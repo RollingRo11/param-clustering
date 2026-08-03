@@ -1,0 +1,176 @@
+{
+ "emo_ids": [
+  3349,
+  27046,
+  29589,
+  40624,
+  64943,
+  93511,
+  94657
+ ],
+ "target_id": 27046,
+ "contrast_top16": [
+  48,
+  434,
+  447,
+  505,
+  317,
+  75,
+  17,
+  241,
+  472,
+  497,
+  368,
+  305,
+  70,
+  181,
+  234,
+  207
+ ],
+ "base": {
+  "emo": {
+   "p_target": 0.023547114804387093,
+   "p_emoset": 0.06333359330892563,
+   "argmax_target_rate": 0.0
+  },
+  "ctrl": {
+   "ce": 4.909127712249756,
+   "p_emoset_all": 4.586427166941576e-06
+  },
+  "gens": [
+   "Thanks again for dinner last night! I really enjoyed it. I think I will make it again. I will let you know how it turns out",
+   "I just got back from the best vacation ever. I went to the beach with my family. I went to the beach with my family. I went to the",
+   "The meeting went really well today. We had a great turnout of 20 people. We had a great discussion about the future of the group."
+  ]
+ },
+ "arms": {
+  "amp_k4_a2.0": {
+   "emo": {
+    "p_target": 0.008587637916207314,
+    "p_emoset": 0.0180667731910944,
+    "argmax_target_rate": 0.0
+   },
+   "ctrl": {
+    "ce": 5.593423843383789,
+    "p_emoset_all": 3.1783572467247723e-06
+   },
+   "gens": [
+    "Thanks again for dinner last night! It was delicious! I will definitely be back!\nThank you so much for dinner last night! It was delicious",
+    "I just got back from the best vacation ever. I went to the beach with my family. I have never been to the beach before. I have never been",
+    "The meeting went really well today. We had a lot of fun and we are all ready to go again. We are going to have a meeting"
+   ]
+  },
+  "amp_k4_a4.0": {
+   "emo": {
+    "p_target": 1.7696305803838186e-05,
+    "p_emoset": 3.5703182220458984e-05,
+    "argmax_target_rate": 0.0
+   },
+   "ctrl": {
+    "ce": 10.408997535705566,
+    "p_emoset_all": 4.951404844177887e-05
+   },
+   "gens": [
+    "Thanks again for dinner last night!enger,\"Check!\" Check moms.getTable moms,\",\"\u4fca moms\":\":,,,,apterPublished with,",
+    "I just got back from the best vacation ever. \u201c traveledavo traveler-more-more-more-more:.mixedmixedmixedmixed:\n-half-and-half:\n,h UR,self",
+    "The meeting went really well today. front who who gang didn Cheap file Saved\u00a0S S%DLocator an dish on in one Hale alename\u0440\u043e\u0434OTHER"
+   ]
+  },
+  "redir_k1_g1.0": {
+   "emo": {
+    "p_target": 2.4810034027211714e-09,
+    "p_emoset": 7.898842159193009e-05,
+    "argmax_target_rate": 0.0
+   },
+   "ctrl": {
+    "ce": 5.428860664367676,
+    "p_emoset_all": 1.0439461561873031e-07
+   },
+   "gens": [
+    "Thanks again for dinner last night! I was so hungry after a long day of work, and I was so hungry for a good meal, and",
+    "I just got back from the best vacation ever. I went to the Bahamas with my husband and my sister, and we stayed at the Atlantis Resort, which is",
+    "The meeting went really well today. The 1st session was a 2-hour workshop with a focus on the 3Rs, 3"
+   ]
+  },
+  "redir_k1_g2.0": {
+   "emo": {
+    "p_target": 0.02647610753774643,
+    "p_emoset": 0.026615995913743973,
+    "argmax_target_rate": 0.1428571492433548
+   },
+   "ctrl": {
+    "ce": 11.07601547241211,
+    "p_emoset_all": 0.1489683985710144
+   },
+   "gens": [
+    "Thanks again for dinner last night! I was so impressed with the food and the presentation :) I was so impressed with the food and the presentation,",
+    "I just got back from the best vacation ever. I went to the beach :) I went to the beach with my husband :) I went to the beach with my",
+    "The meeting went really well today. The team is in a good position :) We are 2-0-0, 2-0-"
+   ]
+  },
+  "redir_k1_g4.0": {
+   "emo": {
+    "p_target": 9.720291238579648e-10,
+    "p_emoset": 9.7476970495336e-07,
+    "argmax_target_rate": 0.0
+   },
+   "ctrl": {
+    "ce": 9.836128234863281,
+    "p_emoset_all": 0.00023884822439868003
+   },
+   "gens": [
+    "Thanks again for dinner last night!.. of, of, of,,,,,,,,,,,,,,,",
+    "I just got back from the best vacation ever.,,,,,,,,,,,,,,,,,,,,,,",
+    "The meeting went really well today... of, of, of,,,,,,,,,,,,,,,"
+   ]
+  },
+  "redir_k4_g1.0": {
+   "emo": {
+    "p_target": 1.569271611185169e-19,
+    "p_emoset": 1.3698669931727636e-07,
+    "argmax_target_rate": 0.0
+   },
+   "ctrl": {
+    "ce": 7.998211860656738,
+    "p_emoset_all": 2.986972731378046e-07
+   },
+   "gens": [
+    "Thanks again for dinner last night!, the 1., , , , , , , , ,",
+    "I just got back from the best vacation ever., of the, of the, of the, of, of, of, of, of, of,",
+    "The meeting went really well today. The 1.,  2,  3,  ,  ,  ,"
+   ]
+  },
+  "redir_k4_g2.0": {
+   "emo": {
+    "p_target": 0.7086788415908813,
+    "p_emoset": 0.7087768912315369,
+    "argmax_target_rate": 0.7142857313156128
+   },
+   "ctrl": {
+    "ce": 20.92881965637207,
+    "p_emoset_all": 0.6970938444137573
+   },
+   "gens": [
+    "Thanks again for dinner last night! :) and it, you and, and,,,,,,,,,,,,,,",
+    "I just got back from the best vacation ever.,,,,,,, 3 :) :) :) 3 3,  and 3 ",
+    "The meeting went really well today.,,, ,    :) :)  3      ,  "
+   ]
+  },
+  "redir_k4_g4.0": {
+   "emo": {
+    "p_target": 0.9954259991645813,
+    "p_emoset": 0.9954265356063843,
+    "argmax_target_rate": 1.0
+   },
+   "ctrl": {
+    "ce": 35.05261993408203,
+    "p_emoset_all": 0.8909469842910767
+   },
+   "gens": [
+    "Thanks again for dinner last night! :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :)",
+    "I just got back from the best vacation ever. :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :)",
+    "The meeting went really well today. :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :)"
+   ]
+  }
+ }
+}

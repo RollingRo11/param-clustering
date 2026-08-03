@@ -1,0 +1,13 @@
+=== phase A: collect shards present, skipping ===
+=== phase B: gram.pt present, skipping ===
+=== phase C: labels present, skipping ===
+=== phase D: banks present, skipping ===
+=== phase E: proportional evals at two densities ===
+Loading weights:   0%|          | 0/146 [00:00<?, ?it/s]Loading weights:   9%|▉         | 13/146 [00:00<00:01, 88.46it/s]Loading weights:  29%|██▉       | 43/146 [00:00<00:00, 192.68it/s]Loading weights:  52%|█████▏    | 76/146 [00:00<00:00, 248.16it/s]Loading weights:  76%|███████▌  | 111/146 [00:00<00:00, 283.70it/s]Loading weights: 100%|██████████| 146/146 [00:00<00:00, 265.93it/s]
+Loading weights:   0%|          | 0/146 [00:00<?, ?it/s]Loading weights:   1%|          | 1/146 [00:00<00:14,  9.79it/s]Loading weights:  38%|███▊      | 56/146 [00:00<00:00, 321.31it/s]Loading weights:  61%|██████    | 89/146 [00:00<00:00, 244.47it/s]Loading weights:  79%|███████▉  | 116/146 [00:00<00:00, 245.39it/s]Loading weights: 100%|██████████| 146/146 [00:00<00:00, 249.14it/s]
+[r0] faithfulness identity max |err| = 0.00e+00 (should be ~fp32 eps)
+[r0] faithfulness identity max |err| = 0.00e+00 (should be ~fp32 eps)
+[r0] eval batch 0: KL 10.1025, gates/tok 66.4, resid-only 84.834, off 84.834, ones 4.62e-08
+[r0] eval batch 0: KL 7.0905, gates/tok 152.5, resid-only 84.834, off 84.834, ones 4.62e-08
+[r0] eval batch 1: KL 10.8540, gates/tok 61.3, resid-only 88.701, off 88.701, ones 4.80e-08
+[r0] eval batch 1: KL 6.8528, gates/tok 145.3, resid-only 88.701, off 88.701, ones 4.80e-08

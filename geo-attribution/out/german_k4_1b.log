@@ -1,0 +1,113 @@
+=== german_k4_1b: alpha sweep + solo edits + ownership profiles (GPU1) ===
+Loading weights:   0%|          | 0/146 [00:00<?, ?it/s]Loading weights:  26%|██▌       | 38/146 [00:00<00:00, 247.94it/s]Loading weights:  47%|████▋     | 68/146 [00:00<00:00, 271.35it/s]Loading weights:  66%|██████▋   | 97/146 [00:00<00:00, 278.90it/s]Loading weights:  86%|████████▋ | 126/146 [00:00<00:00, 279.68it/s]Loading weights: 100%|██████████| 146/146 [00:00<00:00, 305.20it/s]
+[r0] top4 german comps: [35, 374, 302, 54]
+[r0] base CE de/en 4.223/4.926
+[r0] alpha +0.50: dCE de +0.283 en -0.019
+[r0] alpha +0.25: dCE de +0.742 en -0.008
+[r0] alpha +0.00: dCE de +1.612 en +0.020
+[r0] alpha -0.25: dCE de +2.637 en +0.069
+[r0] alpha -0.50: dCE de +3.611 en +0.146
+[r0] alpha -0.75: dCE de +4.301 en +0.263
+[r0] alpha -1.00: dCE de +4.707 en +0.437
+[r0] alpha -1.50: dCE de +5.118 en +0.948
+[r0] alpha -2.00: dCE de +5.381 en +1.472
+[r0] random k4 alpha -2: de +0.241 en +0.107
+[r0] solo c35 del: dCE de +0.333 en -0.003
+[r0] solo c35 inv: dCE de +2.084 en +0.009
+[r0] solo c374 del: dCE de +0.164 en -0.009
+[r0] solo c374 inv: dCE de +0.590 en -0.013
+[r0] solo c302 del: dCE de +0.037 en -0.008
+[r0] solo c302 inv: dCE de +0.118 en -0.016
+[r0] solo c54 del: dCE de +0.163 en +0.030
+[r0] solo c54 inv: dCE de +1.071 en +0.316
+[r0] profile c35: 1.mlp.gate_proj 0.08 (toprow 0.01), 2.mlp.gate_proj 0.06 (toprow 0.02), 1.mlp.up_proj 0.06 (toprow 0.00)
+[r0] profile c374: 15.mlp.up_proj 0.14 (toprow 0.00), 15.mlp.down_proj 0.11 (toprow 0.00), 14.mlp.up_proj 0.09 (toprow 0.00)
+[r0] profile c302: 15.mlp.up_proj 0.13 (toprow 0.01), 15.mlp.gate_proj 0.10 (toprow 0.03), 14.mlp.up_proj 0.10 (toprow 0.01)
+[r0] profile c54: 4.mlp.gate_proj 0.04 (toprow 0.00), 3.mlp.gate_proj 0.04 (toprow 0.01), 2.mlp.gate_proj 0.04 (toprow 0.01)
+[r0] K4 {
+ "alpha_sweep_k4": {
+  "0.5": {
+   "dce_de": 0.2830080986022949,
+   "dce_en": -0.019255638122558594
+  },
+  "0.25": {
+   "dce_de": 0.7415781021118164,
+   "dce_en": -0.008243083953857422
+  },
+  "0.0": {
+   "dce_de": 1.6121835708618164,
+   "dce_en": 0.020025253295898438
+  },
+  "-0.25": {
+   "dce_de": 2.637388229370117,
+   "dce_en": 0.0691986083984375
+  },
+  "-0.5": {
+   "dce_de": 3.610523223876953,
+   "dce_en": 0.14603614807128906
+  },
+  "-0.75": {
+   "dce_de": 4.301062107086182,
+   "dce_en": 0.26314306259155273
+  },
+  "-1.0": {
+   "dce_de": 4.707397937774658,
+   "dce_en": 0.4367032051086426
+  },
+  "-1.5": {
+   "dce_de": 5.117819309234619,
+   "dce_en": 0.9479103088378906
+  },
+  "-2.0": {
+   "dce_de": 5.381202220916748,
+   "dce_en": 1.4717307090759277
+  },
+  "random_-2.0": {
+   "dce_de": 0.2413905461629232,
+   "dce_en": 0.10667975743611653
+  }
+ },
+ "solo": {
+  "35": {
+   "del": {
+    "dce_de": 0.3330349922180176,
+    "dce_en": -0.0030198097229003906
+   },
+   "inv": {
+    "dce_de": 2.0844388008117676,
+    "dce_en": 0.008727550506591797
+   }
+  },
+  "374": {
+   "del": {
+    "dce_de": 0.16379642486572266,
+    "dce_en": -0.00949859619140625
+   },
+   "inv": {
+    "dce_de": 0.5900664329528809,
+    "dce_en": -0.012746334075927734
+   }
+  },
+  "302": {
+   "del": {
+    "dce_de": 0.03746318817138672,
+    "dce_en": -0.008289813995361328
+   },
+   "inv": {
+    "dce_de": 0.11773252487182617,
+    "dce_en": -0.01618194580078125
+   }
+  },
+  "54": {
+   "del": {
+    "dce_de": 0.16306018829345703,
+    "dce_en": 0.02991485595703125
+   },
+   "inv": {
+    "dce_de": 1.070991039276123,
+    "dce_en": 0.3155369758605957
+   }
+  }
+ }
+}
+=== german_k4_1b complete ===

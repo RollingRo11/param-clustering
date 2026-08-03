@@ -1,0 +1,21 @@
+{
+  "batch_seqs_per_gpu": 8,
+  "bf16": false,
+  "compile": false,
+  "fused_attention": false,
+  "ig_k": 2,
+  "peak_gpu_gib": 43.88623046875,
+  "pos_per_seq": 64,
+  "positions": 8192,
+  "positions_per_second": 1017.048730857967,
+  "profile": "baseline",
+  "scalar": "ce",
+  "seconds_max_rank": 8.054677963256836,
+  "sensor": "ig",
+  "seq_len": 512,
+  "sequence_tokens_per_second": 8136.389846863736,
+  "timed_batches": 8,
+  "warmup_batches": 2,
+  "warmup_seconds_max_rank": 2.450690269470215,
+  "world": 2
+}

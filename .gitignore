@@ -1,0 +1,22 @@
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Local compiler and test caches
+.torchinductor_cache/
+.pytest_cache/
+.mypy_cache/
+
+# Machine-local model links, weights, and task locks
+geo-attribution/out/target_local/
+.claude/*.lock
+
+# Editor and OS metadata
+.DS_Store
+*.swp
+
+# Local secrets
+.env
+.env.*
+*.pem
+*.key

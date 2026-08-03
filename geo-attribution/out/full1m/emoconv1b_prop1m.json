@@ -1,0 +1,142 @@
+{
+ "c_emo": 679,
+ "c_sad": 156,
+ "sad_top8": [
+  156,
+  778,
+  977,
+  1615,
+  848,
+  58,
+  858,
+  1533
+ ],
+ "arms": {
+  "base": {
+   "sad_pos": {
+    "p_sad": 0.39631256461143494,
+    "p_happy": 0.002647564746439457,
+    "argmax_sad": 0.625,
+    "argmax_happy": 0.0
+   },
+   "happy_pos": {
+    "p_sad": 0.0005604220787063241,
+    "p_happy": 0.018241211771965027,
+    "argmax_sad": 0.0,
+    "argmax_happy": 0.0
+   },
+   "ctrl_ce": 4.909127712249756,
+   "gens": [
+    "I missed my flight and lost my luggage. What should I do?\nIf you missed your flight or were late returning your luggage, you could still use",
+    "I missed my flight and lost my luggage. I\u2019ve been trying to book a new flight for two days straight, but the website won\u2019t let me",
+    "My computer deleted all my files. What do I do?\nIf you accidentally deleted your files, it is probably too late to recover them without",
+    "My computer deleted all my files. I\u2019ve been trying to recover them. My friend suggested to me to try CdburnerXP."
+   ]
+  },
+  "add_cemo_g8.0": {
+   "sad_pos": {
+    "p_sad": 0.0003189295530319214,
+    "p_happy": 0.3777340054512024,
+    "argmax_sad": 0.0,
+    "argmax_happy": 0.5
+   },
+   "happy_pos": {
+    "p_sad": 3.2899158115655414e-13,
+    "p_happy": 2.1030913404056392e-23,
+    "argmax_sad": 0.0,
+    "argmax_happy": 0.0
+   },
+   "ctrl_ce": 12.350127220153809,
+   "gens": [
+    "I missed my flight and lost my luggage\n and\n\n,\n\n:,\n,\n\n\n\n\n C c\n players out C",
+    "I missed my flight and lost my luggage, ,,\n, of:\n\n\n,,,\n C C of C\n Federal C",
+    "My computer deleted all my files\n and, of,,\n\n, d,\n,\n\n\n\n c\n players\n\n",
+    "My computer deleted all my files, ,,\n, of:\n\n,,,,\n, C\n C   C"
+   ]
+  },
+  "add_cemo_g16.0": {
+   "sad_pos": {
+    "p_sad": 1.0372545674362226e-24,
+    "p_happy": 3.1389085600875902e-43,
+    "argmax_sad": 0.0,
+    "argmax_happy": 0.0
+   },
+   "happy_pos": {
+    "p_sad": 9.557719412445864e-25,
+    "p_happy": 3.026804682941605e-43,
+    "argmax_sad": 0.0,
+    "argmax_happy": 0.0
+   },
+   "ctrl_ce": 19.40460205078125,
+   "gens": [
+    "I missed my flight and lost my luggage,,,,,,\n\n, d,,,\n,,,,,,,,",
+    "I missed my flight and lost my luggage,,,,,,,\n,,,,,,,,,,,,,,",
+    "My computer deleted all my files,,,,,,\n,, d,,,\n,, a,,,,,",
+    "My computer deleted all my files,  h,,,,\n,,,,,, ;) :) :),, :) :) :)"
+   ]
+  },
+  "repl_csad_g1.0": {
+   "sad_pos": {
+    "p_sad": 0.398991197347641,
+    "p_happy": 0.0025348213966935873,
+    "argmax_sad": 0.625,
+    "argmax_happy": 0.0
+   },
+   "happy_pos": {
+    "p_sad": 0.0005913213244639337,
+    "p_happy": 0.021973973140120506,
+    "argmax_sad": 0.0,
+    "argmax_happy": 0.0
+   },
+   "ctrl_ce": 4.90947151184082,
+   "gens": [
+    "I missed my flight and lost my luggage. What should I do?\nIf you missed your flight or were late returning your luggage, you could still use",
+    "I missed my flight and lost my luggage. I\u2019ve been trying to book a new flight for two days straight, but the website won\u2019t let me",
+    "My computer deleted all my files. What should I do?\nIf you accidentally deleted your files, it is probably too late to recover them without",
+    "My computer deleted all my files. I\u2019ve been trying to recover them. My friend suggested to me to try CdburnerXP."
+   ]
+  },
+  "repl_csad_g2.0": {
+   "sad_pos": {
+    "p_sad": 0.40956681966781616,
+    "p_happy": 0.0031811404041945934,
+    "argmax_sad": 0.625,
+    "argmax_happy": 0.0
+   },
+   "happy_pos": {
+    "p_sad": 0.0006126065272837877,
+    "p_happy": 0.03110131248831749,
+    "argmax_sad": 0.0,
+    "argmax_happy": 0.1428571492433548
+   },
+   "ctrl_ce": 4.9096503257751465,
+   "gens": [
+    "I missed my flight and lost my luggage. What should I do?\nIf you missed your flight or were late returning your luggage, you could still use",
+    "I missed my flight and lost my luggage. I\u2019ve been trying to book a new flight for two days straight, but the website won\u2019t let me",
+    "My computer deleted all my files. What should I do?\nIf you accidentally deleted your files, it is probably too late to recover them without",
+    "My computer deleted all my files. Help!!\nJust got home from the hospital. My dad's had a stroke and I think he did something"
+   ]
+  },
+  "del_csad_add_cemo_g8": {
+   "sad_pos": {
+    "p_sad": 3.456726211151749e-14,
+    "p_happy": 6.593414225098926e-24,
+    "argmax_sad": 0.0,
+    "argmax_happy": 0.0
+   },
+   "happy_pos": {
+    "p_sad": 1.572081609280075e-15,
+    "p_happy": 1.4629055708774342e-27,
+    "argmax_sad": 0.0,
+    "argmax_happy": 0.0
+   },
+   "ctrl_ce": 11.06266975402832,
+   "gens": [
+    "I missed my flight and lost my luggage\n and, of, The\n\n, d,\n,\n\n\n\n,\n\n\n\n",
+    "I missed my flight and lost my luggage, ,,,,,:\n\n,,,,\n,\n\n\n\n Federal\n",
+    "My computer deleted all my files\n and\n\n,\n\n\n,\n,\n\n\n\n\n\n,\n\n\n\n",
+    "My computer deleted all my files\n \n,\n\n\n\n\n\n\n,,,\n,\n\n\n\n\n\n"
+   ]
+  }
+ }
+}

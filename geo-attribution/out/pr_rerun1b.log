@@ -1,0 +1,23 @@
+=== pr_rerun1b: overflow-fixed PR gating eval (GPU1) ===
+Loading weights:   0%|          | 0/146 [00:00<?, ?it/s]Loading weights:  37%|███▋      | 54/146 [00:00<00:00, 345.36it/s]Loading weights:  61%|██████    | 89/146 [00:00<00:00, 335.55it/s]Loading weights:  87%|████████▋ | 127/146 [00:00<00:00, 352.98it/s]Loading weights: 100%|██████████| 146/146 [00:00<00:00, 381.67it/s]
+[r0] faithfulness identity max |err| = 0.00e+00 (should be ~fp32 eps)
+[r0] eval batch 0: KL 35.4619, gates/tok 23.4, resid-only 84.834, off 84.834, ones 4.62e-08
+[r0] eval batch 1: KL 42.4828, gates/tok 21.2, resid-only 88.701, off 88.701, ones 4.80e-08
+[r0] eval batch 2: KL 35.8461, gates/tok 23.2, resid-only 83.648, off 83.648, ones 4.57e-08
+[r0] eval batch 3: KL 37.4040, gates/tok 22.7, resid-only 85.805, off 85.805, ones 5.64e-08
+[r0] EVAL {
+ "kl_full_gate": 37.79871082305908,
+ "kl_all_ones_sanity": 4.908804651648779e-08,
+ "kl_residual_only": 85.74706649780273,
+ "kl_off_baseline": 85.74706649780273,
+ "gates_per_token": 22.64540147781372,
+ "keep_top_j": {},
+ "faith_max_abs_err": 0.0,
+ "gate_mode": "pr",
+ "gate_tau": 1.0,
+ "gate_thresh": 0.1,
+ "C": 512,
+ "m": 0,
+ "resid_frac_mean": 0.0
+}
+=== pr_rerun1b complete ===

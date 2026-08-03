@@ -1,0 +1,33 @@
+Loading weights:   0%|          | 0/146 [00:00<?, ?it/s]Loading weights:   3%|▎         | 4/146 [00:00<00:04, 35.46it/s]Loading weights:  32%|███▏      | 46/146 [00:00<00:00, 237.93it/s]Loading weights:  49%|████▉     | 72/146 [00:00<00:00, 246.99it/s]Loading weights:  66%|██████▋   | 97/146 [00:00<00:00, 206.61it/s]Loading weights:  82%|████████▏ | 120/146 [00:00<00:00, 213.39it/s]Loading weights:  97%|█████████▋| 142/146 [00:00<00:00, 215.26it/s]Loading weights: 100%|██████████| 146/146 [00:00<00:00, 215.33it/s]
+[r0] top-8 sad-contrast comps: [156, 778, 977, 1615, 848, 58, 858, 1533] (general emoticon comp c679, sad arm targets c156)
+[r0] base: sad_pos {'p_sad': 0.39631256461143494, 'p_happy': 0.002647564746439457, 'argmax_sad': 0.625, 'argmax_happy': 0.0} | happy_pos {'p_sad': 0.0005604220787063241, 'p_happy': 0.018241211771965027, 'argmax_sad': 0.0, 'argmax_happy': 0.0} | ctrl 4.909
+[r0] base gen: 'I missed my flight and lost my luggage. What should I do?\nIf you missed your flight or were late returning your luggage, you could still use'
+[r0] base gen: 'I missed my flight and lost my luggage. I’ve been trying to book a new flight for two days straight, but the website won’t let me'
+[r0] base gen: 'My computer deleted all my files. What do I do?\nIf you accidentally deleted your files, it is probably too late to recover them without'
+[r0] base gen: 'My computer deleted all my files. I’ve been trying to recover them. My friend suggested to me to try CdburnerXP.'
+[r0] add_cemo_g8.0: sad_pos {'p_sad': 0.0003189295530319214, 'p_happy': 0.3777340054512024, 'argmax_sad': 0.0, 'argmax_happy': 0.5} | happy_pos {'p_sad': 3.2899158115655414e-13, 'p_happy': 2.1030913404056392e-23, 'argmax_sad': 0.0, 'argmax_happy': 0.0} | ctrl 12.350
+[r0] add_cemo_g8.0 gen: 'I missed my flight and lost my luggage\n and\n\n,\n\n:,\n,\n\n\n\n\n C c\n players out C'
+[r0] add_cemo_g8.0 gen: 'I missed my flight and lost my luggage, ,,\n, of:\n\n\n,,,\n C C of C\n Federal C'
+[r0] add_cemo_g8.0 gen: 'My computer deleted all my files\n and, of,,\n\n, d,\n,\n\n\n\n c\n players\n\n'
+[r0] add_cemo_g8.0 gen: 'My computer deleted all my files, ,,\n, of:\n\n,,,,\n, C\n C   C'
+[r0] add_cemo_g16.0: sad_pos {'p_sad': 1.0372545674362226e-24, 'p_happy': 3.1389085600875902e-43, 'argmax_sad': 0.0, 'argmax_happy': 0.0} | happy_pos {'p_sad': 9.557719412445864e-25, 'p_happy': 3.026804682941605e-43, 'argmax_sad': 0.0, 'argmax_happy': 0.0} | ctrl 19.405
+[r0] add_cemo_g16.0 gen: 'I missed my flight and lost my luggage,,,,,,\n\n, d,,,\n,,,,,,,,'
+[r0] add_cemo_g16.0 gen: 'I missed my flight and lost my luggage,,,,,,,\n,,,,,,,,,,,,,,'
+[r0] add_cemo_g16.0 gen: 'My computer deleted all my files,,,,,,\n,, d,,,\n,, a,,,,,'
+[r0] add_cemo_g16.0 gen: 'My computer deleted all my files,  h,,,,\n,,,,,, ;) :) :),, :) :) :)'
+[r0] repl_csad_g1.0: sad_pos {'p_sad': 0.398991197347641, 'p_happy': 0.0025348213966935873, 'argmax_sad': 0.625, 'argmax_happy': 0.0} | happy_pos {'p_sad': 0.0005913213244639337, 'p_happy': 0.021973973140120506, 'argmax_sad': 0.0, 'argmax_happy': 0.0} | ctrl 4.909
+[r0] repl_csad_g1.0 gen: 'I missed my flight and lost my luggage. What should I do?\nIf you missed your flight or were late returning your luggage, you could still use'
+[r0] repl_csad_g1.0 gen: 'I missed my flight and lost my luggage. I’ve been trying to book a new flight for two days straight, but the website won’t let me'
+[r0] repl_csad_g1.0 gen: 'My computer deleted all my files. What should I do?\nIf you accidentally deleted your files, it is probably too late to recover them without'
+[r0] repl_csad_g1.0 gen: 'My computer deleted all my files. I’ve been trying to recover them. My friend suggested to me to try CdburnerXP.'
+[r0] repl_csad_g2.0: sad_pos {'p_sad': 0.40956681966781616, 'p_happy': 0.0031811404041945934, 'argmax_sad': 0.625, 'argmax_happy': 0.0} | happy_pos {'p_sad': 0.0006126065272837877, 'p_happy': 0.03110131248831749, 'argmax_sad': 0.0, 'argmax_happy': 0.1428571492433548} | ctrl 4.910
+[r0] repl_csad_g2.0 gen: 'I missed my flight and lost my luggage. What should I do?\nIf you missed your flight or were late returning your luggage, you could still use'
+[r0] repl_csad_g2.0 gen: 'I missed my flight and lost my luggage. I’ve been trying to book a new flight for two days straight, but the website won’t let me'
+[r0] repl_csad_g2.0 gen: 'My computer deleted all my files. What should I do?\nIf you accidentally deleted your files, it is probably too late to recover them without'
+[r0] repl_csad_g2.0 gen: "My computer deleted all my files. Help!!\nJust got home from the hospital. My dad's had a stroke and I think he did something"
+[r0] del_csad_add_cemo_g8: sad_pos {'p_sad': 3.456726211151749e-14, 'p_happy': 6.593414225098926e-24, 'argmax_sad': 0.0, 'argmax_happy': 0.0} | happy_pos {'p_sad': 1.572081609280075e-15, 'p_happy': 1.4629055708774342e-27, 'argmax_sad': 0.0, 'argmax_happy': 0.0} | ctrl 11.063
+[r0] del_csad_add_cemo_g8 gen: 'I missed my flight and lost my luggage\n and, of, The\n\n, d,\n,\n\n\n\n,\n\n\n\n'
+[r0] del_csad_add_cemo_g8 gen: 'I missed my flight and lost my luggage, ,,,,,:\n\n,,,,\n,\n\n\n\n Federal\n'
+[r0] del_csad_add_cemo_g8 gen: 'My computer deleted all my files\n and\n\n,\n\n\n,\n,\n\n\n\n\n\n,\n\n\n\n'
+[r0] del_csad_add_cemo_g8 gen: 'My computer deleted all my files\n \n,\n\n\n\n\n\n\n,,,\n,\n\n\n\n\n\n'
+[r0] emoconv done

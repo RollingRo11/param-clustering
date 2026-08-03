@@ -1,0 +1,303 @@
+=== phase A: collect shards present, skipping ===
+=== phase B: gram (DDP, module-sharded) ===
+W0802 22:08:08.988000 1476406 torch/distributed/run.py:766] 
+W0802 22:08:08.988000 1476406 torch/distributed/run.py:766] *****************************************
+W0802 22:08:08.988000 1476406 torch/distributed/run.py:766] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0802 22:08:08.988000 1476406 torch/distributed/run.py:766] *****************************************
+Loading weights:   0%|          | 0/146 [00:00<?, ?it/s]Loading weights:   0%|          | 0/146 [00:00<?, ?it/s]Loading weights:   1%|          | 1/146 [00:00<01:31,  1.59it/s]Loading weights:  90%|████████▉ | 131/146 [00:00<00:00, 241.00it/s]Loading weights:   1%|          | 1/146 [00:00<01:26,  1.68it/s]Loading weights: 100%|██████████| 146/146 [00:00<00:00, 189.93it/s]
+Loading weights:  89%|████████▉ | 130/146 [00:00<00:00, 248.89it/s]Loading weights: 100%|██████████| 146/146 [00:00<00:00, 197.00it/s]
+[r0] gram: N=16384 K=2, 56 modules on this rank
+[r1] gram: N=16384 K=2, 56 modules on this rank
+[r1] gram hf.model.layers.0.self_attn.k_proj done (12s)
+[r0] gram hf.model.layers.0.self_attn.q_proj done (29s)
+[r0] gram hf.model.layers.0.self_attn.v_proj done (41s)
+[r1] gram hf.model.layers.0.self_attn.o_proj done (42s)
+[r0] gram hf.model.layers.0.mlp.gate_proj done (143s)
+[r1] gram hf.model.layers.0.mlp.up_proj done (143s)
+[r1] gram hf.model.layers.1.self_attn.q_proj done (172s)
+[r1] gram hf.model.layers.1.self_attn.v_proj done (184s)
+[r0] gram hf.model.layers.0.mlp.down_proj done (227s)
+[r0] gram hf.model.layers.1.self_attn.k_proj done (239s)
+[r0] gram hf.model.layers.1.self_attn.o_proj done (269s)
+[r1] gram hf.model.layers.1.mlp.gate_proj done (285s)
+[r1] gram hf.model.layers.1.mlp.down_proj done (368s)
+[r0] gram hf.model.layers.1.mlp.up_proj done (371s)
+[r1] gram hf.model.layers.2.self_attn.k_proj done (380s)
+[r0] gram hf.model.layers.2.self_attn.q_proj done (401s)
+[r1] gram hf.model.layers.2.self_attn.o_proj done (410s)
+[r0] gram hf.model.layers.2.self_attn.v_proj done (413s)
+[r1] gram hf.model.layers.2.mlp.up_proj done (510s)
+[r0] gram hf.model.layers.2.mlp.gate_proj done (515s)
+[r1] gram hf.model.layers.3.self_attn.q_proj done (540s)
+[r1] gram hf.model.layers.3.self_attn.v_proj done (552s)
+[r0] gram hf.model.layers.2.mlp.down_proj done (598s)
+[r0] gram hf.model.layers.3.self_attn.k_proj done (610s)
+[r0] gram hf.model.layers.3.self_attn.o_proj done (640s)
+[r1] gram hf.model.layers.3.mlp.gate_proj done (652s)
+[r1] gram hf.model.layers.3.mlp.down_proj done (735s)
+[r0] gram hf.model.layers.3.mlp.up_proj done (741s)
+[r1] gram hf.model.layers.4.self_attn.k_proj done (747s)
+[r0] gram hf.model.layers.4.self_attn.q_proj done (771s)
+[r1] gram hf.model.layers.4.self_attn.o_proj done (776s)
+[r0] gram hf.model.layers.4.self_attn.v_proj done (783s)
+[r1] gram hf.model.layers.4.mlp.up_proj done (877s)
+[r0] gram hf.model.layers.4.mlp.gate_proj done (884s)
+[r1] gram hf.model.layers.5.self_attn.q_proj done (906s)
+[r1] gram hf.model.layers.5.self_attn.v_proj done (918s)
+[r0] gram hf.model.layers.4.mlp.down_proj done (969s)
+[r0] gram hf.model.layers.5.self_attn.k_proj done (981s)
+[r0] gram hf.model.layers.5.self_attn.o_proj done (1010s)
+[r1] gram hf.model.layers.5.mlp.gate_proj done (1018s)
+[r1] gram hf.model.layers.5.mlp.down_proj done (1101s)
+[r0] gram hf.model.layers.5.mlp.up_proj done (1112s)
+[r1] gram hf.model.layers.6.self_attn.k_proj done (1113s)
+[r0] gram hf.model.layers.6.self_attn.q_proj done (1141s)
+[r1] gram hf.model.layers.6.self_attn.o_proj done (1143s)
+[r0] gram hf.model.layers.6.self_attn.v_proj done (1153s)
+[r1] gram hf.model.layers.6.mlp.up_proj done (1243s)
+[r0] gram hf.model.layers.6.mlp.gate_proj done (1255s)
+[r1] gram hf.model.layers.7.self_attn.q_proj done (1272s)
+[r1] gram hf.model.layers.7.self_attn.v_proj done (1284s)
+[r0] gram hf.model.layers.6.mlp.down_proj done (1339s)
+[r0] gram hf.model.layers.7.self_attn.k_proj done (1351s)
+[r0] gram hf.model.layers.7.self_attn.o_proj done (1380s)
+[r1] gram hf.model.layers.7.mlp.gate_proj done (1385s)
+[r1] gram hf.model.layers.7.mlp.down_proj done (1468s)
+[r1] gram hf.model.layers.8.self_attn.k_proj done (1479s)
+[r0] gram hf.model.layers.7.mlp.up_proj done (1482s)
+[r1] gram hf.model.layers.8.self_attn.o_proj done (1509s)
+[r0] gram hf.model.layers.8.self_attn.q_proj done (1512s)
+[r0] gram hf.model.layers.8.self_attn.v_proj done (1524s)
+[r1] gram hf.model.layers.8.mlp.up_proj done (1609s)
+[r0] gram hf.model.layers.8.mlp.gate_proj done (1625s)
+[r1] gram hf.model.layers.9.self_attn.q_proj done (1638s)
+[r1] gram hf.model.layers.9.self_attn.v_proj done (1650s)
+[r0] gram hf.model.layers.8.mlp.down_proj done (1709s)
+[r0] gram hf.model.layers.9.self_attn.k_proj done (1721s)
+[r0] gram hf.model.layers.9.self_attn.o_proj done (1751s)
+[r1] gram hf.model.layers.9.mlp.gate_proj done (1751s)
+[r1] gram hf.model.layers.9.mlp.down_proj done (1833s)
+[r1] gram hf.model.layers.10.self_attn.k_proj done (1845s)
+[r0] gram hf.model.layers.9.mlp.up_proj done (1852s)
+[r1] gram hf.model.layers.10.self_attn.o_proj done (1874s)
+[r0] gram hf.model.layers.10.self_attn.q_proj done (1882s)
+[r0] gram hf.model.layers.10.self_attn.v_proj done (1894s)
+[r1] gram hf.model.layers.10.mlp.up_proj done (1975s)
+[r0] gram hf.model.layers.10.mlp.gate_proj done (1995s)
+[r1] gram hf.model.layers.11.self_attn.q_proj done (2004s)
+[r1] gram hf.model.layers.11.self_attn.v_proj done (2016s)
+[r0] gram hf.model.layers.10.mlp.down_proj done (2078s)
+[r0] gram hf.model.layers.11.self_attn.k_proj done (2090s)
+[r1] gram hf.model.layers.11.mlp.gate_proj done (2116s)
+[r0] gram hf.model.layers.11.self_attn.o_proj done (2119s)
+[r1] gram hf.model.layers.11.mlp.down_proj done (2198s)
+[r1] gram hf.model.layers.12.self_attn.k_proj done (2210s)
+[r0] gram hf.model.layers.11.mlp.up_proj done (2220s)
+[r1] gram hf.model.layers.12.self_attn.o_proj done (2240s)
+[r0] gram hf.model.layers.12.self_attn.q_proj done (2249s)
+[r0] gram hf.model.layers.12.self_attn.v_proj done (2261s)
+[r1] gram hf.model.layers.12.mlp.up_proj done (2340s)
+[r0] gram hf.model.layers.12.mlp.gate_proj done (2362s)
+[r1] gram hf.model.layers.13.self_attn.q_proj done (2369s)
+[r1] gram hf.model.layers.13.self_attn.v_proj done (2381s)
+[r0] gram hf.model.layers.12.mlp.down_proj done (2446s)
+[r0] gram hf.model.layers.13.self_attn.k_proj done (2458s)
+[r1] gram hf.model.layers.13.mlp.gate_proj done (2481s)
+[r0] gram hf.model.layers.13.self_attn.o_proj done (2487s)
+[r1] gram hf.model.layers.13.mlp.down_proj done (2563s)
+[r1] gram hf.model.layers.14.self_attn.k_proj done (2575s)
+[r0] gram hf.model.layers.13.mlp.up_proj done (2588s)
+[r1] gram hf.model.layers.14.self_attn.o_proj done (2604s)
+[r0] gram hf.model.layers.14.self_attn.q_proj done (2618s)
+[r0] gram hf.model.layers.14.self_attn.v_proj done (2630s)
+[r1] gram hf.model.layers.14.mlp.up_proj done (2704s)
+[r0] gram hf.model.layers.14.mlp.gate_proj done (2731s)
+[r1] gram hf.model.layers.15.self_attn.q_proj done (2734s)
+[r1] gram hf.model.layers.15.self_attn.v_proj done (2746s)
+[r0] gram hf.model.layers.14.mlp.down_proj done (2814s)
+[r0] gram hf.model.layers.15.self_attn.k_proj done (2826s)
+[r1] gram hf.model.layers.15.mlp.gate_proj done (2845s)
+[r0] gram hf.model.layers.15.self_attn.o_proj done (2855s)
+[r1] gram hf.model.layers.15.mlp.down_proj done (2928s)
+[r0] gram hf.model.layers.15.mlp.up_proj done (2956s)
+/usr/local/lib/python3.12/dist-packages/torch/distributed/distributed_c10d.py:4631: UserWarning: No device id is provided via `init_process_group` or `barrier `. Using the current device set by the user. 
+  warnings.warn(  # warn only once
+[r0] gram saved: diag mean 5.019e+01, min 6.357e-01 (2959s)
+/usr/local/lib/python3.12/dist-packages/torch/distributed/distributed_c10d.py:4631: UserWarning: No device id is provided via `init_process_group` or `barrier `. Using the current device set by the user. 
+  warnings.warn(  # warn only once
+gram.pt OK (1073743316 bytes)
+=== phase C: factor C=512 ===
+[r0] randomized top-1536 eigenpairs (subspace iteration)...
+[r0]   subspace iter 0
+[r0]   subspace iter 1
+[r0]   subspace iter 2
+[r0]   subspace iter 3
+[r0]   subspace iter 4
+[r0]   subspace iter 5
+[r0]   subspace iter 6
+[r0]   subspace iter 7
+[r0] eigengap candidates (C, relative gap): (16, 0.110), (22, 0.080), (25, 0.066), (27, 0.056), (18, 0.046), (24, 0.043), (26, 0.043), (38, 0.040)
+[r0] spectrum head: 6.288e+02, 4.785e+02, 3.362e+02, 2.731e+02, 2.517e+02, 1.935e+02, 1.686e+02, 1.558e+02, 1.409e+02, 1.338e+02, 1.125e+02, 1.045e+02 ... [256]=5.105e+00 [512]=2.884e+00 [1024]=1.701e+00
+[r0] factor: using C=512
+[r0] cluster sizes: min 2, median 28, max 155, empty 0
+=== phase D: proportional softpart extraction ===
+Loading weights:   0%|          | 0/146 [00:00<?, ?it/s]Loading weights:  27%|██▋       | 39/146 [00:00<00:00, 388.90it/s]Loading weights:  61%|██████    | 89/146 [00:00<00:00, 446.33it/s]Loading weights:  92%|█████████▏| 134/146 [00:00<00:00, 443.66it/s]Loading weights: 100%|██████████| 146/146 [00:00<00:00, 463.04it/s]
+[r0] extract_ps: labels from labels_C512.pt, C=512, T=1.0, s=8
+[r0] extract_ps hf.model.layers.0.self_attn.q_proj: mean top-1 share 0.235
+[r0] extract_ps hf.model.layers.0.self_attn.k_proj: mean top-1 share 0.259
+[r0] extract_ps hf.model.layers.0.self_attn.v_proj: mean top-1 share 0.238
+[r0] extract_ps hf.model.layers.0.self_attn.o_proj: mean top-1 share 0.217
+[r0] extract_ps hf.model.layers.0.mlp.gate_proj: mean top-1 share 0.214
+[r0] extract_ps hf.model.layers.0.mlp.up_proj: mean top-1 share 0.212
+[r0] extract_ps hf.model.layers.0.mlp.down_proj: mean top-1 share 0.216
+[r0] extract_ps hf.model.layers.1.self_attn.q_proj: mean top-1 share 0.225
+[r0] extract_ps hf.model.layers.1.self_attn.k_proj: mean top-1 share 0.267
+[r0] extract_ps hf.model.layers.1.self_attn.v_proj: mean top-1 share 0.228
+[r0] extract_ps hf.model.layers.1.self_attn.o_proj: mean top-1 share 0.214
+[r0] extract_ps hf.model.layers.1.mlp.gate_proj: mean top-1 share 0.202
+[r0] extract_ps hf.model.layers.1.mlp.up_proj: mean top-1 share 0.198
+[r0] extract_ps hf.model.layers.1.mlp.down_proj: mean top-1 share 0.198
+[r0] extract_ps hf.model.layers.2.self_attn.q_proj: mean top-1 share 0.204
+[r0] extract_ps hf.model.layers.2.self_attn.k_proj: mean top-1 share 0.187
+[r0] extract_ps hf.model.layers.2.self_attn.v_proj: mean top-1 share 0.199
+[r0] extract_ps hf.model.layers.2.self_attn.o_proj: mean top-1 share 0.207
+[r0] extract_ps hf.model.layers.2.mlp.gate_proj: mean top-1 share 0.206
+[r0] extract_ps hf.model.layers.2.mlp.up_proj: mean top-1 share 0.194
+[r0] extract_ps hf.model.layers.2.mlp.down_proj: mean top-1 share 0.196
+[r0] extract_ps hf.model.layers.3.self_attn.q_proj: mean top-1 share 0.200
+[r0] extract_ps hf.model.layers.3.self_attn.k_proj: mean top-1 share 0.189
+[r0] extract_ps hf.model.layers.3.self_attn.v_proj: mean top-1 share 0.200
+[r0] extract_ps hf.model.layers.3.self_attn.o_proj: mean top-1 share 0.207
+[r0] extract_ps hf.model.layers.3.mlp.gate_proj: mean top-1 share 0.213
+[r0] extract_ps hf.model.layers.3.mlp.up_proj: mean top-1 share 0.189
+[r0] extract_ps hf.model.layers.3.mlp.down_proj: mean top-1 share 0.191
+[r0] extract_ps hf.model.layers.4.self_attn.q_proj: mean top-1 share 0.195
+[r0] extract_ps hf.model.layers.4.self_attn.k_proj: mean top-1 share 0.188
+[r0] extract_ps hf.model.layers.4.self_attn.v_proj: mean top-1 share 0.200
+[r0] extract_ps hf.model.layers.4.self_attn.o_proj: mean top-1 share 0.214
+[r0] extract_ps hf.model.layers.4.mlp.gate_proj: mean top-1 share 0.217
+[r0] extract_ps hf.model.layers.4.mlp.up_proj: mean top-1 share 0.183
+[r0] extract_ps hf.model.layers.4.mlp.down_proj: mean top-1 share 0.187
+[r0] extract_ps hf.model.layers.5.self_attn.q_proj: mean top-1 share 0.190
+[r0] extract_ps hf.model.layers.5.self_attn.k_proj: mean top-1 share 0.192
+[r0] extract_ps hf.model.layers.5.self_attn.v_proj: mean top-1 share 0.201
+[r0] extract_ps hf.model.layers.5.self_attn.o_proj: mean top-1 share 0.215
+[r0] extract_ps hf.model.layers.5.mlp.gate_proj: mean top-1 share 0.211
+[r0] extract_ps hf.model.layers.5.mlp.up_proj: mean top-1 share 0.182
+[r0] extract_ps hf.model.layers.5.mlp.down_proj: mean top-1 share 0.190
+[r0] extract_ps hf.model.layers.6.self_attn.q_proj: mean top-1 share 0.187
+[r0] extract_ps hf.model.layers.6.self_attn.k_proj: mean top-1 share 0.191
+[r0] extract_ps hf.model.layers.6.self_attn.v_proj: mean top-1 share 0.199
+[r0] extract_ps hf.model.layers.6.self_attn.o_proj: mean top-1 share 0.214
+[r0] extract_ps hf.model.layers.6.mlp.gate_proj: mean top-1 share 0.205
+[r0] extract_ps hf.model.layers.6.mlp.up_proj: mean top-1 share 0.183
+[r0] extract_ps hf.model.layers.6.mlp.down_proj: mean top-1 share 0.191
+[r0] extract_ps hf.model.layers.7.self_attn.q_proj: mean top-1 share 0.185
+[r0] extract_ps hf.model.layers.7.self_attn.k_proj: mean top-1 share 0.188
+[r0] extract_ps hf.model.layers.7.self_attn.v_proj: mean top-1 share 0.201
+[r0] extract_ps hf.model.layers.7.self_attn.o_proj: mean top-1 share 0.223
+[r0] extract_ps hf.model.layers.7.mlp.gate_proj: mean top-1 share 0.208
+[r0] extract_ps hf.model.layers.7.mlp.up_proj: mean top-1 share 0.192
+[r0] extract_ps hf.model.layers.7.mlp.down_proj: mean top-1 share 0.198
+[r0] extract_ps hf.model.layers.8.self_attn.q_proj: mean top-1 share 0.186
+[r0] extract_ps hf.model.layers.8.self_attn.k_proj: mean top-1 share 0.200
+[r0] extract_ps hf.model.layers.8.self_attn.v_proj: mean top-1 share 0.206
+[r0] extract_ps hf.model.layers.8.self_attn.o_proj: mean top-1 share 0.227
+[r0] extract_ps hf.model.layers.8.mlp.gate_proj: mean top-1 share 0.213
+[r0] extract_ps hf.model.layers.8.mlp.up_proj: mean top-1 share 0.190
+[r0] extract_ps hf.model.layers.8.mlp.down_proj: mean top-1 share 0.195
+[r0] extract_ps hf.model.layers.9.self_attn.q_proj: mean top-1 share 0.189
+[r0] extract_ps hf.model.layers.9.self_attn.k_proj: mean top-1 share 0.199
+[r0] extract_ps hf.model.layers.9.self_attn.v_proj: mean top-1 share 0.214
+[r0] extract_ps hf.model.layers.9.self_attn.o_proj: mean top-1 share 0.235
+[r0] extract_ps hf.model.layers.9.mlp.gate_proj: mean top-1 share 0.216
+[r0] extract_ps hf.model.layers.9.mlp.up_proj: mean top-1 share 0.194
+[r0] extract_ps hf.model.layers.9.mlp.down_proj: mean top-1 share 0.200
+[r0] extract_ps hf.model.layers.10.self_attn.q_proj: mean top-1 share 0.183
+[r0] extract_ps hf.model.layers.10.self_attn.k_proj: mean top-1 share 0.212
+[r0] extract_ps hf.model.layers.10.self_attn.v_proj: mean top-1 share 0.237
+[r0] extract_ps hf.model.layers.10.self_attn.o_proj: mean top-1 share 0.236
+[r0] extract_ps hf.model.layers.10.mlp.gate_proj: mean top-1 share 0.221
+[r0] extract_ps hf.model.layers.10.mlp.up_proj: mean top-1 share 0.201
+[r0] extract_ps hf.model.layers.10.mlp.down_proj: mean top-1 share 0.200
+[r0] extract_ps hf.model.layers.11.self_attn.q_proj: mean top-1 share 0.194
+[r0] extract_ps hf.model.layers.11.self_attn.k_proj: mean top-1 share 0.226
+[r0] extract_ps hf.model.layers.11.self_attn.v_proj: mean top-1 share 0.260
+[r0] extract_ps hf.model.layers.11.self_attn.o_proj: mean top-1 share 0.228
+[r0] extract_ps hf.model.layers.11.mlp.gate_proj: mean top-1 share 0.219
+[r0] extract_ps hf.model.layers.11.mlp.up_proj: mean top-1 share 0.207
+[r0] extract_ps hf.model.layers.11.mlp.down_proj: mean top-1 share 0.204
+[r0] extract_ps hf.model.layers.12.self_attn.q_proj: mean top-1 share 0.189
+[r0] extract_ps hf.model.layers.12.self_attn.k_proj: mean top-1 share 0.237
+[r0] extract_ps hf.model.layers.12.self_attn.v_proj: mean top-1 share 0.265
+[r0] extract_ps hf.model.layers.12.self_attn.o_proj: mean top-1 share 0.218
+[r0] extract_ps hf.model.layers.12.mlp.gate_proj: mean top-1 share 0.212
+[r0] extract_ps hf.model.layers.12.mlp.up_proj: mean top-1 share 0.209
+[r0] extract_ps hf.model.layers.12.mlp.down_proj: mean top-1 share 0.203
+[r0] extract_ps hf.model.layers.13.self_attn.q_proj: mean top-1 share 0.197
+[r0] extract_ps hf.model.layers.13.self_attn.k_proj: mean top-1 share 0.228
+[r0] extract_ps hf.model.layers.13.self_attn.v_proj: mean top-1 share 0.258
+[r0] extract_ps hf.model.layers.13.self_attn.o_proj: mean top-1 share 0.201
+[r0] extract_ps hf.model.layers.13.mlp.gate_proj: mean top-1 share 0.206
+[r0] extract_ps hf.model.layers.13.mlp.up_proj: mean top-1 share 0.205
+[r0] extract_ps hf.model.layers.13.mlp.down_proj: mean top-1 share 0.194
+[r0] extract_ps hf.model.layers.14.self_attn.q_proj: mean top-1 share 0.194
+[r0] extract_ps hf.model.layers.14.self_attn.k_proj: mean top-1 share 0.229
+[r0] extract_ps hf.model.layers.14.self_attn.v_proj: mean top-1 share 0.264
+[r0] extract_ps hf.model.layers.14.self_attn.o_proj: mean top-1 share 0.187
+[r0] extract_ps hf.model.layers.14.mlp.gate_proj: mean top-1 share 0.207
+[r0] extract_ps hf.model.layers.14.mlp.up_proj: mean top-1 share 0.210
+[r0] extract_ps hf.model.layers.14.mlp.down_proj: mean top-1 share 0.194
+[r0] extract_ps hf.model.layers.15.self_attn.q_proj: mean top-1 share 0.192
+[r0] extract_ps hf.model.layers.15.self_attn.k_proj: mean top-1 share 0.243
+[r0] extract_ps hf.model.layers.15.self_attn.v_proj: mean top-1 share 0.274
+[r0] extract_ps hf.model.layers.15.self_attn.o_proj: mean top-1 share 0.184
+[r0] extract_ps hf.model.layers.15.mlp.gate_proj: mean top-1 share 0.203
+[r0] extract_ps hf.model.layers.15.mlp.up_proj: mean top-1 share 0.216
+[r0] extract_ps hf.model.layers.15.mlp.down_proj: mean top-1 share 0.188
+[r0] softpart banks saved (_prop1b)
+banks_prop1b.pt OK (31138588433 bytes)
+=== phase E: proportional evals at two densities ===
+Loading weights:   0%|          | 0/146 [00:00<?, ?it/s]Loading weights:  21%|██        | 30/146 [00:00<00:00, 283.14it/s]Loading weights:  45%|████▌     | 66/146 [00:00<00:00, 321.26it/s]Loading weights:  73%|███████▎  | 107/146 [00:00<00:00, 359.93it/s]Loading weights:  99%|█████████▊| 144/146 [00:00<00:00, 361.07it/s]Loading weights: 100%|██████████| 146/146 [00:00<00:00, 353.42it/s]
+Loading weights:   0%|          | 0/146 [00:00<?, ?it/s]Loading weights:   1%|          | 1/146 [00:00<00:18,  7.95it/s]Loading weights:  31%|███       | 45/146 [00:00<00:00, 177.84it/s]Loading weights:  50%|█████     | 73/146 [00:00<00:00, 214.58it/s]Loading weights:  76%|███████▌  | 111/146 [00:00<00:00, 266.16it/s]Loading weights:  99%|█████████▉| 145/146 [00:00<00:00, 289.99it/s]Loading weights: 100%|██████████| 146/146 [00:00<00:00, 244.71it/s]
+[r0] faithfulness identity max |err| = 0.00e+00 (should be ~fp32 eps)
+[r0] faithfulness identity max |err| = 0.00e+00 (should be ~fp32 eps)
+[r0] eval batch 0: KL 6.9717, gates/tok 148.9, resid-only 86.768, off 86.768, ones 5.17e-08
+[r0] eval batch 0: KL 10.4782, gates/tok 63.9, resid-only 86.768, off 86.768, ones 5.17e-08
+Traceback (most recent call last):
+  File "/workspace/circuit-decomp/geo-attribution/geo1b.py", line 88, in <module>
+    geo67.main()
+  File "/workspace/circuit-decomp/geo-attribution/geo67.py", line 999, in main
+    {"collect": stage_collect, "gram": stage_gram, "factor": stage_factor,
+  File "/workspace/circuit-decomp/geo-attribution/geo67.py", line 861, in stage_eval
+    attr, lt = run.attribution(idx, args.ig_k)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/circuit-decomp/geo-attribution/geo67.py", line 797, in attribution
+    s = ce_sum(logits, idx)
+        ^^^^^^^^^^^^^^^^^^^
+  File "/workspace/circuit-decomp/geo-attribution/geo67.py", line 168, in ce_sum
+    return F.cross_entropy(logits[:, :-1].flatten(0, 1), idx[:, 1:].flatten(),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/functional.py", line 3494, in cross_entropy
+    return torch._C._nn.cross_entropy_loss(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 1.96 GiB. GPU 0 has a total capacity of 79.19 GiB of which 488.50 MiB is free. Including non-PyTorch memory, this process has 78.70 GiB memory in use. Of the allocated memory 74.79 GiB is allocated by PyTorch, and 3.19 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+Traceback (most recent call last):
+  File "/workspace/circuit-decomp/geo-attribution/geo1b.py", line 88, in <module>
+    geo67.main()
+  File "/workspace/circuit-decomp/geo-attribution/geo67.py", line 999, in main
+    {"collect": stage_collect, "gram": stage_gram, "factor": stage_factor,
+  File "/workspace/circuit-decomp/geo-attribution/geo67.py", line 861, in stage_eval
+    attr, lt = run.attribution(idx, args.ig_k)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/circuit-decomp/geo-attribution/geo67.py", line 797, in attribution
+    s = ce_sum(logits, idx)
+        ^^^^^^^^^^^^^^^^^^^
+  File "/workspace/circuit-decomp/geo-attribution/geo67.py", line 168, in ce_sum
+    return F.cross_entropy(logits[:, :-1].flatten(0, 1), idx[:, 1:].flatten(),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/functional.py", line 3494, in cross_entropy
+    return torch._C._nn.cross_entropy_loss(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 1.96 GiB. GPU 0 has a total capacity of 79.19 GiB of which 488.50 MiB is free. Including non-PyTorch memory, this process has 78.70 GiB memory in use. Of the allocated memory 74.79 GiB is allocated by PyTorch, and 3.19 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+=== run1b complete (jsons copied to out/full1b/) ===

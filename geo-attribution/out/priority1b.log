@@ -1,0 +1,134 @@
+=== GPU1: german weight edit -> PR gating | GPU0: a_c plot -> ramp gating ===
+Loading weights:   0%|          | 0/146 [00:00<?, ?it/s]Loading weights:  21%|██        | 30/146 [00:00<00:00, 290.57it/s]Loading weights:  45%|████▌     | 66/146 [00:00<00:00, 323.53it/s]Loading weights:  68%|██████▊   | 99/146 [00:00<00:00, 242.29it/s]Loading weights:  86%|████████▋ | 126/146 [00:00<00:00, 247.13it/s]Loading weights: 100%|██████████| 146/146 [00:00<00:00, 287.05it/s]
+Loading weights:   0%|          | 0/146 [00:00<?, ?it/s]Loading weights:   3%|▎         | 5/146 [00:00<00:03, 45.54it/s]Loading weights:  39%|███▉      | 57/146 [00:00<00:00, 309.42it/s]Loading weights:  64%|██████▎   | 93/146 [00:00<00:00, 326.09it/s]Loading weights:  87%|████████▋ | 127/146 [00:00<00:00, 327.99it/s]Loading weights: 100%|██████████| 146/146 [00:00<00:00, 293.15it/s]
+[r0] chunks: rank de/en 2/1, eval de/en 1/1
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+saved /workspace/circuit-decomp/geo-attribution/out/full1b/ac_bar_1b.png
+token (0,64): max 7.081e-01, median 7.400e-04, >2%max: 38, >10%max: 7
+token (0,128): max 2.936e-01, median 3.805e-04, >2%max: 55, >10%max: 9
+token (1,192): max 1.290e+00, median 2.584e-03, >2%max: 78, >10%max: 13
+Loading weights:   0%|          | 0/146 [00:00<?, ?it/s]Loading weights:  19%|█▉        | 28/146 [00:00<00:00, 276.30it/s]Loading weights:  43%|████▎     | 63/146 [00:00<00:00, 312.74it/s]Loading weights:  65%|██████▌   | 95/146 [00:00<00:00, 232.73it/s]Loading weights:  88%|████████▊ | 129/146 [00:00<00:00, 264.80it/s]Loading weights: 100%|██████████| 146/146 [00:00<00:00, 289.80it/s]
+[r0] faithfulness identity max |err| = 0.00e+00 (should be ~fp32 eps)
+[r0] top-8 german-contrast comps: [35, 374, 302, 54, 125, 31, 498, 300]
+[r0] target CE de/en 4.223/4.926; gated base de/en 12.763/13.124
+[r0] weight-space mode: unedited target CE de/en 4.223/4.926
+[r0] k=4 alpha=0.0: dCE de +1.612 en +0.020 | random de +0.045 en +0.014
+[r0] k=4 alpha=-1.0: dCE de +4.707 en +0.437 | random de +0.121 en +0.046
+[r0] k=8 alpha=0.0: dCE de +2.531 en +0.212 | random de +0.193 en +0.078
+[r0] k=8 alpha=-1.0: dCE de +5.528 en +1.881 | random de +0.646 en +0.303
+[r0] k=16 alpha=0.0: dCE de +4.587 en +2.319 | random de +0.256 en +0.131
+[r0] k=16 alpha=-1.0: dCE de +8.453 en +6.168 | random de +0.988 en +0.502
+[r0] k=32 alpha=0.0: dCE de +5.798 en +2.282 | random de +0.775 en +0.339
+[r0] k=32 alpha=-1.0: dCE de +10.680 en +8.090 | random de +2.351 en +1.329
+[r0] GERMAN {
+ "k4_a0.0": {
+  "dce_de": 1.6121835708618164,
+  "dce_en": 0.020025253295898438,
+  "rnd_dce_de": 0.04539632797241211,
+  "rnd_dce_en": 0.014051755269368194
+ },
+ "k4_a-1.0": {
+  "dce_de": 4.707397937774658,
+  "dce_en": 0.4367032051086426,
+  "rnd_dce_de": 0.12102429072062204,
+  "rnd_dce_en": 0.04600652058919241
+ },
+ "k8_a0.0": {
+  "dce_de": 2.5314416885375977,
+  "dce_en": 0.21191835403442383,
+  "rnd_dce_de": 0.1930549939473467,
+  "rnd_dce_en": 0.07796096801757812
+ },
+ "k8_a-1.0": {
+  "dce_de": 5.527831554412842,
+  "dce_en": 1.880612850189209,
+  "rnd_dce_de": 0.6455329259236651,
+  "rnd_dce_en": 0.30307483673095703
+ },
+ "k16_a0.0": {
+  "dce_de": 4.587286472320557,
+  "dce_en": 2.31856107711792,
+  "rnd_dce_de": 0.2557029724121094,
+  "rnd_dce_en": 0.13141298294067383
+ },
+ "k16_a-1.0": {
+  "dce_de": 8.453240871429443,
+  "dce_en": 6.1682562828063965,
+  "rnd_dce_de": 0.9883151054382324,
+  "rnd_dce_en": 0.5016438166300459
+ },
+ "k32_a0.0": {
+  "dce_de": 5.797764301300049,
+  "dce_en": 2.282383918762207,
+  "rnd_dce_de": 0.7752343813578291,
+  "rnd_dce_en": 0.33870569864908884
+ },
+ "k32_a-1.0": {
+  "dce_de": 10.679710865020752,
+  "dce_en": 8.09033727645874,
+  "rnd_dce_de": 2.3510204950968427,
+  "rnd_dce_en": 1.3288809458414717
+ }
+}
+Loading weights:   0%|          | 0/146 [00:00<?, ?it/s]Loading weights:  16%|█▋        | 24/146 [00:00<00:00, 167.33it/s]Loading weights:  40%|███▉      | 58/146 [00:00<00:00, 247.50it/s]Loading weights:  63%|██████▎   | 92/146 [00:00<00:00, 285.37it/s]Loading weights:  84%|████████▎ | 122/146 [00:00<00:00, 288.83it/s]Loading weights: 100%|██████████| 146/146 [00:00<00:00, 308.91it/s]
+[r0] faithfulness identity max |err| = 0.00e+00 (should be ~fp32 eps)
+[r0] eval batch 0: KL 8.0243, gates/tok 129.3, resid-only 84.834, off 84.834, ones 4.62e-08
+[r0] eval batch 0: KL nan, gates/tok nan, resid-only 84.834, off 84.834, ones 4.62e-08
+[r0] eval batch 1: KL 8.0194, gates/tok 122.9, resid-only 88.701, off 88.701, ones 4.80e-08
+[r0] eval batch 1: KL nan, gates/tok nan, resid-only 88.701, off 88.701, ones 4.80e-08
+[r0] eval batch 2: KL 8.1416, gates/tok 129.7, resid-only 83.648, off 83.648, ones 4.57e-08
+[r0] eval batch 2: KL nan, gates/tok nan, resid-only 83.648, off 83.648, ones 4.57e-08
+[r0] eval batch 3: KL 7.7837, gates/tok 130.3, resid-only 85.805, off 85.805, ones 5.64e-08
+[r0] EVAL {
+ "kl_full_gate": 7.992262363433838,
+ "kl_all_ones_sanity": 4.908804651648779e-08,
+ "kl_residual_only": 85.74706649780273,
+ "kl_off_baseline": 85.74706649780273,
+ "gates_per_token": 128.0450611114502,
+ "keep_top_j": {},
+ "faith_max_abs_err": 0.0,
+ "gate_mode": "ramp",
+ "gate_tau": 1.0,
+ "gate_thresh": 0.02,
+ "C": 512,
+ "m": 0,
+ "resid_frac_mean": 0.0
+}
+Loading weights:   0%|          | 0/146 [00:00<?, ?it/s]Loading weights:  16%|█▌        | 23/146 [00:00<00:00, 226.99it/s]Loading weights:  34%|███▍      | 50/146 [00:00<00:00, 248.09it/s]Loading weights:  64%|██████▎   | 93/146 [00:00<00:00, 319.15it/s]Loading weights:  86%|████████▌ | 125/146 [00:00<00:00, 253.45it/s]Loading weights: 100%|██████████| 146/146 [00:00<00:00, 292.83it/s]
+[r0] faithfulness identity max |err| = 0.00e+00 (should be ~fp32 eps)
+[r0] eval batch 3: KL nan, gates/tok nan, resid-only 85.805, off 85.805, ones 5.64e-08
+[r0] EVAL {
+ "kl_full_gate": NaN,
+ "kl_all_ones_sanity": 4.908804651648779e-08,
+ "kl_residual_only": 85.74706649780273,
+ "kl_off_baseline": 85.74706649780273,
+ "gates_per_token": NaN,
+ "keep_top_j": {},
+ "faith_max_abs_err": 0.0,
+ "gate_mode": "pr",
+ "gate_tau": 1.0,
+ "gate_thresh": 0.1,
+ "C": 512,
+ "m": 0,
+ "resid_frac_mean": 0.0
+}
+[r0] eval batch 0: KL 6.5683, gates/tok 192.2, resid-only 84.834, off 84.834, ones 4.62e-08
+[r0] eval batch 1: KL 5.9729, gates/tok 186.1, resid-only 88.701, off 88.701, ones 4.80e-08
+[r0] eval batch 2: KL 5.4142, gates/tok 192.3, resid-only 83.648, off 83.648, ones 4.57e-08
+[r0] eval batch 3: KL 5.5783, gates/tok 193.9, resid-only 85.805, off 85.805, ones 5.64e-08
+[r0] EVAL {
+ "kl_full_gate": 5.883424282073975,
+ "kl_all_ones_sanity": 4.908804651648779e-08,
+ "kl_residual_only": 85.74706649780273,
+ "kl_off_baseline": 85.74706649780273,
+ "gates_per_token": 191.1287841796875,
+ "keep_top_j": {},
+ "faith_max_abs_err": 0.0,
+ "gate_mode": "ramp",
+ "gate_tau": 0.5,
+ "gate_thresh": 0.02,
+ "C": 512,
+ "m": 0,
+ "resid_frac_mean": 0.0
+}
+=== priority1b complete ===

@@ -1,0 +1,176 @@
+{
+ "emo_ids": [
+  3349,
+  27046,
+  29589,
+  40624,
+  64943,
+  93511,
+  94657
+ ],
+ "target_id": 27046,
+ "contrast_top16": [
+  582,
+  48,
+  1794,
+  911,
+  1941,
+  1326,
+  339,
+  458,
+  1442,
+  1977,
+  1465,
+  447,
+  1936,
+  790,
+  1938,
+  862
+ ],
+ "base": {
+  "emo": {
+   "p_target": 0.023547114804387093,
+   "p_emoset": 0.06333359330892563,
+   "argmax_target_rate": 0.0
+  },
+  "ctrl": {
+   "ce": 4.909127712249756,
+   "p_emoset_all": 4.586427166941576e-06
+  },
+  "gens": [
+   "Thanks again for dinner last night! I really enjoyed it. I think I will make it again. I will let you know how it turns out",
+   "I just got back from the best vacation ever. I went to the beach with my family. I went to the beach with my family. I went to the",
+   "The meeting went really well today. We had a great turnout of 20 people. We had a great discussion about the future of the group."
+  ]
+ },
+ "arms": {
+  "amp_k4_a2.0": {
+   "emo": {
+    "p_target": 0.00030934601090848446,
+    "p_emoset": 0.0019841231405735016,
+    "argmax_target_rate": 0.0
+   },
+   "ctrl": {
+    "ce": 7.200564861297607,
+    "p_emoset_all": 7.668378202652093e-06
+   },
+   "gens": [
+    "Thanks again for dinner last night! It was a little before last all about all 10 10.10s 11 10. ",
+    "I just got back from the best vacation ever. I was there with my friends and I was just so needed for the best of company, I just knew I",
+    "The meeting went really well today. I have a feeling that we will be here too, and the time to go, and the time to good"
+   ]
+  },
+  "amp_k4_a4.0": {
+   "emo": {
+    "p_target": 2.2250463871387183e-07,
+    "p_emoset": 2.2645843273494393e-05,
+    "argmax_target_rate": 0.0
+   },
+   "ctrl": {
+    "ce": 12.752117156982422,
+    "p_emoset_all": 7.308031490538269e-05
+   },
+   "gens": [
+    "Thanks again for dinner last night!ench! toierge c ofude Transfer. ts\ufffd fashion \u00a0 confusionCoder \u00a0ovichPad:inghue \u00a0",
+    "I just got back from the best vacation ever.ara \u200b\u200b \u200b\u200b \u200b\u200biable \u200b\u200bitu graveyard\u5b66 earnquakeourn\u9894\ufffd\ufffd Continueournawa Continue \u200b\u200b \u200b\u200b",
+    "The meeting went really well today. DeadpeedoadA Paid 'positesodoxNA\u5728 OptionalTimerato\u5728 graduate tpringattleATO540 TemENA"
+   ]
+  },
+  "redir_k1_g1.0": {
+   "emo": {
+    "p_target": 0.035051945596933365,
+    "p_emoset": 0.08039160072803497,
+    "argmax_target_rate": 0.0
+   },
+   "ctrl": {
+    "ce": 4.9101176261901855,
+    "p_emoset_all": 5.607262664852897e-06
+   },
+   "gens": [
+    "Thanks again for dinner last night! I really enjoyed it. I think I will make it again. I will let you know how it turns out",
+    "I just got back from the best vacation ever. I went to the beach with my family. I went to the beach with my family. I went to the",
+    "The meeting went really well today. We had a great turnout of 20 people. We had a great discussion about the future of the club."
+   ]
+  },
+  "redir_k1_g2.0": {
+   "emo": {
+    "p_target": 0.04558907449245453,
+    "p_emoset": 0.0909869447350502,
+    "argmax_target_rate": 0.1428571492433548
+   },
+   "ctrl": {
+    "ce": 4.909149646759033,
+    "p_emoset_all": 7.098192781995749e-06
+   },
+   "gens": [
+    "Thanks again for dinner last night! I really enjoyed it. I think I will make it again. I will let you know how it turns out",
+    "I just got back from the best vacation ever. I went to the beach with my family. I went to the beach with my family. I went to the",
+    "The meeting went really well today. We had a great turnout of 20 people. We had a great discussion about the future of the club."
+   ]
+  },
+  "redir_k1_g4.0": {
+   "emo": {
+    "p_target": 0.00907010119408369,
+    "p_emoset": 0.04118868336081505,
+    "argmax_target_rate": 0.0
+   },
+   "ctrl": {
+    "ce": 4.9088287353515625,
+    "p_emoset_all": 1.1422119314374868e-05
+   },
+   "gens": [
+    "Thanks again for dinner last night! I really enjoyed it. I think I will try to make it again sometime. I will let you know how",
+    "I just got back from the best vacation ever. I went to the beach with my family. I went to the beach with my family. I went to the",
+    "The meeting went really well today. We had a great turnout of 20 people, and we had a lot of great discussion. We had a"
+   ]
+  },
+  "redir_k4_g1.0": {
+   "emo": {
+    "p_target": 2.635753837409993e-09,
+    "p_emoset": 1.133545083575882e-05,
+    "argmax_target_rate": 0.0
+   },
+   "ctrl": {
+    "ce": 7.209479808807373,
+    "p_emoset_all": 2.3897457595012384e-06
+   },
+   "gens": [
+    "Thanks again for dinner last night! 1, 8, 1, 1, 1, 1, 1, ",
+    "I just got back from the best vacation ever. I was a 1, : 8., 8., 9. 10,",
+    "The meeting went really well today. The, and,,,,,,,,,,,,,,,,,,,"
+   ]
+  },
+  "redir_k4_g2.0": {
+   "emo": {
+    "p_target": 1.585107337777643e-19,
+    "p_emoset": 1.8439729387864645e-07,
+    "argmax_target_rate": 0.0
+   },
+   "ctrl": {
+    "ce": 15.262548446655273,
+    "p_emoset_all": 0.10750345140695572
+   },
+   "gens": [
+    "Thanks again for dinner last night!,,,,,,,,,,,,,,,,,,,,,,",
+    "I just got back from the best vacation ever.,,,,,,,,,,,,,,,,,,,,,,",
+    "The meeting went really well today.,,,,,,,,,,,,,,,,,,,,,,"
+   ]
+  },
+  "redir_k4_g4.0": {
+   "emo": {
+    "p_target": 3.640570607718946e-39,
+    "p_emoset": 5.354205967478265e-10,
+    "argmax_target_rate": 0.0
+   },
+   "ctrl": {
+    "ce": 12.832880973815918,
+    "p_emoset_all": 0.021721936762332916
+   },
+   "gens": [
+    "Thanks again for dinner last night!,,,,,,,,,,,,,,,,,,,,,,",
+    "I just got back from the best vacation ever.,,,,,,,,,,,,,,,,,,,,,,",
+    "The meeting went really well today.,,,,,,,,,,,,,,,,,,,,,,"
+   ]
+  }
+ }
+}

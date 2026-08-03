@@ -1,0 +1,70 @@
+Loading weights:   0%|          | 0/146 [00:00<?, ?it/s]Loading weights:  24%|██▍       | 35/146 [00:00<00:00, 348.81it/s]Loading weights:  49%|████▊     | 71/146 [00:00<00:00, 355.23it/s]Loading weights:  75%|███████▍  | 109/146 [00:00<00:00, 361.31it/s]Loading weights: 100%|██████████| 146/146 [00:00<00:00, 352.10it/s]Loading weights: 100%|██████████| 146/146 [00:00<00:00, 353.15it/s]
+[r0] evidence batch 0/12 (929s)
+[r0] evidence batch 10/12 (10212s)
+[r0] evidence done: 1571/2048 components with examples, 48768 positions
+[r0] labeling 2048 components
+[r0] labeled 0/2048
+[r0] labeled 32/2048
+[r0] labeled 64/2048
+[r0] labeled 96/2048
+[r0] labeled 128/2048
+[r0] labeled 160/2048
+[r0] labeled 192/2048
+[r0] labeled 224/2048
+[r0] labeled 256/2048
+[r0] labeled 288/2048
+[r0] labeled 320/2048
+[r0] labeled 352/2048
+[r0] labeled 384/2048
+[r0] labeled 416/2048
+[r0] labeled 448/2048
+[r0] labeled 480/2048
+[r0] labeled 512/2048
+[r0] labeled 544/2048
+[r0] labeled 576/2048
+[r0] labeled 608/2048
+[r0] labeled 640/2048
+[r0] labeled 672/2048
+[r0] labeled 704/2048
+[r0] labeled 736/2048
+[r0] labeled 768/2048
+[r0] labeled 800/2048
+[r0] labeled 832/2048
+[r0] labeled 864/2048
+[r0] labeled 896/2048
+[r0] labeled 928/2048
+[r0] labeled 960/2048
+[r0] labeled 992/2048
+[r0] labeled 1024/2048
+[r0] labeled 1056/2048
+[r0] labeled 1088/2048
+[r0] labeled 1120/2048
+[r0] labeled 1152/2048
+[r0] labeled 1184/2048
+[r0] labeled 1216/2048
+[r0] labeled 1248/2048
+[r0] labeled 1280/2048
+[r0] labeled 1312/2048
+[r0] labeled 1344/2048
+[r0] labeled 1376/2048
+[r0] labeled 1408/2048
+[r0] labeled 1440/2048
+[r0] labeled 1472/2048
+[r0] labeled 1504/2048
+[r0] labeled 1536/2048
+[r0] labeled 1568/2048
+[r0] labeled 1600/2048
+[r0] labeled 1632/2048
+[r0] labeled 1664/2048
+[r0] labeled 1696/2048
+[r0] labeled 1728/2048
+[r0] labeled 1760/2048
+[r0] labeled 1792/2048
+[r0] labeled 1824/2048
+[r0] labeled 1856/2048
+[r0] labeled 1888/2048
+[r0] labeled 1920/2048
+[r0] labeled 1952/2048
+[r0] labeled 1984/2048
+[r0] labeled 2016/2048
+[r0] catalog: 2048 labeled, 1023 high-conf, 204 polysemantic/unclear, 477 dead
