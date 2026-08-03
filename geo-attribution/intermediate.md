@@ -313,6 +313,20 @@ The residual gap to C=512's 80:1 is the genuine granularity tradeoff (finer unit
 
 The emoticon narrow-mechanism edit sharpened too: on the 1M bank the single-component redirect at gain 1 moves target probability 0.024 → 0.086 at +0.22 CE (vs INERT at gain 1 on the 16k-cluster bank) — the top emoticon component now carries more signal, less noise. Cartoon endpoint (k4 gain2 = 97% ' :)') and the negative amplify arm both reproduce.
 
+**Sad→happy flip (valence conversion).** The surgical route fails at every granularity we have: components selected by the sad-vs-happy attribution contrast (e.g. c156 on the 1M bank) are causally inert under replacement and deletion — sad-emoticon probability at held-out ' :('-predicting positions barely moves. The emoticon-SLOT is a component; emoticon-VALENCE is not — the decomposition carves "an emoticon goes here" as a unit, and which emoticon wins is decided downstream in output competition, not by a separate valence-carrying parameter cluster. The flip that works is therefore competition biasing: the additive ' :)' steering on the slot component (c679, 1M bank) simultaneously suppresses the frown and promotes the smiley.
+
+Sweep (additive smiley steering on the slot component; sad_pos = held-out ' :('-predicting positions; ctrl = English CE, base 4.909):
+
+| gain | P(' :(') | P(' :)') | argmax sad / happy | ctrl CE | sample text |
+|---|---|---|---|---|---|
+| base | 0.396 | 0.003 | 0.62 / 0.00 | 4.909 | — |
+| 2 | 0.004 | 0.000 | 0.00 / 0.00 | 5.350 | "My laptop crashed and I lost my essay. Well :) I hope to hear some good ideas soon :)" |
+| 3 | 0.000 | 0.094 | 0.00 / 0.12 | 11.281 | "…lost my luggage :) A good day for a day." |
+| 4 | 0.000 | 0.122 | 0.00 / 0.12 | 15.564 | smiley chains |
+| 5 | 0.000 | 0.978 | 0.00 / 1.00 | 33.779 | 100% ":)" (model destroyed) |
+
+The knee is gain 2: the frown is 99% erased (0.396 → 0.004) at only +0.44 ctrl CE with coherent, even smiley-tinged text — the model routes around the suppressed frown rather than emitting a forced smiley. Beyond that, smiley probability rises only as general model damage rises (gain 5 = 100% argmax-smiley at +28.9 CE = lobotomy, not steering). Lesson recorded in method.md §2.6: correlation-selected components must be causally validated, and choice-flips within a shared slot are edits to the slot's output competition, not surgery on a (nonexistent) per-choice component. Script: `sadflip1m.py`; raw sweep in this table.
+
 ## Artifact map
 
 `out/full/`: `gram.pt`, `labels.pt`, `spectrum.pt` (N=32k); `banks{,_lam01,_lam1}.pt` (ridge arms), `banks_part{3,5,8}.pt` (partition arms); `eval_*.json`, `canary_*.json` (part8 threshold-0.1 preserved as `*_part8_t01.json`); `german_part8.json` (gate, α sweep), `german_part8_weight.json`; `evidence_part8.json`, `catalog_part8.json`; per-arm logs `out/arm_*.log`. `out/full65/`: collect shards (N=65k), `eig.pt`, `labels_C{512,1024,2048}.pt`; hard-partition banks `banks_C{512,1024,2048}_r*.pt` with matching `eval/canary/german*` JSONs; fractional banks `banks_softT{1,05}.pt` (C=512) with `eval_softT*{,_soft1.0}.json`, `german_softT*_weight.json`, `canary_softT1.json`; soft-gate arms `eval_C512_r{2,3,8}_soft{0.5,1.0,2.0}.json`; gate-aware arm at C=1024 (`banks_softC1024T1.pt`, `banks_gawC1024.pt`, driver `gateaware1024.sh`, log `out/gateaware1024.log`; evals `eval_{softC1024T1,gawC1024}.json` at thresh 0.02 plus `eval_gawC1024_t{005,001}.json` at 0.005/0.001; batteries `canary_*`, `german_*{,_weight}.json` for both banks).
