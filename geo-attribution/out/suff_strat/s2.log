@@ -1,0 +1,16 @@
+[pile] cache hit strat_246bd3dda1b098a4.pt: (168, 512), 14 subsets
+[suff67] tokens (168, 512)
+[suff67] unablated CE on the 48 target tokens: 2.7554
+[suff67] eap                K=1  sufficient k= 256/256  CE@k=16 14.850  (rand 42.094)  roundtrip +8.40e-05  (13s)
+[suff67] ig2                K=2  sufficient k=  96/256  CE@k=16 19.589  (rand 46.822)  roundtrip -4.90e-05  (13s)
+[suff67] ig3                K=3  sufficient k=  96/256  CE@k=16 19.227  (rand 51.557)  roundtrip -4.20e-05  (14s)
+[suff67] ig5                K=5  sufficient k=  64/256  CE@k=16 16.720  (rand 52.565)  roundtrip +8.40e-05  (16s)
+[suff67] gim                K=1  sufficient k= 192/256  CE@k=16 9.885  (rand 44.702)  roundtrip -3.20e-05  (11s)
+[suff67] gim_softmax_only   K=1  sufficient k= 256/256  CE@k=16 13.216  (rand 42.557)  roundtrip -2.60e-05  (11s)
+[suff67] gim_scales_only    K=1  sufficient k= 256/256  CE@k=16 9.839  (rand 42.869)  roundtrip +5.90e-05  (12s)
+[suff67] eap_linmlp_gimattn K=1  sufficient k= 256/256  CE@k=16 16.034  (rand 45.412)  roundtrip +2.20e-05  (12s)
+[suff67] eap_linmlp         K=1  sufficient k= 256/256  CE@k=16 17.864  (rand 45.789)  roundtrip +7.00e-06  (12s)
+[suff67] eapig_inputs5      K=5  sufficient k= 256/256  CE@k=16 14.678  (rand 49.144)  roundtrip -8.00e-06  (16s)
+[suff67] actonly            K=1  sufficient k= 256/256  CE@k=16 37.368  (rand 59.061)  roundtrip -2.00e-05  (11s)
+[suff67] random             K=1  sufficient k= 256/256  CE@k=16 55.383  (rand 59.607)  roundtrip -4.30e-05  (12s)
+[suff67] wrote out/suff_strat/s2.json  (total 156s)

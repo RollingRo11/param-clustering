@@ -40,15 +40,26 @@ def main():
                                streaming=True)
     partial = OUT.with_suffix(OUT.suffix + ".partial")
     written = 0
-    buf, t0 = [], time.time()
+    t0 = time.time()
+    import collections
     import numpy as np
+    # Stratify by meta.pile_set_name. Streaming order is ~30% Pile-CC and
+    # under 0.1% Ubuntu IRC, so taking documents as they arrive biases the
+    # corpus hard toward web text. Instead buffer per subset and emit in
+    # round-robin, which keeps every prefix of the file diverse -- the
+    # pipeline reads prefixes, not the whole thing.
+    pend = collections.defaultdict(list)
     with open(partial, "wb") as output:
         for ex in ds:
-            buf.append(ex["text"])
-            if len(buf) < args.text_batch:
+            pend[ex["meta"]["pile_set_name"]].append(ex["text"])
+            ready = [k for k, v in pend.items() if len(v) >= args.text_batch]
+            if not ready:
                 continue
-            encoded = tok(buf)["input_ids"]
-            buf = []
+            texts = []
+            for k in sorted(ready):
+                texts.extend(pend[k][:args.text_batch])
+                del pend[k][:args.text_batch]
+            encoded = tok(texts)["input_ids"]
             flat = np.fromiter((token for ids in encoded for token in ids),
                                dtype=np.uint32)
             take = min(flat.size, args.target_tokens - written)

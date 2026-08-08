@@ -309,18 +309,14 @@ def main():
 
     # ---- data: uncopyrighted Pile, the target's own tokenizer ----
     from transformers import AutoTokenizer
-    from datasets import load_dataset
+    from pile_data import load_pile_blocks
     tok = AutoTokenizer.from_pretrained(TOKENIZER)
-    need = (args.positions // 64 + args.eval_seqs + 8) * args.seq
-    ds = load_dataset("monology/pile-uncopyrighted", split="train",
-                      streaming=True)
-    toks = []
-    for r in ds:
-        toks.extend(tok.encode(r["text"]))
-        if len(toks) >= need + 1:
-            break
-    n_blk = len(toks) // args.seq
-    IDS = torch.tensor(toks[:n_blk * args.seq]).view(n_blk, args.seq).to(dev)
+    # stratified by meta.pile_set_name: equal block quota per subset.
+    want_blocks = args.positions // 64 + args.eval_seqs + 8
+    ids_cpu, blk_labels, pile_stats = load_pile_blocks(
+        tok, want_blocks, args.seq, seed=0, tokenizer_name=TOKENIZER)
+    IDS = ids_cpu.to(dev)
+    n_blk = IDS.shape[0]
     timing["data"] = round(time.perf_counter() - t00, 1)
     log(f"tokens: {IDS.shape} ({timing['data']}s)")
 
@@ -499,7 +495,7 @@ def main():
 
     out = {"format": "transpose67_v1", "model": "VPD 4L-Pile 67M target "
            "(wandb goodfire/spd/t-9d2b8f02)", "C": args.C, "N": N,
-           "D": args.feat_dim, "n_matrices": len(MODULES),
+           "D": args.feat_dim, "n_matrices": len(MODULES), "pile": pile_stats,
            "decomposable_params": n_dec, "base_ce": round(base_ce, 5),
            "timing_seconds": timing, "results": results}
     args.out.parent.mkdir(parents=True, exist_ok=True)
