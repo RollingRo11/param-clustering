@@ -1,0 +1,16 @@
+[german-vpd] features [2048, 65536] in 8.7s
+[german-vpd] transposed problem: [65536, 2048] (0.50 GiB)
+[german-vpd] cols_sph: coordinate-cluster sizes min 2 median 250 max 7803
+[german-vpd] cols_euclid: coordinate-cluster sizes min 1 median 98 max 7686
+[german-vpd] row k-means 0.2s | column k-means 0.1s
+[german-vpd] rows_sph: bank in 17.8s
+[german-vpd] rows_euclid: bank in 17.3s
+[german-vpd] cols_sph: bank in 18.2s
+[german-vpd] cols_euclid: bank in 18.1s
+[german-vpd] base CE 0.8210
+[german-vpd] rows_sph     removable 16/128  gini 0.717  max 0.1216  median 0.00412
+[german-vpd] rows_euclid  removable 16/128  gini 0.628  max 0.0810  median 0.00688
+[german-vpd] cols_sph     removable 16/128  gini 0.593  max 0.0395  median 0.00377
+[german-vpd] cols_euclid  removable 16/128  gini 0.532  max 0.0292  median 0.00653
+[german-vpd] timing: {"collect_features": 8.7, "pca_embed": 0.2, "kmeans_rows": 0.2, "kmeans_cols": 0.1, "bank_rows_sph": 17.8, "bank_rows_euclid": 17.3, "bank_cols_sph": 18.2, "bank_cols_euclid": 18.1}
+[german-vpd] wrote /dev/shm/geo1b/run1b_streamC4096/transpose_smoke.json  (total 100s)

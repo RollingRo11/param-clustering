@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Component activity — Llama-3.2-1B, C=4096</title>
+<style>
+:root{
+  color-scheme: light;
+  --plane:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e;
+  --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7;
+  --border:rgba(11,11,11,0.10); --accent:#2a78d6; --accent2:#eb6834;
+  --wash:rgba(42,120,214,0.09); --wash2:rgba(42,120,214,0.18);
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --plane:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink2:#c3c2b7;
+  --muted:#898781; --grid:#2c2c2a; --axis:#383835;
+  --border:rgba(255,255,255,0.10); --accent:#3987e5; --accent2:#d95926;
+  --wash:rgba(57,135,229,0.15); --wash2:rgba(57,135,229,0.28);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--plane);color:var(--ink);
+  font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;display:flex;flex-direction:column}
+header{padding:12px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:14px;background:var(--surface);flex:none}
+header h1{font-size:15.5px;font-weight:640;margin:0;letter-spacing:-.01em}
+header .sub{font-size:12.5px;color:var(--muted)}
+header .spacer{flex:1}
+button,select,input{font:inherit}
+.btn{background:var(--surface);border:1px solid var(--border);color:var(--ink2);
+  border-radius:8px;padding:6px 11px;font-size:12.5px;cursor:pointer}
+.btn:hover{background:var(--wash)}
+main{flex:1;display:grid;grid-template-columns:1fr 1fr;min-height:0}
+@media(max-width:900px){main{grid-template-columns:1fr;grid-template-rows:1fr 1fr}}
+section{min-height:0;display:flex;flex-direction:column}
+#chat{border-right:1px solid var(--border)}
+.scroll{flex:1;overflow-y:auto;padding:18px 20px}
+.msg{margin-bottom:16px;max-width:92%}
+.msg .who{font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:5px}
+.msg.user .bubble{background:var(--wash);border:1px solid var(--border);
+  border-radius:12px;padding:9px 13px;white-space:pre-wrap}
+.msg.bot .bubble{background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:9px 13px;line-height:1.85}
+.msg.user{margin-left:auto}
+tok{display:inline;border-radius:4px;cursor:pointer;padding:1px 0;
+  white-space:pre-wrap;border-bottom:2px solid transparent}
+tok:hover{background:var(--wash)}
+tok.sel{background:var(--wash2);border-bottom-color:var(--accent)}
+#chips{flex:none;display:flex;gap:7px;flex-wrap:wrap;padding:0 20px 10px}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--ink2);
+  border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer}
+.chip:hover{background:var(--wash)}
+form{flex:none;display:flex;gap:9px;padding:13px 20px;border-top:1px solid var(--border);
+  background:var(--surface)}
+form input[type=text]{flex:1;padding:9px 12px;border-radius:9px;
+  border:1px solid var(--border);background:var(--plane);color:var(--ink)}
+form button{background:var(--accent);border:none;color:#fff;border-radius:9px;
+  padding:9px 17px;font-weight:600;cursor:pointer}
+form button:disabled{opacity:.5;cursor:default}
+#panel{background:var(--surface)}
+.phead{padding:15px 20px 11px;border-bottom:1px solid var(--border);flex:none}
+.phead h2{margin:0 0 3px;font-size:14px;font-weight:620}
+.phead .ctx{font-size:12.5px;color:var(--ink2);
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  word-break:break-word}
+.phead .ctx b{background:var(--wash2);border-radius:3px;padding:0 3px;color:var(--ink)}
+.phead .hint{font-size:12px;color:var(--muted);margin-top:4px}
+.comp{border-bottom:1px solid var(--grid);padding:10px 20px;cursor:pointer}
+.comp:hover{background:var(--wash)}
+.comp .row1{display:flex;align-items:baseline;gap:9px}
+.comp .id{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums;
+  min-width:52px}
+.comp .lab{flex:1;font-size:13.5px}
+.comp .pct{font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--ink2);
+  font-weight:600}
+.bar{height:5px;border-radius:3px;background:var(--grid);margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.comp .meta{font-size:11.5px;color:var(--muted);margin-top:4px}
+.ex{padding:2px 20px 12px 72px;background:var(--plane)}
+.ex div{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;
+  color:var(--ink2);padding:3px 0;white-space:pre-wrap;word-break:break-word}
+.ex b{color:var(--ink);background:var(--wash);border-radius:3px;padding:0 2px}
+.empty{padding:26px 20px;color:var(--muted);font-size:13.5px}
+.stats{padding:9px 20px;border-top:1px solid var(--border);font-size:11.5px;
+  color:var(--muted);flex:none;font-variant-numeric:tabular-nums}
+.spin{display:inline-block;width:11px;height:11px;border:2px solid var(--muted);
+  border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;
+  vertical-align:-1px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Component activity</h1>
+  <span class="sub" id="meta">Llama-3.2-1B · attribution-geometry decomposition</span>
+  <span class="spacer"></span>
+  <select class="btn" id="mode">
+    <option value="chat">Chat</option>
+    <option value="complete">Completion</option>
+  </select>
+  <select class="btn" id="len">
+    <option value="48">short</option>
+    <option value="120" selected>medium</option>
+    <option value="256">long</option>
+  </select>
+  <select class="btn" id="temp">
+    <option value="0">greedy</option>
+    <option value="0.7" selected>temp 0.7</option>
+    <option value="1.0">temp 1.0</option>
+  </select>
+  <button class="btn" id="theme" type="button">Dark</button>
+</header>
+
+<main>
+  <section id="chat">
+    <div class="scroll" id="log"></div>
+    <div id="chips"></div>
+    <form id="form">
+      <input type="text" id="inp" autocomplete="off"
+             placeholder="Say something — then click any token in the reply">
+      <button id="send" type="submit">Send</button>
+    </form>
+  </section>
+
+  <section id="panel">
+    <div class="phead">
+      <h2 id="ptitle">Components</h2>
+      <div class="ctx" id="pctx"></div>
+      <div class="hint" id="phint">Send a message to begin.</div>
+    </div>
+    <div class="scroll" id="plist"></div>
+    <div class="stats" id="stats"></div>
+  </section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => s.replace(/[&<>"]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+const theme = $("#theme");
+document.documentElement.dataset.theme =
+  matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+const syncTheme = () => theme.textContent =
+  document.documentElement.dataset.theme === "dark" ? "Light" : "Dark";
+syncTheme();
+theme.onclick = () => {
+  document.documentElement.dataset.theme =
+    document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  syncTheme();
+};
+
+fetch("/api/meta").then(r => r.json()).then(m => {
+  $("#meta").textContent =
+    `${m.model} · C=${m.C} components · ${m.labeled.toLocaleString()} labeled`;
+}).catch(() => {});
+
+let messages = [], lastTurn = null, selected = null, openComp = null;
+
+function renderComponents(list, title, ctxHtml, hint) {
+  $("#ptitle").textContent = title;
+  $("#pctx").innerHTML = ctxHtml || "";
+  $("#phint").textContent = hint || "";
+  list = list.filter((c, i) => i < 4 || c.share >= 0.001);
+  const max = list.length ? Math.max(...list.map(c => c.share)) : 1;
+  const pct = v => v >= 0.001 ? (100 * v).toFixed(1) + "%" : "&lt;0.1%";
+  $("#plist").innerHTML = list.length ? list.map(c => `
+    <div class="comp" data-c="${c.c}">
+      <div class="row1">
+        <span class="id">c${c.c}</span>
+        <span class="lab">${esc(c.label)}</span>
+        <span class="pct">${pct(c.share)}</span>
+      </div>
+      <div class="bar"><i style="width:${Math.max(2, 100 * c.share / max)}%"></i></div>
+      <div class="meta">${esc(c.category || "")}${c.mono ? " · " + c.mono : ""}${
+        c.fire_rate ? " · fires on " + (100 * c.fire_rate).toFixed(3) + "% of tokens" : ""}</div>
+    </div>`).join("") : `<div class="empty">No components to show.</div>`;
+}
+
+$("#plist").onclick = async e => {
+  const el = e.target.closest(".comp");
+  if (!el) return;
+  const c = el.dataset.c;
+  const nxt = el.nextElementSibling;
+  if (nxt && nxt.classList.contains("ex")) { nxt.remove(); openComp = null; return; }
+  document.querySelectorAll(".ex").forEach(x => x.remove());
+  openComp = c;
+  const d = await (await fetch("/api/component/" + c)).json();
+  const html = (d.examples || []).map(x =>
+    `<div>${esc(x.text).replace(/«([\s\S]*?)»/g, (_, m) => "<b>" + (m || "␠") + "</b>")}</div>`
+  ).join("") || "<div>no stored evidence</div>";
+  el.insertAdjacentHTML("afterend",
+    `<div class="ex"><div style="color:var(--muted);font-family:inherit;font-size:11.5px">
+     top corpus activations, each from a different document</div>${html}</div>`);
+};
+
+function selectToken(i) {
+  selected = i;
+  document.querySelectorAll("tok").forEach(t =>
+    t.classList.toggle("sel", +t.dataset.i === i));
+  const t = lastTurn.tokens[i];
+  const pre = lastTurn.tokens.slice(Math.max(0, i - 6), i).map(x => x.text).join("");
+  const post = lastTurn.tokens.slice(i + 1, i + 5).map(x => x.text).join("");
+  renderComponents(t.components, "Active on this token",
+    `…${esc(pre)}<b>${esc(t.text) || "␠"}</b>${esc(post)}…`,
+    "Posterior share of the attribution fingerprint at this position. Click a component for corpus examples.");
+}
+
+function showOverall() {
+  selected = null;
+  document.querySelectorAll("tok").forEach(t => t.classList.remove("sel"));
+  renderComponents(lastTurn.overall, "Most active across this response", "",
+    "Averaged over every token the model generated. Click a token in the reply to see one position.");
+}
+
+function addMessage(role, html) {
+  const d = document.createElement("div");
+  d.className = "msg " + (role === "user" ? "user" : "bot");
+  d.innerHTML = `<div class="who">${role === "user" ? "You" : "Model"}</div>
+                 <div class="bubble">${html}</div>`;
+  $("#log").appendChild(d);
+  $("#log").scrollTop = $("#log").scrollHeight;
+  return d;
+}
+
+$("#form").onsubmit = async e => {
+  e.preventDefault();
+  const text = $("#inp").value.trim();
+  if (!text) return;
+  $("#inp").value = "";
+  $("#send").disabled = true;
+  addMessage("user", esc(text));
+  messages.push({ role: "user", content: text });
+  const holder = addMessage("bot", `<span class="spin"></span><span style="color:var(--muted)">generating and attributing…</span>`);
+  try {
+    const r = await fetch("/api/chat", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages, mode: $("#mode").value,
+                             temperature: +$("#temp").value,
+                             max_new_tokens: +$("#len").value })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    lastTurn = d;
+    messages.push({ role: "assistant", content: d.reply });
+    holder.querySelector(".bubble").innerHTML = d.tokens.map(t =>
+      `<tok data-i="${t.i}">${esc(t.text)}</tok>`).join("");
+    holder.querySelectorAll("tok").forEach(el =>
+      el.onclick = () => selectToken(+el.dataset.i));
+    showOverall();
+    $("#stats").textContent =
+      `${d.stats.reply_tokens} tokens · generate ${d.stats.generate_s}s · ` +
+      `attribute ${d.stats.attribute_s}s · ${d.stats.components.toLocaleString()} components`;
+  } catch (err) {
+    holder.querySelector(".bubble").innerHTML =
+      `<span style="color:var(--accent2)">${esc(String(err.message || err))}</span>`;
+  } finally {
+    $("#send").disabled = false;
+    $("#inp").focus();
+  }
+};
+const PRESETS = [
+  ["Salt", "Write a short paragraph about why the ocean is salty."],
+  ["Induction", "The capital of France is Paris. The capital of Japan is Tokyo. The capital of France is"],
+  ["Code", "def fibonacci(n):"],
+  ["German", "Der Bundestag hat gestern beschlossen, dass"],
+  ["List", "Three reasons to learn a musical instrument:\n1."],
+];
+$("#chips").innerHTML = PRESETS.map((p, i) =>
+  `<button class="chip" type="button" data-i="${i}">${esc(p[0])}</button>`).join("");
+$("#chips").onclick = e => {
+  const b = e.target.closest(".chip");
+  if (!b) return;
+  const [, text] = PRESETS[+b.dataset.i];
+  $("#mode").value = (+b.dataset.i >= 1) ? "complete" : "chat";
+  $("#inp").value = text;
+  $("#form").requestSubmit();
+};
+$("#inp").focus();
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
++ cd /workspace/param-clustering/geo-attribution
++ CUDA_VISIBLE_DEVICES=1
++ python3.12 collect_fast.py spec --tag stream_spec_seed1 --feat_dim 16384 --seed 1 --no-reuse_spec
+[r0] created W^2 feature spec D=16384: /dev/shm/geo1b/stream_spec_seed1/spec.pt
++ CUDA_VISIBLE_DEVICES=0
++ python3.12 collect_fast.py validate_fresh --spec_tag stream_spec --second_spec_tag stream_spec_seed1 --pos_per_seq 64 --batch_seqs 8 --val_n 512
+[r0] VALIDATE-FRESH D=16384 sensor=gim: corr_raw=0.7521, corr_normalized=0.7953, diag_corr=0.9245 -> /dev/shm/geo1b/stream_spec/validate_fresh_D16384_gim.json
++ CUDA_VISIBLE_DEVICES=0
++ python3.12 collect_fast.py validate_fresh --spec_tag stream_spec_stats --second_spec_tag stream_spec --pos_per_seq 64 --batch_seqs 8 --val_n 512
+[r0] VALIDATE-FRESH D=16384 sensor=gim: corr_raw=0.8576, corr_normalized=0.8564, diag_corr=0.9704 -> /dev/shm/geo1b/stream_spec_stats/validate_fresh_D16384_gim.json
++ CUDA_VISIBLE_DEVICES=0
++ python3.12 collect_fast.py validate_fresh --spec_tag stream_spec_stats --sensor ig --ig_k 2 --scalar ce --no-bf16 --no-fused_attention --no-compile --pos_per_seq 64 --batch_seqs 8 --val_n 512
+[r0] VALIDATE-FRESH D=16384 sensor=ig: corr_raw=0.8830, corr_normalized=0.8868, diag_corr=0.9782 -> /dev/shm/geo1b/stream_spec_stats/validate_fresh_D16384_ig.json
++ echo ROUND3_DONE
+ROUND3_DONE

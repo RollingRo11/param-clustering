@@ -1,0 +1,261 @@
+[german-vpd] materialized components [1395, 3081]: 16/112 matrices
+[german-vpd] materialized components [1395, 3081]: 32/112 matrices
+[german-vpd] materialized components [1395, 3081]: 48/112 matrices
+[german-vpd] materialized components [1395, 3081]: 64/112 matrices
+[german-vpd] materialized components [1395, 3081]: 80/112 matrices
+[german-vpd] materialized components [1395, 3081]: 96/112 matrices
+[german-vpd] materialized components [1395, 3081]: 112/112 matrices
+[german-vpd] top     [1/16] L0 c1395(q) x c3081(k): dq +0.00020 dk +0.00128 both +0.00105 -> synergy -0.000428  (8s)
+[german-vpd] materialized components [2670, 3081]: 16/112 matrices
+[german-vpd] materialized components [2670, 3081]: 32/112 matrices
+[german-vpd] materialized components [2670, 3081]: 48/112 matrices
+[german-vpd] materialized components [2670, 3081]: 64/112 matrices
+[german-vpd] materialized components [2670, 3081]: 80/112 matrices
+[german-vpd] materialized components [2670, 3081]: 96/112 matrices
+[german-vpd] materialized components [2670, 3081]: 112/112 matrices
+[german-vpd] top     [2/16] L0 c2670(q) x c3081(k): dq -0.00072 dk +0.00128 both +0.00001 -> synergy -0.000560  (4s)
+[german-vpd] materialized components [1010, 3081]: 16/112 matrices
+[german-vpd] materialized components [1010, 3081]: 32/112 matrices
+[german-vpd] materialized components [1010, 3081]: 48/112 matrices
+[german-vpd] materialized components [1010, 3081]: 64/112 matrices
+[german-vpd] materialized components [1010, 3081]: 80/112 matrices
+[german-vpd] materialized components [1010, 3081]: 96/112 matrices
+[german-vpd] materialized components [1010, 3081]: 112/112 matrices
+[german-vpd] top     [3/16] L0 c1010(q) x c3081(k): dq +0.00187 dk +0.00128 both +0.00228 -> synergy -0.000879  (4s)
+[german-vpd] materialized components [1010, 598]: 16/112 matrices
+[german-vpd] materialized components [1010, 598]: 32/112 matrices
+[german-vpd] materialized components [1010, 598]: 48/112 matrices
+[german-vpd] materialized components [1010, 598]: 64/112 matrices
+[german-vpd] materialized components [1010, 598]: 80/112 matrices
+[german-vpd] materialized components [1010, 598]: 96/112 matrices
+[german-vpd] materialized components [1010, 598]: 112/112 matrices
+[german-vpd] top     [4/16] L0 c1010(q) x c598(k): dq +0.00187 dk -0.00037 both +0.00221 -> synergy +0.000710  (4s)
+[german-vpd] materialized components [1695, 3104]: 16/112 matrices
+[german-vpd] materialized components [1695, 3104]: 32/112 matrices
+[german-vpd] materialized components [1695, 3104]: 48/112 matrices
+[german-vpd] materialized components [1695, 3104]: 64/112 matrices
+[german-vpd] materialized components [1695, 3104]: 80/112 matrices
+[german-vpd] materialized components [1695, 3104]: 96/112 matrices
+[german-vpd] materialized components [1695, 3104]: 112/112 matrices
+[german-vpd] top     [5/16] L2 c1695(q) x c3104(k): dq +0.00001 dk +0.00021 both +0.00030 -> synergy +0.000081  (4s)
+[german-vpd] materialized components [1010, 3081]: 16/112 matrices
+[german-vpd] materialized components [1010, 3081]: 32/112 matrices
+[german-vpd] materialized components [1010, 3081]: 48/112 matrices
+[german-vpd] materialized components [1010, 3081]: 64/112 matrices
+[german-vpd] materialized components [1010, 3081]: 80/112 matrices
+[german-vpd] materialized components [1010, 3081]: 96/112 matrices
+[german-vpd] materialized components [1010, 3081]: 112/112 matrices
+[german-vpd] top     [6/16] L1 c1010(q) x c3081(k): dq +0.00038 dk +0.00012 both +0.00063 -> synergy +0.000128  (4s)
+[german-vpd] materialized components [1010, 3278]: 16/112 matrices
+[german-vpd] materialized components [1010, 3278]: 32/112 matrices
+[german-vpd] materialized components [1010, 3278]: 48/112 matrices
+[german-vpd] materialized components [1010, 3278]: 64/112 matrices
+[german-vpd] materialized components [1010, 3278]: 80/112 matrices
+[german-vpd] materialized components [1010, 3278]: 96/112 matrices
+[german-vpd] materialized components [1010, 3278]: 112/112 matrices
+[german-vpd] top     [7/16] L0 c1010(q) x c3278(k): dq +0.00187 dk -0.00007 both +0.00275 -> synergy +0.000949  (4s)
+[german-vpd] materialized components [1010, 811]: 16/112 matrices
+[german-vpd] materialized components [1010, 811]: 32/112 matrices
+[german-vpd] materialized components [1010, 811]: 48/112 matrices
+[german-vpd] materialized components [1010, 811]: 64/112 matrices
+[german-vpd] materialized components [1010, 811]: 80/112 matrices
+[german-vpd] materialized components [1010, 811]: 96/112 matrices
+[german-vpd] materialized components [1010, 811]: 112/112 matrices
+[german-vpd] top     [8/16] L0 c1010(q) x c811(k): dq +0.00187 dk +0.00098 both +0.00264 -> synergy -0.000217  (4s)
+[german-vpd] materialized components [1228, 3200]: 16/112 matrices
+[german-vpd] materialized components [1228, 3200]: 32/112 matrices
+[german-vpd] materialized components [1228, 3200]: 48/112 matrices
+[german-vpd] materialized components [1228, 3200]: 64/112 matrices
+[german-vpd] materialized components [1228, 3200]: 80/112 matrices
+[german-vpd] materialized components [1228, 3200]: 96/112 matrices
+[german-vpd] materialized components [1228, 3200]: 112/112 matrices
+[german-vpd] top     [9/16] L14 c1228(q) x c3200(k): dq +0.00006 dk +0.00033 both +0.00045 -> synergy +0.000049  (4s)
+[german-vpd] materialized components [2892, 1002]: 16/112 matrices
+[german-vpd] materialized components [2892, 1002]: 32/112 matrices
+[german-vpd] materialized components [2892, 1002]: 48/112 matrices
+[german-vpd] materialized components [2892, 1002]: 64/112 matrices
+[german-vpd] materialized components [2892, 1002]: 80/112 matrices
+[german-vpd] materialized components [2892, 1002]: 96/112 matrices
+[german-vpd] materialized components [2892, 1002]: 112/112 matrices
+[german-vpd] top     [10/16] L9 c2892(q) x c1002(k): dq +0.00031 dk +0.00013 both +0.00002 -> synergy -0.000420  (4s)
+[german-vpd] materialized components [1010, 3104]: 16/112 matrices
+[german-vpd] materialized components [1010, 3104]: 32/112 matrices
+[german-vpd] materialized components [1010, 3104]: 48/112 matrices
+[german-vpd] materialized components [1010, 3104]: 64/112 matrices
+[german-vpd] materialized components [1010, 3104]: 80/112 matrices
+[german-vpd] materialized components [1010, 3104]: 96/112 matrices
+[german-vpd] materialized components [1010, 3104]: 112/112 matrices
+[german-vpd] top     [11/16] L1 c1010(q) x c3104(k): dq +0.00038 dk +0.00042 both +0.00038 -> synergy -0.000424  (4s)
+[german-vpd] materialized components [1010, 3019]: 16/112 matrices
+[german-vpd] materialized components [1010, 3019]: 32/112 matrices
+[german-vpd] materialized components [1010, 3019]: 48/112 matrices
+[german-vpd] materialized components [1010, 3019]: 64/112 matrices
+[german-vpd] materialized components [1010, 3019]: 80/112 matrices
+[german-vpd] materialized components [1010, 3019]: 96/112 matrices
+[german-vpd] materialized components [1010, 3019]: 112/112 matrices
+[german-vpd] top     [12/16] L1 c1010(q) x c3019(k): dq +0.00038 dk +0.00033 both +0.00034 -> synergy -0.000372  (4s)
+[german-vpd] materialized components [1010, 1231]: 16/112 matrices
+[german-vpd] materialized components [1010, 1231]: 32/112 matrices
+[german-vpd] materialized components [1010, 1231]: 48/112 matrices
+[german-vpd] materialized components [1010, 1231]: 64/112 matrices
+[german-vpd] materialized components [1010, 1231]: 80/112 matrices
+[german-vpd] materialized components [1010, 1231]: 96/112 matrices
+[german-vpd] materialized components [1010, 1231]: 112/112 matrices
+[german-vpd] top     [13/16] L0 c1010(q) x c1231(k): dq +0.00187 dk -0.00087 both +0.00127 -> synergy +0.000268  (4s)
+[german-vpd] materialized components [3153, 3019]: 16/112 matrices
+[german-vpd] materialized components [3153, 3019]: 32/112 matrices
+[german-vpd] materialized components [3153, 3019]: 48/112 matrices
+[german-vpd] materialized components [3153, 3019]: 64/112 matrices
+[german-vpd] materialized components [3153, 3019]: 80/112 matrices
+[german-vpd] materialized components [3153, 3019]: 96/112 matrices
+[german-vpd] materialized components [3153, 3019]: 112/112 matrices
+[german-vpd] top     [14/16] L2 c3153(q) x c3019(k): dq +0.00055 dk +0.00110 both +0.00124 -> synergy -0.000407  (4s)
+[german-vpd] materialized components [2670, 598]: 16/112 matrices
+[german-vpd] materialized components [2670, 598]: 32/112 matrices
+[german-vpd] materialized components [2670, 598]: 48/112 matrices
+[german-vpd] materialized components [2670, 598]: 64/112 matrices
+[german-vpd] materialized components [2670, 598]: 80/112 matrices
+[german-vpd] materialized components [2670, 598]: 96/112 matrices
+[german-vpd] materialized components [2670, 598]: 112/112 matrices
+[german-vpd] top     [15/16] L0 c2670(q) x c598(k): dq -0.00072 dk -0.00037 both -0.00105 -> synergy +0.000031  (4s)
+[german-vpd] materialized components [1395, 4033]: 16/112 matrices
+[german-vpd] materialized components [1395, 4033]: 32/112 matrices
+[german-vpd] materialized components [1395, 4033]: 48/112 matrices
+[german-vpd] materialized components [1395, 4033]: 64/112 matrices
+[german-vpd] materialized components [1395, 4033]: 80/112 matrices
+[german-vpd] materialized components [1395, 4033]: 96/112 matrices
+[german-vpd] materialized components [1395, 4033]: 112/112 matrices
+[german-vpd] top     [16/16] L0 c1395(q) x c4033(k): dq +0.00020 dk +0.00055 both +0.00053 -> synergy -0.000226  (4s)
+[german-vpd] materialized components [1032, 3579]: 16/112 matrices
+[german-vpd] materialized components [1032, 3579]: 32/112 matrices
+[german-vpd] materialized components [1032, 3579]: 48/112 matrices
+[german-vpd] materialized components [1032, 3579]: 64/112 matrices
+[german-vpd] materialized components [1032, 3579]: 80/112 matrices
+[german-vpd] materialized components [1032, 3579]: 96/112 matrices
+[german-vpd] materialized components [1032, 3579]: 112/112 matrices
+[german-vpd] control [1/16] L5 c1032(q) x c3579(k): dq +0.00049 dk +0.00049 both +0.00059 -> synergy -0.000385  (4s)
+[german-vpd] materialized components [2276, 1235]: 16/112 matrices
+[german-vpd] materialized components [2276, 1235]: 32/112 matrices
+[german-vpd] materialized components [2276, 1235]: 48/112 matrices
+[german-vpd] materialized components [2276, 1235]: 64/112 matrices
+[german-vpd] materialized components [2276, 1235]: 80/112 matrices
+[german-vpd] materialized components [2276, 1235]: 96/112 matrices
+[german-vpd] materialized components [2276, 1235]: 112/112 matrices
+[german-vpd] control [2/16] L6 c2276(q) x c1235(k): dq +0.00054 dk -0.00010 both +0.00015 -> synergy -0.000291  (4s)
+[german-vpd] materialized components [1619, 588]: 16/112 matrices
+[german-vpd] materialized components [1619, 588]: 32/112 matrices
+[german-vpd] materialized components [1619, 588]: 48/112 matrices
+[german-vpd] materialized components [1619, 588]: 64/112 matrices
+[german-vpd] materialized components [1619, 588]: 80/112 matrices
+[german-vpd] materialized components [1619, 588]: 96/112 matrices
+[german-vpd] materialized components [1619, 588]: 112/112 matrices
+[german-vpd] control [3/16] L6 c1619(q) x c588(k): dq +0.00065 dk +0.00029 both +0.00032 -> synergy -0.000627  (4s)
+[german-vpd] materialized components [1669, 2294]: 16/112 matrices
+[german-vpd] materialized components [1669, 2294]: 32/112 matrices
+[german-vpd] materialized components [1669, 2294]: 48/112 matrices
+[german-vpd] materialized components [1669, 2294]: 64/112 matrices
+[german-vpd] materialized components [1669, 2294]: 80/112 matrices
+[german-vpd] materialized components [1669, 2294]: 96/112 matrices
+[german-vpd] materialized components [1669, 2294]: 112/112 matrices
+[german-vpd] control [4/16] L6 c1669(q) x c2294(k): dq +0.00052 dk -0.00027 both +0.00012 -> synergy -0.000135  (4s)
+[german-vpd] materialized components [332, 2294]: 16/112 matrices
+[german-vpd] materialized components [332, 2294]: 32/112 matrices
+[german-vpd] materialized components [332, 2294]: 48/112 matrices
+[german-vpd] materialized components [332, 2294]: 64/112 matrices
+[german-vpd] materialized components [332, 2294]: 80/112 matrices
+[german-vpd] materialized components [332, 2294]: 96/112 matrices
+[german-vpd] materialized components [332, 2294]: 112/112 matrices
+[german-vpd] control [5/16] L9 c332(q) x c2294(k): dq +0.00023 dk +0.00029 both +0.00057 -> synergy +0.000056  (4s)
+[german-vpd] materialized components [2415, 4051]: 16/112 matrices
+[german-vpd] materialized components [2415, 4051]: 32/112 matrices
+[german-vpd] materialized components [2415, 4051]: 48/112 matrices
+[german-vpd] materialized components [2415, 4051]: 64/112 matrices
+[german-vpd] materialized components [2415, 4051]: 80/112 matrices
+[german-vpd] materialized components [2415, 4051]: 96/112 matrices
+[german-vpd] materialized components [2415, 4051]: 112/112 matrices
+[german-vpd] control [6/16] L14 c2415(q) x c4051(k): dq +0.00039 dk +0.00001 both -0.00001 -> synergy -0.000413  (4s)
+[german-vpd] materialized components [1726, 3977]: 16/112 matrices
+[german-vpd] materialized components [1726, 3977]: 32/112 matrices
+[german-vpd] materialized components [1726, 3977]: 48/112 matrices
+[german-vpd] materialized components [1726, 3977]: 64/112 matrices
+[german-vpd] materialized components [1726, 3977]: 80/112 matrices
+[german-vpd] materialized components [1726, 3977]: 96/112 matrices
+[german-vpd] materialized components [1726, 3977]: 112/112 matrices
+[german-vpd] control [7/16] L1 c1726(q) x c3977(k): dq +0.00220 dk +0.00061 both +0.00194 -> synergy -0.000865  (4s)
+[german-vpd] materialized components [3368, 1777]: 16/112 matrices
+[german-vpd] materialized components [3368, 1777]: 32/112 matrices
+[german-vpd] materialized components [3368, 1777]: 48/112 matrices
+[german-vpd] materialized components [3368, 1777]: 64/112 matrices
+[german-vpd] materialized components [3368, 1777]: 80/112 matrices
+[german-vpd] materialized components [3368, 1777]: 96/112 matrices
+[german-vpd] materialized components [3368, 1777]: 112/112 matrices
+[german-vpd] control [8/16] L2 c3368(q) x c1777(k): dq -0.00060 dk +0.00028 both -0.00030 -> synergy +0.000024  (4s)
+[german-vpd] materialized components [2073, 4065]: 16/112 matrices
+[german-vpd] materialized components [2073, 4065]: 32/112 matrices
+[german-vpd] materialized components [2073, 4065]: 48/112 matrices
+[german-vpd] materialized components [2073, 4065]: 64/112 matrices
+[german-vpd] materialized components [2073, 4065]: 80/112 matrices
+[german-vpd] materialized components [2073, 4065]: 96/112 matrices
+[german-vpd] materialized components [2073, 4065]: 112/112 matrices
+[german-vpd] control [9/16] L0 c2073(q) x c4065(k): dq +0.00055 dk +0.00004 both +0.00006 -> synergy -0.000536  (4s)
+[german-vpd] materialized components [3890, 1695]: 16/112 matrices
+[german-vpd] materialized components [3890, 1695]: 32/112 matrices
+[german-vpd] materialized components [3890, 1695]: 48/112 matrices
+[german-vpd] materialized components [3890, 1695]: 64/112 matrices
+[german-vpd] materialized components [3890, 1695]: 80/112 matrices
+[german-vpd] materialized components [3890, 1695]: 96/112 matrices
+[german-vpd] materialized components [3890, 1695]: 112/112 matrices
+[german-vpd] control [10/16] L8 c3890(q) x c1695(k): dq +0.00034 dk +0.00026 both +0.00029 -> synergy -0.000311  (4s)
+[german-vpd] materialized components [1527, 2230]: 16/112 matrices
+[german-vpd] materialized components [1527, 2230]: 32/112 matrices
+[german-vpd] materialized components [1527, 2230]: 48/112 matrices
+[german-vpd] materialized components [1527, 2230]: 64/112 matrices
+[german-vpd] materialized components [1527, 2230]: 80/112 matrices
+[german-vpd] materialized components [1527, 2230]: 96/112 matrices
+[german-vpd] materialized components [1527, 2230]: 112/112 matrices
+[german-vpd] control [11/16] L14 c1527(q) x c2230(k): dq +0.00052 dk -0.00013 both +0.00024 -> synergy -0.000145  (4s)
+[german-vpd] materialized components [1891, 3562]: 16/112 matrices
+[german-vpd] materialized components [1891, 3562]: 32/112 matrices
+[german-vpd] materialized components [1891, 3562]: 48/112 matrices
+[german-vpd] materialized components [1891, 3562]: 64/112 matrices
+[german-vpd] materialized components [1891, 3562]: 80/112 matrices
+[german-vpd] materialized components [1891, 3562]: 96/112 matrices
+[german-vpd] materialized components [1891, 3562]: 112/112 matrices
+[german-vpd] control [12/16] L15 c1891(q) x c3562(k): dq +0.00005 dk +0.00016 both +0.00015 -> synergy -0.000069  (4s)
+[german-vpd] materialized components [3158, 1228]: 16/112 matrices
+[german-vpd] materialized components [3158, 1228]: 32/112 matrices
+[german-vpd] materialized components [3158, 1228]: 48/112 matrices
+[german-vpd] materialized components [3158, 1228]: 64/112 matrices
+[german-vpd] materialized components [3158, 1228]: 80/112 matrices
+[german-vpd] materialized components [3158, 1228]: 96/112 matrices
+[german-vpd] materialized components [3158, 1228]: 112/112 matrices
+[german-vpd] control [13/16] L14 c3158(q) x c1228(k): dq -0.00000 dk +0.00017 both +0.00038 -> synergy +0.000214  (4s)
+[german-vpd] materialized components [3165, 1619]: 16/112 matrices
+[german-vpd] materialized components [3165, 1619]: 32/112 matrices
+[german-vpd] materialized components [3165, 1619]: 48/112 matrices
+[german-vpd] materialized components [3165, 1619]: 64/112 matrices
+[german-vpd] materialized components [3165, 1619]: 80/112 matrices
+[german-vpd] materialized components [3165, 1619]: 96/112 matrices
+[german-vpd] materialized components [3165, 1619]: 112/112 matrices
+[german-vpd] control [14/16] L14 c3165(q) x c1619(k): dq +0.00022 dk -0.00015 both -0.00035 -> synergy -0.000421  (4s)
+[german-vpd] materialized components [1142, 3071]: 16/112 matrices
+[german-vpd] materialized components [1142, 3071]: 32/112 matrices
+[german-vpd] materialized components [1142, 3071]: 48/112 matrices
+[german-vpd] materialized components [1142, 3071]: 64/112 matrices
+[german-vpd] materialized components [1142, 3071]: 80/112 matrices
+[german-vpd] materialized components [1142, 3071]: 96/112 matrices
+[german-vpd] materialized components [1142, 3071]: 112/112 matrices
+[german-vpd] control [15/16] L8 c1142(q) x c3071(k): dq +0.00014 dk -0.00037 both -0.00037 -> synergy -0.000135  (4s)
+[german-vpd] materialized components [208, 3212]: 16/112 matrices
+[german-vpd] materialized components [208, 3212]: 32/112 matrices
+[german-vpd] materialized components [208, 3212]: 48/112 matrices
+[german-vpd] materialized components [208, 3212]: 64/112 matrices
+[german-vpd] materialized components [208, 3212]: 80/112 matrices
+[german-vpd] materialized components [208, 3212]: 96/112 matrices
+[german-vpd] materialized components [208, 3212]: 112/112 matrices
+[german-vpd] control [16/16] L12 c208(q) x c3212(k): dq -0.00009 dk +0.00031 both +0.00020 -> synergy -0.000023  (4s)
+[german-vpd] 
+top     synergy mean -0.000107 median -0.000226 (44% positive)
+[german-vpd] control synergy mean -0.000254 median -0.000291 (19% positive)
+[german-vpd] t = +1.07
+[german-vpd] wrote /dev/shm/geo1b/run1b_streamC4096/pair_synergy_dedup.json

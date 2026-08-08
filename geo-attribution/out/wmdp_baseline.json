@@ -1,0 +1,22 @@
+{
+ "wmdp-bio": {
+  "n": 1273,
+  "accuracy": 0.4713,
+  "chance": 0.25
+ },
+ "wmdp-chem": {
+  "n": 408,
+  "accuracy": 0.3137,
+  "chance": 0.25
+ },
+ "wmdp-cyber": {
+  "n": 1500,
+  "accuracy": 0.3327,
+  "chance": 0.25
+ },
+ "mmlu": {
+  "n": 1500,
+  "accuracy": 0.3893,
+  "chance": 0.25
+ }
+}

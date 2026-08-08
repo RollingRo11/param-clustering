@@ -1,0 +1,121 @@
+[german-vpd] reusing cached protocol data /dev/shm/geo1b/run1b_streamC4096/german_vpd_data.pt
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 16/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 32/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 48/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 64/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 80/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 96/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 112/112 matrices
+[german-vpd] replicated component editor on cuda:1
+[german-vpd] solo c1668 step 0000: deCE=3.85 enKL=0.031 romKL=0.766
+[german-vpd] solo c42 step 0000: deCE=3.83 enKL=0.081 romKL=0.861
+[german-vpd] solo c1668 step 0399: deCE=9.62 enKL=0.063 romKL=0.250
+[german-vpd] solo c42 step 0399: deCE=5.90 enKL=0.070 romKL=0.089
+[german-vpd] SOLO c1668: de=+6.05 en=+0.056 rom=+0.325
+[german-vpd] solo c2207 step 0000: deCE=2.63 enKL=0.003 romKL=0.016
+[german-vpd] SOLO c42: de=+3.50 en=+0.034 rom=+0.083
+[german-vpd] solo c1406 step 0000: deCE=2.61 enKL=0.001 romKL=0.002
+[german-vpd] solo c2207 step 0399: deCE=2.66 enKL=0.002 romKL=0.002
+[german-vpd] solo c1406 step 0399: deCE=9.36 enKL=0.020 romKL=0.051
+[german-vpd] SOLO c2207: de=+0.02 en=-0.000 rom=+0.018
+[german-vpd] solo c3634 step 0000: deCE=2.61 enKL=0.001 romKL=0.002
+[german-vpd] SOLO c1406: de=+7.32 en=+0.017 rom=+0.140
+[german-vpd] solo c3600 step 0000: deCE=2.67 enKL=0.018 romKL=0.007
+[german-vpd] solo c3634 step 0399: deCE=12.25 enKL=0.010 romKL=0.037
+[german-vpd] SOLO c3634: de=+8.97 en=+0.011 rom=+0.070
+[german-vpd] solo c3600 step 0399: deCE=2.66 enKL=0.002 romKL=0.002
+[german-vpd] solo c493 step 0000: deCE=2.61 enKL=0.001 romKL=0.001
+[german-vpd] SOLO c3600: de=+0.02 en=+0.003 rom=+0.018
+[german-vpd] solo c2161 step 0000: deCE=2.62 enKL=0.005 romKL=0.004
+[german-vpd] solo c493 step 0399: deCE=2.64 enKL=0.002 romKL=0.001
+[german-vpd] SOLO c493: de=+0.01 en=+0.001 rom=+0.018
+[german-vpd] solo c2161 step 0399: deCE=2.65 enKL=0.002 romKL=0.001
+[german-vpd] solo c2318 step 0000: deCE=2.61 enKL=0.001 romKL=0.001
+[german-vpd] SOLO c2161: de=+0.02 en=+0.002 rom=+0.016
+[german-vpd] solo c3749 step 0000: deCE=2.62 enKL=0.001 romKL=0.001
+[german-vpd] solo c3749 step 0399: deCE=2.68 enKL=0.002 romKL=0.002
+[german-vpd] solo c2318 step 0399: deCE=2.65 enKL=0.001 romKL=0.002
+[german-vpd] SOLO c3749: de=+0.05 en=+0.054 rom=+0.041
+[german-vpd] SOLO c2318: de=+0.02 en=+0.000 rom=+0.016
+[german-vpd] solo c2111 step 0000: deCE=2.61 enKL=0.001 romKL=0.001
+[german-vpd] solo c928 step 0000: deCE=2.66 enKL=0.015 romKL=0.013
+[german-vpd] solo c2111 step 0399: deCE=2.65 enKL=0.001 romKL=0.001
+[german-vpd] SOLO c2111: de=+0.02 en=+0.002 rom=+0.021
+[german-vpd] solo c928 step 0399: deCE=8.96 enKL=0.051 romKL=0.093
+[german-vpd] solo c2520 step 0000: deCE=2.62 enKL=0.002 romKL=0.001
+[german-vpd] SOLO c928: de=+5.48 en=+0.571 rom=+0.120
+[german-vpd] solo c749 step 0000: deCE=2.62 enKL=0.001 romKL=0.001
+[german-vpd] solo c2520 step 0399: deCE=10.86 enKL=0.071 romKL=0.048
+[german-vpd] SOLO c2520: de=+7.94 en=+0.039 rom=+0.129
+[german-vpd] solo c2200 step 0000: deCE=2.61 enKL=0.001 romKL=0.001
+[german-vpd] solo c749 step 0399: deCE=2.66 enKL=0.002 romKL=0.001
+[german-vpd] SOLO c749: de=+0.02 en=+0.013 rom=+0.016
+[german-vpd] solo c2921 step 0000: deCE=2.61 enKL=0.001 romKL=0.002
+[german-vpd] solo c2200 step 0399: deCE=2.65 enKL=0.001 romKL=0.001
+[german-vpd] SOLO c2200: de=+0.02 en=+0.018 rom=+0.017
+[german-vpd] solo c2921 step 0399: deCE=2.66 enKL=0.002 romKL=0.001
+[german-vpd] SOLO c2921: de=+0.02 en=+0.003 rom=+0.022
+[german-vpd] finalists: c3634 (de=+8.97), c2520 (de=+7.94), c1406 (de=+7.32)
+[german-vpd] final c3634 warm l=10/10 lr=0.1 step 0000: deCE=2.61 enKL=0.001 romKL=0.002
+[german-vpd] final c3634 warm l=10/3 lr=0.3 step 0000: deCE=2.61 enKL=0.001 romKL=0.002
+[german-vpd] final c3634 warm l=10/10 lr=0.1 step 0400: deCE=12.47 enKL=0.008 romKL=0.043
+[german-vpd] final c3634 warm l=10/3 lr=0.3 step 0400: deCE=12.90 enKL=0.011 romKL=0.050
+[german-vpd] final c3634 warm l=10/10 lr=0.1 step 0799: deCE=12.30 enKL=0.010 romKL=0.038
+[german-vpd] FINAL c3634 [warm,l=10/10,lr=0.1]: de=+9.02 en=+0.012 rom=+0.071
+[german-vpd] final c3634 invert l=10/10 lr=0.3 step 0000: deCE=3.10 enKL=0.044 romKL=0.255
+[german-vpd] final c3634 warm l=10/3 lr=0.3 step 0799: deCE=11.88 enKL=0.013 romKL=0.046
+[german-vpd] FINAL c3634 [warm,l=10/3,lr=0.3]: de=+8.81 en=+0.002 rom=+0.049
+[german-vpd] final c3634 warm l=30/10 lr=0.3 step 0000: deCE=2.61 enKL=0.001 romKL=0.002
+[german-vpd] final c3634 invert l=10/10 lr=0.3 step 0400: deCE=12.45 enKL=0.008 romKL=0.045
+[german-vpd] final c3634 warm l=30/10 lr=0.3 step 0400: deCE=12.44 enKL=0.008 romKL=0.045
+[german-vpd] final c3634 invert l=10/10 lr=0.3 step 0799: deCE=12.43 enKL=0.010 romKL=0.040
+[german-vpd] FINAL c3634 [invert,l=10/10,lr=0.3]: de=+9.14 en=+0.013 rom=+0.072
+[german-vpd] final c2520 warm l=10/3 lr=0.3 step 0000: deCE=2.62 enKL=0.002 romKL=0.001
+[german-vpd] final c3634 warm l=30/10 lr=0.3 step 0799: deCE=12.31 enKL=0.009 romKL=0.039
+[german-vpd] FINAL c3634 [warm,l=30/10,lr=0.3]: de=+8.95 en=+0.011 rom=+0.070
+[german-vpd] final c3634 identity l=10/10 lr=0.3 step 0000: deCE=2.61 enKL=0.000 romKL=0.000
+[german-vpd] final c2520 warm l=10/3 lr=0.3 step 0400: deCE=11.49 enKL=0.028 romKL=0.091
+[german-vpd] final c3634 identity l=10/10 lr=0.3 step 0400: deCE=12.39 enKL=0.008 romKL=0.043
+[german-vpd] final c2520 warm l=10/3 lr=0.3 step 0799: deCE=11.24 enKL=0.087 romKL=0.077
+[german-vpd] FINAL c2520 [warm,l=10/3,lr=0.3]: de=+8.25 en=+0.056 rom=+0.168
+[german-vpd] final c2520 warm l=30/10 lr=0.3 step 0000: deCE=2.62 enKL=0.002 romKL=0.001
+[german-vpd] final c3634 identity l=10/10 lr=0.3 step 0799: deCE=12.39 enKL=0.010 romKL=0.039
+[german-vpd] FINAL c3634 [identity,l=10/10,lr=0.3]: de=+9.12 en=+0.012 rom=+0.073
+[german-vpd] final c2520 warm l=10/10 lr=0.1 step 0000: deCE=2.62 enKL=0.002 romKL=0.001
+[german-vpd] final c2520 warm l=30/10 lr=0.3 step 0400: deCE=10.84 enKL=0.017 romKL=0.046
+[german-vpd] final c2520 warm l=10/10 lr=0.1 step 0400: deCE=9.50 enKL=0.020 romKL=0.031
+[german-vpd] final c2520 warm l=30/10 lr=0.3 step 0799: deCE=10.60 enKL=0.053 romKL=0.040
+[german-vpd] FINAL c2520 [warm,l=30/10,lr=0.3]: de=+7.73 en=+0.019 rom=+0.082
+[german-vpd] final c2520 identity l=10/10 lr=0.3 step 0000: deCE=2.61 enKL=0.000 romKL=0.000
+[german-vpd] final c2520 warm l=10/10 lr=0.1 step 0799: deCE=10.42 enKL=0.061 romKL=0.048
+[german-vpd] FINAL c2520 [warm,l=10/10,lr=0.1]: de=+7.39 en=+0.026 rom=+0.096
+[german-vpd] final c2520 invert l=10/10 lr=0.3 step 0000: deCE=2.69 enKL=0.005 romKL=0.004
+[german-vpd] final c2520 identity l=10/10 lr=0.3 step 0400: deCE=11.64 enKL=0.117 romKL=0.100
+[german-vpd] final c2520 invert l=10/10 lr=0.3 step 0400: deCE=7.63 enKL=0.051 romKL=0.072
+[german-vpd] final c2520 identity l=10/10 lr=0.3 step 0799: deCE=11.78 enKL=0.107 romKL=0.186
+[german-vpd] FINAL c2520 [identity,l=10/10,lr=0.3]: de=+6.66 en=+0.158 rom=+0.172
+[german-vpd] final c1406 warm l=10/10 lr=0.1 step 0000: deCE=2.61 enKL=0.001 romKL=0.002
+[german-vpd] final c2520 invert l=10/10 lr=0.3 step 0799: deCE=7.76 enKL=0.081 romKL=0.125
+[german-vpd] FINAL c2520 [invert,l=10/10,lr=0.3]: de=+3.81 en=+0.194 rom=+0.111
+[german-vpd] final c1406 warm l=10/3 lr=0.3 step 0000: deCE=2.61 enKL=0.001 romKL=0.002
+[german-vpd] final c1406 warm l=10/10 lr=0.1 step 0400: deCE=8.86 enKL=0.009 romKL=0.102
+[german-vpd] final c1406 warm l=10/3 lr=0.3 step 0400: deCE=10.89 enKL=0.022 romKL=0.239
+[german-vpd] final c1406 warm l=10/10 lr=0.1 step 0799: deCE=8.92 enKL=0.023 romKL=0.057
+[german-vpd] FINAL c1406 [warm,l=10/10,lr=0.1]: de=+6.92 en=+0.014 rom=+0.147
+[german-vpd] final c1406 invert l=10/10 lr=0.3 step 0000: deCE=2.76 enKL=0.003 romKL=0.030
+[german-vpd] final c1406 warm l=10/3 lr=0.3 step 0799: deCE=10.22 enKL=0.031 romKL=0.139
+[german-vpd] FINAL c1406 [warm,l=10/3,lr=0.3]: de=+8.10 en=+0.036 rom=+0.405
+[german-vpd] final c1406 warm l=30/10 lr=0.3 step 0000: deCE=2.61 enKL=0.001 romKL=0.002
+[german-vpd] final c1406 invert l=10/10 lr=0.3 step 0400: deCE=7.82 enKL=0.018 romKL=0.153
+[german-vpd] final c1406 warm l=30/10 lr=0.3 step 0400: deCE=9.98 enKL=0.007 romKL=0.055
+[german-vpd] final c1406 invert l=10/10 lr=0.3 step 0799: deCE=7.06 enKL=0.031 romKL=0.113
+[german-vpd] FINAL c1406 [invert,l=10/10,lr=0.3]: de=+5.13 en=+0.021 rom=+0.247
+[german-vpd] final c1406 warm l=30/10 lr=0.3 step 0799: deCE=9.19 enKL=0.011 romKL=0.039
+[german-vpd] FINAL c1406 [warm,l=30/10,lr=0.3]: de=+7.16 en=+0.007 rom=+0.111
+[german-vpd] final c1406 identity l=10/10 lr=0.3 step 0000: deCE=2.61 enKL=0.000 romKL=0.000
+[german-vpd] final c1406 identity l=10/10 lr=0.3 step 0400: deCE=7.82 enKL=0.018 romKL=0.153
+[german-vpd] final c1406 identity l=10/10 lr=0.3 step 0799: deCE=7.06 enKL=0.031 romKL=0.113
+[german-vpd] FINAL c1406 [identity,l=10/10,lr=0.3]: de=+5.13 en=+0.020 rom=+0.247
+[german-vpd] BEST single-component edit: c3634 [invert,l=10/10,lr=0.3] de=+9.14 en=+0.013 rom=+0.072
+[german-vpd] literal surgery: max |dlogit|=1.406e-01
+[german-vpd] wrote /dev/shm/geo1b/run1b_streamC4096/german_solo.json

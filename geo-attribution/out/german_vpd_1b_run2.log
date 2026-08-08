@@ -1,0 +1,39 @@
+[german-vpd] reusing cached protocol data /dev/shm/geo1b/run1m_stream/german_vpd_data.pt
+[german-vpd] materialized component 339: 16/112 matrices
+[german-vpd] materialized component 339: 32/112 matrices
+[german-vpd] materialized component 339: 48/112 matrices
+[german-vpd] materialized component 339: 64/112 matrices
+[german-vpd] materialized component 339: 80/112 matrices
+[german-vpd] materialized component 339: 96/112 matrices
+[german-vpd] materialized component 339: 112/112 matrices
+[german-vpd] component 339 squared-weight mass fraction 9.841036e-06
+[german-vpd] warm-start scan a=-20:deCE=14.42/enKL=10.432, a=-15:deCE=5.32/enKL=1.402, a=-12:deCE=3.21/enKL=0.179, a=-10:deCE=2.78/enKL=0.035, a=-8:deCE=2.72/enKL=0.010, a=-6:deCE=2.71/enKL=0.006, a=-4:deCE=2.71/enKL=0.004, a=-2:deCE=2.71/enKL=0.002, a=-1:deCE=2.70/enKL=0.002, a=+0:deCE=2.70/enKL=0.001, a=+0.5:deCE=2.69/enKL=0.001, a=+1:deCE=2.69/enKL=0.000, a=+1.5:deCE=2.69/enKL=0.001, a=+2:deCE=2.69/enKL=0.001, a=+3:deCE=2.69/enKL=0.003, a=+4:deCE=2.71/enKL=0.007, a=+5:deCE=2.83/enKL=0.061, a=+5.5:deCE=3.75/enKL=0.238, a=+6:deCE=10.33/enKL=1.019, a=+6.5:deCE=20.23/enKL=3.339, a=+7:deCE=27.49/enKL=5.755, a=+8:deCE=30.30/enKL=11.763, a=+10:deCE=23.89/enKL=21.840, a=+12:deCE=18.46/enKL=25.141, a=+15:deCE=15.98/enKL=15.850, a=+20:deCE=15.76/enKL=14.030
+[german-vpd] warm-start inits lambda=0.1->alpha=+6.5, lambda=1->alpha=+6, lambda=10->alpha=+1, lambda=30->alpha=+1, lambda=100->alpha=+1
+[german-vpd] step 0000: lambda=0.1 alpha=+6.400 deCE=18.451 enKL=3.1802, lambda=1 alpha=+6.100 deCE=6.575 enKL=1.6805, lambda=10 alpha=+0.900 deCE=2.613 enKL=0.0000, lambda=30 alpha=+0.900 deCE=2.613 enKL=0.0000, lambda=100 alpha=+0.900 deCE=2.613 enKL=0.0000
+[german-vpd] step 0025: lambda=0.1 alpha=+6.749 deCE=31.724 enKL=8.3737, lambda=1 alpha=+6.389 deCE=28.061 enKL=4.9549, lambda=10 alpha=-0.079 deCE=2.888 enKL=0.0008, lambda=30 alpha=+0.785 deCE=2.884 enKL=0.0007, lambda=100 alpha=+0.889 deCE=2.885 enKL=0.0007
+[german-vpd] step 0050: lambda=0.1 alpha=+6.561 deCE=20.051 enKL=3.9382, lambda=1 alpha=+6.260 deCE=17.911 enKL=1.9611, lambda=10 alpha=-0.194 deCE=2.655 enKL=0.0009, lambda=30 alpha=+0.798 deCE=2.656 enKL=0.0007, lambda=100 alpha=+0.945 deCE=2.656 enKL=0.0006
+[german-vpd] step 0075: lambda=0.1 alpha=+6.667 deCE=18.609 enKL=1.0657, lambda=1 alpha=+6.447 deCE=10.963 enKL=0.6873, lambda=10 alpha=-0.181 deCE=2.626 enKL=0.0015, lambda=30 alpha=+0.773 deCE=2.622 enKL=0.0008, lambda=100 alpha=+0.948 deCE=2.623 enKL=0.0007
+[german-vpd] step 0100: lambda=0.1 alpha=+6.491 deCE=18.155 enKL=3.1249, lambda=1 alpha=+6.437 deCE=16.833 enKL=2.9873, lambda=10 alpha=-0.168 deCE=2.617 enKL=0.0012, lambda=30 alpha=+0.793 deCE=2.615 enKL=0.0007, lambda=100 alpha=+0.932 deCE=2.613 enKL=0.0006
+[german-vpd] step 0125: lambda=0.1 alpha=+6.702 deCE=31.486 enKL=7.7098, lambda=1 alpha=+6.453 deCE=28.786 enKL=5.4629, lambda=10 alpha=-0.162 deCE=2.890 enKL=0.0008, lambda=30 alpha=+0.772 deCE=2.885 enKL=0.0007, lambda=100 alpha=+0.923 deCE=2.883 enKL=0.0007
+[german-vpd] step 0150: lambda=0.1 alpha=+6.453 deCE=19.602 enKL=3.2415, lambda=1 alpha=+6.397 deCE=19.278 enKL=2.6291, lambda=10 alpha=-0.160 deCE=2.655 enKL=0.0009, lambda=30 alpha=+0.774 deCE=2.655 enKL=0.0007, lambda=100 alpha=+0.963 deCE=2.657 enKL=0.0007
+[german-vpd] step 0175: lambda=0.1 alpha=+6.676 deCE=19.203 enKL=1.0935, lambda=1 alpha=+6.428 deCE=10.864 enKL=0.6638, lambda=10 alpha=-0.142 deCE=2.629 enKL=0.0015, lambda=30 alpha=+0.776 deCE=2.623 enKL=0.0008, lambda=100 alpha=+0.930 deCE=2.622 enKL=0.0007
+[german-vpd] step 0200: lambda=0.1 alpha=+6.527 deCE=17.931 enKL=3.0948, lambda=1 alpha=+6.462 deCE=17.234 enKL=3.0126, lambda=10 alpha=-0.133 deCE=2.617 enKL=0.0011, lambda=30 alpha=+0.804 deCE=2.616 enKL=0.0007, lambda=100 alpha=+0.914 deCE=2.614 enKL=0.0006
+[german-vpd] step 0225: lambda=0.1 alpha=+6.717 deCE=31.521 enKL=7.9747, lambda=1 alpha=+6.460 deCE=29.313 enKL=5.6491, lambda=10 alpha=-0.137 deCE=2.890 enKL=0.0008, lambda=30 alpha=+0.777 deCE=2.884 enKL=0.0007, lambda=100 alpha=+0.942 deCE=2.882 enKL=0.0007
+[german-vpd] step 0250: lambda=0.1 alpha=+6.420 deCE=19.377 enKL=2.8011, lambda=1 alpha=+6.243 deCE=17.900 enKL=2.0396, lambda=10 alpha=-0.163 deCE=2.655 enKL=0.0009, lambda=30 alpha=+0.778 deCE=2.653 enKL=0.0007, lambda=100 alpha=+0.911 deCE=2.653 enKL=0.0006
+[german-vpd] step 0275: lambda=0.1 alpha=+6.717 deCE=21.122 enKL=1.2017, lambda=1 alpha=+6.363 deCE=8.942 enKL=0.5725, lambda=10 alpha=-0.156 deCE=2.628 enKL=0.0015, lambda=30 alpha=+0.773 deCE=2.622 enKL=0.0007, lambda=100 alpha=+0.927 deCE=2.627 enKL=0.0006
+[german-vpd] step 0300: lambda=0.1 alpha=+6.428 deCE=17.143 enKL=2.9988, lambda=1 alpha=+6.431 deCE=16.381 enKL=2.9805, lambda=10 alpha=-0.154 deCE=2.619 enKL=0.0011, lambda=30 alpha=+0.785 deCE=2.614 enKL=0.0007, lambda=100 alpha=+0.954 deCE=2.614 enKL=0.0006
+[german-vpd] step 0325: lambda=0.1 alpha=+6.682 deCE=31.380 enKL=7.7514, lambda=1 alpha=+6.320 deCE=26.255 enKL=4.1854, lambda=10 alpha=-0.161 deCE=2.890 enKL=0.0008, lambda=30 alpha=+0.778 deCE=2.887 enKL=0.0007, lambda=100 alpha=+0.945 deCE=2.882 enKL=0.0007
+[german-vpd] step 0350: lambda=0.1 alpha=+6.394 deCE=19.184 enKL=2.7622, lambda=1 alpha=+6.267 deCE=18.175 enKL=1.9618, lambda=10 alpha=-0.158 deCE=2.655 enKL=0.0008, lambda=30 alpha=+0.770 deCE=2.653 enKL=0.0007, lambda=100 alpha=+0.895 deCE=2.654 enKL=0.0007
+[german-vpd] step 0375: lambda=0.1 alpha=+6.662 deCE=18.636 enKL=1.0805, lambda=1 alpha=+6.240 deCE=6.982 enKL=0.4219, lambda=10 alpha=-0.149 deCE=2.629 enKL=0.0015, lambda=30 alpha=+0.804 deCE=2.622 enKL=0.0007, lambda=100 alpha=+0.922 deCE=2.622 enKL=0.0007
+[german-vpd] step 0399: lambda=0.1 alpha=+6.663 deCE=17.460 enKL=1.0239, lambda=1 alpha=+6.364 deCE=9.112 enKL=0.5766, lambda=10 alpha=-0.143 deCE=2.625 enKL=0.0015, lambda=30 alpha=+0.793 deCE=2.624 enKL=0.0007, lambda=100 alpha=+0.933 deCE=2.623 enKL=0.0007
+[german-vpd] selected lambda=10, alpha=-0.1431; dev dCE de/en=+0.003/+0.001
+[german-vpd] eval german_europarl: CE 2.664 -> 2.666 (+0.002), KL=0.0017
+[german-vpd] eval english_pile: CE 2.096 -> 2.096 (+0.000), KL=0.0011
+[german-vpd] eval english_europarl: CE 3.041 -> 3.041 (+0.000), KL=0.0010
+[german-vpd] eval french_europarl: CE 2.527 -> 2.529 (+0.002), KL=0.0010
+[german-vpd] eval spanish_europarl: CE 2.836 -> 2.836 (+0.001), KL=0.0009
+[german-vpd] eval italian_europarl: CE 2.523 -> 2.523 (-0.000), KL=0.0009
+[german-vpd] eval codeparrot: CE 1.697 -> 1.697 (+0.000), KL=0.0009
+[german-vpd] literal weight-edit equivalence: max |delta logit|=0.000e+00
+[german-vpd] wrote result /dev/shm/geo1b/run1m_stream/german_vpd_prop1b.json
+[german-vpd] wrote replayable scalar adapter /dev/shm/geo1b/run1m_stream/german_vpd_prop1b_adapter.pt

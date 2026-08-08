@@ -1,0 +1,26 @@
+[german-vpd] reusing cached protocol data /dev/shm/geo1b/run1b_streamC4096/german_vpd_data.pt
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 16/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 32/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 48/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 64/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 80/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 96/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 112/112 matrices
+[german-vpd] comp4 B=8 l=10/10 lr=0.1: de=+0.57 en=+0.020 rom=+0.117
+[german-vpd] comp4 B=8 l=10/10 lr=0.3: de=+0.47 en=+0.011 rom=+0.081
+[german-vpd] comp4 B=8 l=30/30 lr=0.1: de=+0.71 en=+0.008 rom=+0.100
+[german-vpd] comp4 B=8 l=30/30 lr=0.3: de=+1.86 en=+0.014 rom=+0.038
+[german-vpd] comp4 B=64 l=10/10 lr=0.1: de=+4.80 en=+0.013 rom=+0.188
+[german-vpd] comp4 B=64 l=10/10 lr=0.3: de=+5.10 en=+0.008 rom=+0.123
+[german-vpd] comp4 B=64 l=30/30 lr=0.1: de=+3.84 en=+0.013 rom=+0.135
+[german-vpd] comp4 B=64 l=30/30 lr=0.3: de=+5.45 en=+0.009 rom=+0.088
+[german-vpd] comp4 B=512 l=10/10 lr=0.1: de=+7.41 en=+0.016 rom=+0.161
+[german-vpd] comp4 B=512 l=10/10 lr=0.3: de=+7.49 en=+0.012 rom=+0.107
+[german-vpd] comp4 B=512 l=30/30 lr=0.1: de=+3.27 en=+0.008 rom=+0.105
+[german-vpd] comp4 B=512 l=30/30 lr=0.3: de=+7.98 en=+0.013 rom=+0.087
+[german-vpd] comp4 B=2048 l=10/10 lr=0.1: de=+7.94 en=+0.019 rom=+0.171
+[german-vpd] comp4 B=2048 l=10/10 lr=0.3: de=+7.64 en=+0.014 rom=+0.104
+[german-vpd] comp4 B=2048 l=30/30 lr=0.1: de=+3.84 en=+0.008 rom=+0.115
+[german-vpd] comp4 B=2048 l=30/30 lr=0.3: de=+7.81 en=+0.014 rom=+0.094
+[german-vpd] wrote comp k=4 arm json
+K4_DONE

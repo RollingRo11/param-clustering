@@ -1,0 +1,65 @@
+[german-vpd] reusing cached protocol data /dev/shm/geo1b/run1b_streamC4096/german_vpd_data.pt
+Some weights of LlamaForCausalLM were not initialized from the model checkpoint at unsloth/Llama-3.2-1B and are newly initialized: ['lm_head.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 16/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 32/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 48/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 64/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 80/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 96/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 112/112 matrices
+[german-vpd] comp_warm B=8 l=10/10 lr=0.1: de=+1.08 en=+0.018 rom=+0.081
+[german-vpd] comp_warm B=8 l=10/10 lr=0.3: de=+3.44 en=+0.009 rom=+0.019
+[german-vpd] comp_warm B=8 l=30/30 lr=0.1: de=+0.37 en=+0.017 rom=+0.093
+[german-vpd] comp_warm B=8 l=30/30 lr=0.3: de=+3.82 en=+0.005 rom=+0.019
+[german-vpd] comp_cold B=8 l=10/10 lr=0.1: de=+0.67 en=+0.014 rom=+0.066
+[german-vpd] comp_warm B=64 l=10/10 lr=0.1: de=+6.37 en=+0.055 rom=+0.065
+[german-vpd] comp_warm B=64 l=10/10 lr=0.3: de=+7.76 en=+0.042 rom=+0.038
+[german-vpd] comp_warm B=64 l=30/30 lr=0.1: de=+6.34 en=+0.016 rom=+0.046
+[german-vpd] comp_warm B=64 l=30/30 lr=0.3: de=+6.89 en=+0.010 rom=+0.032
+[german-vpd] comp_cold B=64 l=10/10 lr=0.1: de=+7.30 en=+0.014 rom=+0.053
+[german-vpd] comp_warm B=512 l=10/10 lr=0.1: de=+6.92 en=+0.073 rom=+0.074
+[german-vpd] comp_warm B=512 l=10/10 lr=0.3: de=+7.70 en=+0.075 rom=+0.053
+[german-vpd] comp_warm B=512 l=30/30 lr=0.1: de=+6.91 en=+0.059 rom=+0.069
+[german-vpd] comp_warm B=512 l=30/30 lr=0.3: de=+6.99 en=+0.062 rom=+0.041
+[german-vpd] comp_cold B=512 l=10/10 lr=0.1: de=+8.74 en=+0.006 rom=+0.035
+[german-vpd] comp_warm B=2048 l=10/10 lr=0.1: de=+9.18 en=+0.059 rom=+0.067
+[german-vpd] comp_warm B=2048 l=10/10 lr=0.3: de=+9.87 en=+0.029 rom=+0.041
+[german-vpd] comp_warm B=2048 l=30/30 lr=0.1: de=+7.99 en=+0.066 rom=+0.065
+[german-vpd] comp_warm B=2048 l=30/30 lr=0.3: de=+8.65 en=+0.035 rom=+0.039
+[german-vpd] comp_cold B=2048 l=10/10 lr=0.1: de=+8.76 en=+0.048 rom=+0.126
+Traceback (most recent call last):
+  File "/workspace/param-clustering/geo-attribution/budget_race.py", line 276, in <module>
+    main()
+  File "/workspace/param-clustering/geo-attribution/budget_race.py", line 260, in main
+    results.extend(future.result())
+                   ^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/usr/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/param-clustering/geo-attribution/budget_race.py", line 240, in lora_worker
+    target = geo1b.load_target_1b("cuda:1")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/param-clustering/geo-attribution/geo1b.py", line 55, in load_target_1b
+    target = LogitsWrapper(hf).to(device).eval()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1369, in to
+    return self._apply(convert)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 928, in _apply
+    module._apply(fn)
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 928, in _apply
+    module._apply(fn)
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 928, in _apply
+    module._apply(fn)
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 955, in _apply
+    param_applied = fn(param)
+                    ^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1362, in convert
+    raise NotImplementedError(
+NotImplementedError: Cannot copy out of meta tensor; no data! Please use torch.nn.Module.to_empty() instead of torch.nn.Module.to() when moving module from meta to a different device.

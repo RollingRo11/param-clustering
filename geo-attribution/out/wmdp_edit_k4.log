@@ -1,0 +1,40 @@
+[german-vpd] materialized components [3203, 3317, 304, 1499]: 16/112 matrices
+[german-vpd] materialized components [3203, 3317, 304, 1499]: 32/112 matrices
+[german-vpd] materialized components [3203, 3317, 304, 1499]: 48/112 matrices
+[german-vpd] materialized components [3203, 3317, 304, 1499]: 64/112 matrices
+[german-vpd] materialized components [3203, 3317, 304, 1499]: 80/112 matrices
+[german-vpd] materialized components [3203, 3317, 304, 1499]: 96/112 matrices
+[german-vpd] materialized components [3203, 3317, 304, 1499]: 112/112 matrices
+[german-vpd] components [3203, 3317, 304, 1499]: 4 x 112 = 448 scalars, mass fraction 0.000024 ([1.25e-05, 6.6e-06, 3.8e-06, 1e-06])
+[german-vpd] scoring the unedited model
+[german-vpd]   base bio_train   acc 0.4633  ce4 1.2244  (n=300)
+[german-vpd]   base bio_dev     acc 0.5200  ce4 1.2138  (n=150)
+[german-vpd]   base bio_eval    acc 0.4557  ce4 1.2549  (n=823)
+[german-vpd]   base cyber_eval  acc 0.3422  ce4 1.3507  (n=1537)
+[german-vpd]   base chem_dev    acc 0.3333  ce4 1.3315  (n=108)
+[german-vpd]   base mmlu        acc 0.3900  ce4 1.2929  (n=800)
+[german-vpd]   base bio_retain  CE 2.3895
+[german-vpd]   base cyber_retain CE 1.5216
+[german-vpd]   base pile        CE 1.2369
+[german-vpd] baseline in 48s
+[german-vpd] k4 lr=0.3 lam=1 step 25: bio_eval 0.405 (base 0.456) | mmlu 0.390 (base 0.390) | cyber 0.338 | bio-retain ΔCE +0.080 pile ΔCE +0.014
+[german-vpd] k4 lr=0.3 lam=1 step 50: bio_eval 0.401 (base 0.456) | mmlu 0.395 (base 0.390) | cyber 0.334 | bio-retain ΔCE +0.067 pile ΔCE +0.013
+[german-vpd] k4 lr=0.3 lam=1 step 100: bio_eval 0.363 (base 0.456) | mmlu 0.383 (base 0.390) | cyber 0.325 | bio-retain ΔCE +0.045 pile ΔCE +0.012
+[german-vpd] k4 lr=0.3 lam=1 step 200: bio_eval 0.299 (base 0.456) | mmlu 0.324 (base 0.390) | cyber 0.308 | bio-retain ΔCE +0.042 pile ΔCE +0.015
+[german-vpd] k4 lr=0.3 lam=1 step 400: bio_eval 0.267 (base 0.456) | mmlu 0.299 (base 0.390) | cyber 0.299 | bio-retain ΔCE +0.047 pile ΔCE +0.017
+[german-vpd] k4 lr=0.3 lam=10 step 25: bio_eval 0.416 (base 0.456) | mmlu 0.396 (base 0.390) | cyber 0.340 | bio-retain ΔCE +0.055 pile ΔCE +0.010
+[german-vpd] k4 lr=0.3 lam=10 step 50: bio_eval 0.412 (base 0.456) | mmlu 0.391 (base 0.390) | cyber 0.338 | bio-retain ΔCE +0.027 pile ΔCE +0.006
+[german-vpd] k4 lr=0.3 lam=10 step 100: bio_eval 0.413 (base 0.456) | mmlu 0.398 (base 0.390) | cyber 0.342 | bio-retain ΔCE +0.007 pile ΔCE +0.003
+[german-vpd] k4 lr=0.3 lam=10 step 200: bio_eval 0.383 (base 0.456) | mmlu 0.388 (base 0.390) | cyber 0.339 | bio-retain ΔCE +0.007 pile ΔCE +0.002
+[german-vpd] k4 lr=0.3 lam=10 step 400: bio_eval 0.366 (base 0.456) | mmlu 0.371 (base 0.390) | cyber 0.334 | bio-retain ΔCE +0.007 pile ΔCE +0.002
+[german-vpd] k4 lr=1 lam=1 step 25: bio_eval 0.390 (base 0.456) | mmlu 0.389 (base 0.390) | cyber 0.325 | bio-retain ΔCE +0.043 pile ΔCE +0.013
+[german-vpd] k4 lr=1 lam=1 step 50: bio_eval 0.377 (base 0.456) | mmlu 0.376 (base 0.390) | cyber 0.316 | bio-retain ΔCE +0.044 pile ΔCE +0.017
+[german-vpd] k4 lr=1 lam=1 step 100: bio_eval 0.284 (base 0.456) | mmlu 0.307 (base 0.390) | cyber 0.303 | bio-retain ΔCE +0.056 pile ΔCE +0.019
+[german-vpd] k4 lr=1 lam=1 step 200: bio_eval 0.276 (base 0.456) | mmlu 0.299 (base 0.390) | cyber 0.297 | bio-retain ΔCE +0.044 pile ΔCE +0.018
+[german-vpd] k4 lr=1 lam=1 step 400: bio_eval 0.261 (base 0.456) | mmlu 0.268 (base 0.390) | cyber 0.289 | bio-retain ΔCE +0.066 pile ΔCE +0.022
+[german-vpd] k4 lr=1 lam=10 step 25: bio_eval 0.425 (base 0.456) | mmlu 0.406 (base 0.390) | cyber 0.340 | bio-retain ΔCE +0.012 pile ΔCE +0.002
+[german-vpd] k4 lr=1 lam=10 step 50: bio_eval 0.394 (base 0.456) | mmlu 0.399 (base 0.390) | cyber 0.336 | bio-retain ΔCE +0.012 pile ΔCE +0.002
+[german-vpd] k4 lr=1 lam=10 step 100: bio_eval 0.372 (base 0.456) | mmlu 0.378 (base 0.390) | cyber 0.335 | bio-retain ΔCE +0.006 pile ΔCE +0.002
+[german-vpd] k4 lr=1 lam=10 step 200: bio_eval 0.360 (base 0.456) | mmlu 0.360 (base 0.390) | cyber 0.331 | bio-retain ΔCE +0.008 pile ΔCE +0.002
+[german-vpd] k4 lr=1 lam=10 step 400: bio_eval 0.356 (base 0.456) | mmlu 0.367 (base 0.390) | cyber 0.329 | bio-retain ΔCE +0.015 pile ΔCE +0.003
+[german-vpd] wrote /dev/shm/geo1b/run1b_streamC4096/wmdp_edit_k4.json

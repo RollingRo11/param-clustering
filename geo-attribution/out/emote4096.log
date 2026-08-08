@@ -1,0 +1,73 @@
+[german-vpd] emoticon token ids [3349, 27046, 29589, 40624, 64943, 93511, 94657]; target ':o' = 94657
+[german-vpd] rank: 12 emoticon-predicting positions
+[german-vpd] top emoticon-contrast components: [3201, 1912, 1620, 3931, 2324, 840, 1406, 816] (activity [0.0751, 0.0529, 0.0521, 0.0439, 0.0293, 0.025, 0.0239, 0.0194])
+[german-vpd] 32 write-side matrices
+[german-vpd] BASE: {"p_target": 3.1526128623227123e-06, "p_emoset": 0.05634968727827072, "argmax_target_rate": 0.0, "ctrl_ce": 3.564197301864624}
+[german-vpd] base gen: 'ely be making this again. I did make a few changes. I used 1'
+[german-vpd] base gen: 'nt to the mountains, and I went to the desert, and I went to'
+[german-vpd] base gen: 'om! I’m looking forward to meeting all of you and getting to'
+[german-vpd] additive_k1_g2: p_target=0.000 p_emoset=0.054 argmax_target=0.00 ctrl_ce=3.570
+[german-vpd] additive_k1_g2 gen: 'ely be making this again. I did make a few changes. I used 1'
+[german-vpd] additive_k1_g2 gen: 'nt to the mountains, and I went to the desert, and I went to'
+[german-vpd] additive_k1_g2 gen: 'om! I’m looking forward to meeting all of you and getting to'
+[german-vpd] additive_k1_g8: p_target=0.000 p_emoset=0.085 argmax_target=0.00 ctrl_ce=3.637
+[german-vpd] additive_k1_g8 gen: 'sure to make it again. I will be sure to let you know how it'
+[german-vpd] additive_k1_g8 gen: 'nt to the mountains, and I went to the desert, and I went to'
+[german-vpd] additive_k1_g8 gen: 'm so excited to be a part of the 2018-2019 1st Grade team! I'
+[german-vpd] additive_k1_g32: p_target=0.032 p_emoset=0.257 argmax_target=0.00 ctrl_ce=4.610
+[german-vpd] additive_k1_g32 gen: ' night! I really enjoyed the 2nd 1/2 of the 2nd 1/2 of the 2'
+[german-vpd] additive_k1_g32 gen: '. I went to the 2011 4th of July in 4th of July, 4th of July'
+[german-vpd] additive_k1_g32 gen: 'oday. See you tomorrow!"\n"  1:o:o:o:o:o:o:  1:o:o:o:o:o:o:  '
+[german-vpd] additive_k1_g128: p_target=0.000 p_emoset=0.000 argmax_target=0.00 ctrl_ce=48.267
+[german-vpd] additive_k1_g128 gen: 'ks again for dinner last night! :o\n :o\n :o,  1,  2,  :o, :o,'
+[german-vpd] additive_k1_g128 gen: 'he best vacation ever. :o\n :o :o:o:o\n :o :o:o:o:o\n :o :o:o:o'
+[german-vpd] additive_k1_g128 gen: 'really well today. See you tomorrow,, :o, 0, 0, 0, 0, 0, 0, '
+[german-vpd] replace_k1_g2: p_target=0.000 p_emoset=0.055 argmax_target=0.00 ctrl_ce=3.571
+[german-vpd] replace_k1_g2 gen: 'ely be making this again. I did make a few changes. I used 1'
+[german-vpd] replace_k1_g2 gen: 'nt to the mountains, and I went to the desert, and I went to'
+[german-vpd] replace_k1_g2 gen: 'om! I’m looking forward to meeting all of you and getting to'
+[german-vpd] replace_k1_g8: p_target=0.002 p_emoset=0.043 argmax_target=0.00 ctrl_ce=3.639
+[german-vpd] replace_k1_g8 gen: 'sure to make it again. I will be sure to let you know how it'
+[german-vpd] replace_k1_g8 gen: 'nt to the mountains, and I went to the desert, and I went to'
+[german-vpd] replace_k1_g8 gen: 'n: A 30-year-old man presents with a 2-week history of fever'
+[german-vpd] replace_k1_g32: p_target=0.000 p_emoset=0.015 argmax_target=0.00 ctrl_ce=4.637
+[german-vpd] replace_k1_g32 gen: 'gain for dinner last night! \xa0I’m so, so, \xa0so, \xa0so, \xa0so, \xa0so,'
+[german-vpd] replace_k1_g32 gen: 'ation ever. \xa0I was in the \xa0Caribbean, and \xa0I \xa0had \xa0the \xa0best'
+[german-vpd] replace_k1_g32 gen: "oday. See you tomorrow!\nI'm in the 2nd 1/2 of 2nd 1/2 of 2nd"
+[german-vpd] replace_k1_g128: p_target=0.000 p_emoset=0.000 argmax_target=0.00 ctrl_ce=8.258
+[german-vpd] replace_k1_g128 gen: 'dinner last night! :)\n:o:o:o\nI:o:o\n:o:o\n:o:o\n:o:o\n:o:o\n:o:o\n'
+[german-vpd] replace_k1_g128 gen: 'ot back from the best vacation ever. \xa0. \xa0. \xa0. \xa0. \xa0. \xa0. \xa0. \xa0.'
+[german-vpd] replace_k1_g128 gen: 'oday. See you tomorrow,, 1:o:o:o:o:o:o, 1:o:o:o:o:o, 1:o,o:o'
+[german-vpd] additive_k4_g2: p_target=0.000 p_emoset=0.061 argmax_target=0.00 ctrl_ce=3.587
+[german-vpd] additive_k4_g2 gen: 'ely be making this again. I did make a few changes. I used 1'
+[german-vpd] additive_k4_g2 gen: ' got to see my family. I got to see my friends. I got to see'
+[german-vpd] additive_k4_g2 gen: 'om! I’m looking forward to meeting all of you and getting to'
+[german-vpd] additive_k4_g8: p_target=0.250 p_emoset=0.307 argmax_target=0.25 ctrl_ce=3.802
+[german-vpd] additive_k4_g8 gen: 'ely be making this again. I did make a few changes. I used 1'
+[german-vpd] additive_k4_g8 gen: 's amazing. I went to Maui and Oahu and it was so much fun. I'
+[german-vpd] additive_k4_g8 gen: "ry:o) I'm not sure what happened:o) I'm sorry:o) I'm sorry:o"
+[german-vpd] additive_k4_g32: p_target=0.274 p_emoset=0.358 argmax_target=0.25 ctrl_ce=5.400
+[german-vpd] additive_k4_g32 gen: 'st night! \xa0I was a little \xa0fearful of the \xa0chicken, but \xa0, \xa0'
+[german-vpd] additive_k4_g32 gen: 'from the best vacation ever. \xa0I was in the \xa0" \xa0" \xa0" \xa0" \xa0" \xa0"'
+[german-vpd] additive_k4_g32 gen: " See you tomorrow:o)\nI'm in the 2nd 1/2 of 1,000,000,000,000"
+[german-vpd] additive_k4_g128: p_target=1.000 p_emoset=1.000 argmax_target=1.00 ctrl_ce=18.019
+[german-vpd] additive_k4_g128 gen: 's again for dinner last night!:o:o:o, :o:o  :o              '
+[german-vpd] additive_k4_g128 gen: 'rom the best vacation ever. \xa0, \xa0, \xa0 \xa0, \xa0:o:o \xa0:o:o \xa0:o:o \xa0:o'
+[german-vpd] additive_k4_g128 gen: ' today. See you tomorrow:o:o:o\n:o:o\n:o:o\n:o:o\n:o\n  1:o\n:o\n  '
+[german-vpd] replace_k4_g2: p_target=0.000 p_emoset=0.058 argmax_target=0.00 ctrl_ce=3.574
+[german-vpd] replace_k4_g2 gen: 'ely be making this again. I did make a few changes. I used 1'
+[german-vpd] replace_k4_g2 gen: 'nt to the mountains, and I went to the desert, and I went to'
+[german-vpd] replace_k4_g2 gen: 'om! I’m looking forward to meeting all of you and getting to'
+[german-vpd] replace_k4_g8: p_target=0.000 p_emoset=0.069 argmax_target=0.00 ctrl_ce=3.683
+[german-vpd] replace_k4_g8 gen: 'sure to make it again. I will be sure to let you know how it'
+[german-vpd] replace_k4_g8 gen: 'nt to the mountains, and I went to the desert, and I went to'
+[german-vpd] replace_k4_g8 gen: "!\nI'm so excited to be a part of the 2016-2017 1st-3rd grade"
+[german-vpd] replace_k4_g32: p_target=0.237 p_emoset=0.307 argmax_target=0.25 ctrl_ce=5.207
+[german-vpd] replace_k4_g32 gen: 'in for dinner last night! \xa0I am a \xa0big, \xa0fan of \xa0the \xa0" \xa0I \xa0'
+[german-vpd] replace_k4_g32 gen: 'vacation ever. \xa0I was in \xa0a \xa0gated community in \xa0the \xa0 1st \xa0'
+[german-vpd] replace_k4_g32 gen: 'day. See you tomorrow:o)\nPosted by 1st 1st 1st 1st 1st 1st 1'
+[german-vpd] replace_k4_g128: p_target=1.000 p_emoset=1.000 argmax_target=1.00 ctrl_ce=18.959
+[german-vpd] replace_k4_g128 gen: 'gain for dinner last night!  11  11:o:o:o,:o,:o:o  11       '
+[german-vpd] replace_k4_g128 gen: 'm the best vacation ever. \xa0, \xa0, \xa0, \xa0, \xa0:o:o:o:o, lol:o:o:o:o'
+[german-vpd] replace_k4_g128 gen: '. See you tomorrow:o:o:o:o:o:o:o:o:o:o:o\n:o:o\n:o\n:o\n:o\n:o\n:o'
+[german-vpd] wrote /dev/shm/geo1b/run1b_streamC4096/emote4096.json

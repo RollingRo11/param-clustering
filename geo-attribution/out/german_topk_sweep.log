@@ -1,0 +1,34 @@
+[german-vpd] top-16 components by German specificity: [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]
+[german-vpd] reusing cached protocol data /dev/shm/geo1b/run1b_streamC4096/german_vpd_data.pt
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 16/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 32/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 48/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 64/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 80/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 96/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 112/112 matrices
+[german-vpd] replicated component editor on cuda:1
+[german-vpd] screening 493 candidates
+[german-vpd] k=1 guard<1: [+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+10,+1,+1,+2,+1] (k1:refine) de=+1.696 en=+0.019 romance=+0.940
+[german-vpd] k=1 guard<0.5: [+1,+1,+1,+1,+1,+1,+1,+8,+1,+1,+1,+1,+1,+1,+1,+1] (k1:c3634) de=+0.953 en=-0.016 romance=+0.347
+[german-vpd] k=1 guard<0.3: [+1,+1,+1,+10,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1] (k1:c1668) de=+0.638 en=-0.018 romance=+0.275
+[german-vpd] k=2 guard<1: [+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+10,+1,+1,+3,+1] (k2:refine) de=+1.848 en=+0.023 romance=+0.983
+[german-vpd] k=2 guard<0.5: [+1,+1,+1,+1,+1,+1,+1,+8,+1,+1,+1,+1,+1,+1,+1,+1] (k1:c3634) de=+0.953 en=-0.016 romance=+0.347
+[german-vpd] k=2 guard<0.3: [+1,+1,+1,+10,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1] (k1:c1668) de=+0.638 en=-0.018 romance=+0.275
+[german-vpd] k=4 guard<1: [+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+10,+1,+1,+2,+1] (k1:refine) de=+1.696 en=+0.019 romance=+0.940
+[german-vpd] k=4 guard<0.5: [+1,+1,+1,+1,+1,+1,+1,+8,+1,+1,+1,+1,+1,+1,+1,+1] (k1:c3634) de=+0.953 en=-0.016 romance=+0.347
+[german-vpd] k=4 guard<0.3: [+1,+1,+1,+10,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1] (k1:c1668) de=+0.638 en=-0.018 romance=+0.275
+[german-vpd] k=8 guard<1: [+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+10,+1,+1,+2,+1] (k1:refine) de=+1.696 en=+0.019 romance=+0.940
+[german-vpd] k=8 guard<0.5: [+1,+1,+1,+1,+1,+1,+1,+8,+1,+1,+1,+1,+1,+1,+1,+1] (k1:c3634) de=+0.953 en=-0.016 romance=+0.347
+[german-vpd] k=8 guard<0.3: [+1,+1,+1,+10,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1] (k1:c1668) de=+0.638 en=-0.018 romance=+0.275
+[german-vpd] k=16 guard<1: [+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+10,+1,+1,+3,+0] (k16:refine) de=+1.883 en=+0.014 romance=+0.956
+[german-vpd] k=16 guard<0.5: [+1,+1,+1,+1,+1,+1,+1,+8,+1,+1,+1,+1,+1,+1,+1,+1] (k1:c3634) de=+0.953 en=-0.016 romance=+0.347
+[german-vpd] k=16 guard<0.3: [+1,+1,+1,+10,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1] (k1:c1668) de=+0.638 en=-0.018 romance=+0.275
+[german-vpd] screening done (125s)
+[german-vpd] EVAL k=1 [+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+10,+1,+1,+2,+1]: de=+1.303 en_pile=+0.079 fr/es/it=+0.681/+0.801/+0.856
+[german-vpd] EVAL k=2 [+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+10,+1,+1,+3,+1]: de=+1.431 en_pile=+0.081 fr/es/it=+0.700/+0.842/+0.893
+[german-vpd] EVAL k=4 [+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+10,+1,+1,+2,+1]: de=+1.303 en_pile=+0.079 fr/es/it=+0.681/+0.801/+0.856
+[german-vpd] EVAL k=8 [+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+10,+1,+1,+2,+1]: de=+1.303 en_pile=+0.079 fr/es/it=+0.681/+0.801/+0.856
+[german-vpd] EVAL k=16 [+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+10,+1,+1,+3,+0]: de=+1.450 en_pile=+0.079 fr/es/it=+0.693/+0.824/+0.868
+[german-vpd] wrote /dev/shm/geo1b/run1b_streamC4096/german_topk_sweep.json
+SWEEP_DONE

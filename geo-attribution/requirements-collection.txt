@@ -1,0 +1,7 @@
+# Runtime used by the BF16/Flash-GIM collector and prep1b.py.
+transformers==4.57.6
+huggingface-hub==0.36.2
+hf-transfer>=0.1.9,<1
+datasets==4.8.5
+zstandard==0.25.0
+sentencepiece==0.2.2

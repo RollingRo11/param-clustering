@@ -1,0 +1,43 @@
+[german-vpd] reusing cached protocol data /dev/shm/geo1b/run1b_streamC4096/german_vpd_data.pt
+[german-vpd] row masks: 33123/376832 rows (8.8%) carry 80% of components' owned mass
+[german-vpd] row masks: 33123/376832 rows (8.8%) carry 80% of components' owned mass
+[german-vpd] 6 configs (masked x4, plain control x2)
+[german-vpd] masked,l_en=10,l_rom=10 step 0000: deCE=2.61 enKL=0.000 romKL=0.000
+[german-vpd] masked,l_en=10,l_rom=30 step 0000: deCE=2.61 enKL=0.000 romKL=0.000
+[german-vpd] masked,l_en=10,l_rom=10 step 0100: deCE=41.48 enKL=0.002 romKL=0.002
+[german-vpd] masked,l_en=10,l_rom=30 step 0100: deCE=50.14 enKL=0.002 romKL=0.001
+[german-vpd] masked,l_en=10,l_rom=10 step 0200: deCE=40.39 enKL=0.001 romKL=0.001
+[german-vpd] masked,l_en=10,l_rom=30 step 0200: deCE=48.88 enKL=0.001 romKL=0.001
+[german-vpd] masked,l_en=10,l_rom=10 step 0300: deCE=39.46 enKL=0.001 romKL=0.001
+[german-vpd] masked,l_en=10,l_rom=30 step 0300: deCE=47.87 enKL=0.001 romKL=0.001
+[german-vpd] masked,l_en=10,l_rom=10 step 0399: deCE=38.82 enKL=0.001 romKL=0.001
+[german-vpd] masked,l_en=10,l_rom=30 step 0399: deCE=46.88 enKL=0.001 romKL=0.001
+[german-vpd] masked,l_en=10,l_rom=10: de=+35.386 en_pile=+0.002 fr/es/it=+0.033/+0.017/+0.026 (141s)
+[german-vpd] masked,l_en=10,l_rom=30: de=+43.726 en_pile=+0.000 fr/es/it=+0.024/+0.021/+0.020 (141s)
+[german-vpd] masked,l_en=30,l_rom=30 step 0000: deCE=2.61 enKL=0.000 romKL=0.000
+[german-vpd] masked,l_en=100,l_rom=100 step 0000: deCE=2.61 enKL=0.000 romKL=0.000
+[german-vpd] masked,l_en=30,l_rom=30 step 0100: deCE=37.01 enKL=0.001 romKL=0.001
+[german-vpd] masked,l_en=100,l_rom=100 step 0100: deCE=44.79 enKL=0.001 romKL=0.001
+[german-vpd] masked,l_en=30,l_rom=30 step 0200: deCE=35.96 enKL=0.001 romKL=0.001
+[german-vpd] masked,l_en=100,l_rom=100 step 0200: deCE=43.20 enKL=0.001 romKL=0.001
+[german-vpd] masked,l_en=30,l_rom=30 step 0300: deCE=34.95 enKL=0.001 romKL=0.001
+[german-vpd] masked,l_en=100,l_rom=100 step 0300: deCE=41.81 enKL=0.001 romKL=0.000
+[german-vpd] masked,l_en=30,l_rom=30 step 0399: deCE=33.57 enKL=0.001 romKL=0.001
+[german-vpd] masked,l_en=100,l_rom=100 step 0399: deCE=39.55 enKL=0.001 romKL=0.000
+[german-vpd] masked,l_en=30,l_rom=30: de=+30.587 en_pile=+0.002 fr/es/it=+0.022/+0.005/+0.013 (138s)
+[german-vpd] plain,l_en=10,l_rom=10 step 0000: deCE=2.61 enKL=0.000 romKL=0.000
+[german-vpd] masked,l_en=100,l_rom=100: de=+36.951 en_pile=-0.000 fr/es/it=+0.010/+0.004/+0.010 (138s)
+[german-vpd] plain,l_en=10,l_rom=30 step 0000: deCE=2.61 enKL=0.000 romKL=0.000
+[german-vpd] plain,l_en=10,l_rom=10 step 0100: deCE=32.72 enKL=0.002 romKL=0.003
+[german-vpd] plain,l_en=10,l_rom=30 step 0100: deCE=37.16 enKL=0.005 romKL=0.004
+[german-vpd] plain,l_en=10,l_rom=10 step 0200: deCE=33.49 enKL=0.002 romKL=0.002
+[german-vpd] plain,l_en=10,l_rom=30 step 0200: deCE=36.79 enKL=0.002 romKL=0.002
+[german-vpd] plain,l_en=10,l_rom=10 step 0300: deCE=33.70 enKL=0.001 romKL=0.002
+[german-vpd] plain,l_en=10,l_rom=30 step 0300: deCE=36.37 enKL=0.001 romKL=0.001
+[german-vpd] plain,l_en=10,l_rom=10 step 0399: deCE=32.19 enKL=0.001 romKL=0.001
+[german-vpd] plain,l_en=10,l_rom=30 step 0399: deCE=34.48 enKL=0.001 romKL=0.001
+[german-vpd] plain,l_en=10,l_rom=10: de=+29.677 en_pile=+0.016 fr/es/it=+0.025/-0.005/+0.018 (140s)
+[german-vpd] plain,l_en=10,l_rom=30: de=+31.719 en_pile=+0.012 fr/es/it=+0.011/-0.018/+0.017 (140s)
+[german-vpd] selected masked l_en=10 l_rom=30
+[german-vpd] wrote /dev/shm/geo1b/run1b_streamC4096/german_lora_guided.json
+EXP2_DONE

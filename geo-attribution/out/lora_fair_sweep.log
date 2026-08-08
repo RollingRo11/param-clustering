@@ -1,0 +1,40 @@
+[german-vpd] reusing cached protocol data /dev/shm/geo1b/run1b_streamC4096/german_vpd_data.pt
+[german-vpd] materialized components [3634]: 16/112 matrices
+[german-vpd] materialized components [3634]: 32/112 matrices
+[german-vpd] materialized components [3634]: 48/112 matrices
+[german-vpd] materialized components [3634]: 64/112 matrices
+[german-vpd] materialized components [3634]: 80/112 matrices
+[german-vpd] materialized components [3634]: 96/112 matrices
+[german-vpd] materialized components [3634]: 112/112 matrices
+[german-vpd] lora multilingual B=2048 l=10 lr=0.0003 step 25: de=+1.48 en=+0.000 rom=+0.680
+[german-vpd] comp multilingual B=2048 l=10 lr=0.3 step 25: de=+0.61 en=+0.009 rom=+0.107
+[german-vpd] lora multilingual B=2048 l=10 lr=0.0003 step 50: de=+14.26 en=+0.003 rom=+0.581
+[german-vpd] comp multilingual B=2048 l=10 lr=0.3 step 50: de=+4.64 en=+0.017 rom=+0.101
+[german-vpd] lora multilingual B=2048 l=10 lr=0.0003 step 100: de=+16.66 en=-0.000 rom=+0.178
+[german-vpd] comp multilingual B=2048 l=10 lr=0.3 step 100: de=+8.84 en=+0.017 rom=+0.116
+[german-vpd] lora multilingual B=2048 l=10 lr=0.0003 step 200: de=+15.67 en=+0.000 rom=+0.113
+[german-vpd] comp multilingual B=2048 l=10 lr=0.3 step 200: de=+8.73 en=+0.014 rom=+0.081
+[german-vpd] lora multilingual B=2048 l=10 lr=0.0003 step 400: de=+14.68 en=+0.001 rom=+0.073
+[german-vpd] comp multilingual B=2048 l=10 lr=0.3 step 400: de=+8.64 en=+0.012 rom=+0.069
+[german-vpd] lora multilingual B=2048 l=10 lr=0.0003 step 800: de=+13.57 en=-0.000 rom=+0.051
+[german-vpd] comp multilingual B=2048 l=10 lr=0.3 step 800: de=+8.70 en=+0.011 rom=+0.068
+[german-vpd] lora multilingual B=2048 l=10 lr=0.001 step 25: de=+47.06 en=+0.011 rom=+0.095
+[german-vpd] comp multilingual B=2048 l=100 lr=0.3 step 25: de=+0.09 en=+0.003 rom=+0.087
+[german-vpd] lora multilingual B=2048 l=10 lr=0.001 step 50: de=+49.86 en=+0.007 rom=+0.086
+[german-vpd] comp multilingual B=2048 l=100 lr=0.3 step 50: de=+0.01 en=+0.001 rom=+0.011
+[german-vpd] lora multilingual B=2048 l=10 lr=0.001 step 100: de=+49.98 en=+0.005 rom=+0.062
+[german-vpd] comp multilingual B=2048 l=100 lr=0.3 step 100: de=-0.00 en=-0.000 rom=+0.002
+[german-vpd] lora multilingual B=2048 l=10 lr=0.001 step 200: de=+49.90 en=+0.003 rom=+0.047
+[german-vpd] comp multilingual B=2048 l=100 lr=0.3 step 200: de=+0.00 en=+0.001 rom=+0.002
+[german-vpd] lora multilingual B=2048 l=10 lr=0.001 step 400: de=+49.72 en=+0.003 rom=+0.040
+[german-vpd] comp multilingual B=2048 l=100 lr=0.3 step 400: de=+0.00 en=-0.000 rom=+0.002
+[german-vpd] comp multilingual B=2048 l=100 lr=0.3 step 800: de=+0.00 en=-0.001 rom=+0.001
+[german-vpd] lora multilingual B=2048 l=10 lr=0.001 step 800: de=+49.26 en=+0.000 rom=+0.031
+[german-vpd] comp multilingual B=64 l=10 lr=0.3 step 25: de=+0.73 en=+0.008 rom=+0.104
+[german-vpd] comp multilingual B=64 l=10 lr=0.3 step 50: de=+6.89 en=+0.015 rom=+0.120
+[german-vpd] lora multilingual B=2048 l=10 lr=0.003 step 25: de=+59.87 en=+0.026 rom=+0.011
+[german-vpd] comp multilingual B=64 l=10 lr=0.3 step 100: de=+7.36 en=+0.012 rom=+0.066
+[german-vpd] lora multilingual B=2048 l=10 lr=0.003 step 50: de=+61.27 en=+0.022 rom=-0.013
+[german-vpd] comp multilingual B=64 l=10 lr=0.3 step 200: de=+6.74 en=+0.011 rom=+0.049
+[german-vpd] lora multilingual B=2048 l=10 lr=0.003 step 100: de=+61.27 en=+0.020 rom=-0.001
+[german-vpd] comp multilingual B=64 l=10 lr=0.3 step 400: de=+6.87 en=+0.010 rom=+0.046

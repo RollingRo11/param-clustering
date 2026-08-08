@@ -1,0 +1,3 @@
+[german-vpd] loading model + decomposition…
+[german-vpd] catalog 4096 labels, evidence 4096 components
+[german-vpd] serving on http://0.0.0.0:8000  (Ctrl-C to stop)

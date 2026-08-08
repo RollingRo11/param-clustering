@@ -1,0 +1,95 @@
+[german-vpd] reusing cached protocol data /dev/shm/geo1b/run1m_stream/german_vpd_data.pt
+[german-vpd] LoRA r=1 on 112 matrices: 704512 trainable parameters; devices ['cuda:0', 'cuda:1']
+[german-vpd] lr=0.003,lambda=0.1 step 0000: deCE=2.613 enKL=0.0000
+[german-vpd] lr=0.003,lambda=1 step 0000: deCE=2.613 enKL=0.0000
+[german-vpd] lr=0.003,lambda=0.1 step 0100: deCE=43.245 enKL=0.0517
+[german-vpd] lr=0.003,lambda=1 step 0100: deCE=15.083 enKL=0.0166
+[german-vpd] lr=0.003,lambda=0.1 step 0200: deCE=42.853 enKL=0.0257
+[german-vpd] lr=0.003,lambda=1 step 0200: deCE=15.051 enKL=0.0086
+[german-vpd] lr=0.003,lambda=0.1 step 0300: deCE=42.495 enKL=0.0166
+[german-vpd] lr=0.003,lambda=1 step 0300: deCE=15.239 enKL=0.0051
+[german-vpd] lr=0.003,lambda=0.1 step 0399: deCE=43.017 enKL=0.0158
+[german-vpd] lr=0.003,lambda=1 step 0399: deCE=15.169 enKL=0.0060
+[german-vpd] lr=0.003,lambda=0.1: dev dCE de/en=+39.415/-0.024, eval de/en_pile=+39.970/+0.190 (131s)
+[german-vpd] lr=0.003,lambda=10 step 0000: deCE=2.613 enKL=0.0000
+[german-vpd] lr=0.003,lambda=1: dev dCE de/en=+12.289/-0.045, eval de/en_pile=+12.249/+0.023 (133s)
+[german-vpd] lr=0.003,lambda=30 step 0000: deCE=2.613 enKL=0.0000
+[german-vpd] lr=0.003,lambda=10 step 0100: deCE=55.040 enKL=0.0059
+[german-vpd] lr=0.003,lambda=30 step 0100: deCE=36.321 enKL=0.0065
+[german-vpd] lr=0.003,lambda=10 step 0200: deCE=54.570 enKL=0.0033
+[german-vpd] lr=0.003,lambda=30 step 0200: deCE=36.156 enKL=0.0021
+[german-vpd] lr=0.003,lambda=10 step 0300: deCE=54.147 enKL=0.0016
+[german-vpd] lr=0.003,lambda=30 step 0300: deCE=35.607 enKL=0.0038
+[german-vpd] lr=0.003,lambda=10 step 0399: deCE=52.784 enKL=0.0023
+[german-vpd] lr=0.003,lambda=10: dev dCE de/en=+50.149/-0.020, eval de/en_pile=+49.943/+0.018 (129s)
+[german-vpd] lr=0.003,lambda=100 step 0000: deCE=2.613 enKL=0.0000
+[german-vpd] lr=0.003,lambda=30 step 0399: deCE=34.033 enKL=0.0022
+[german-vpd] lr=0.003,lambda=30: dev dCE de/en=+31.048/-0.011, eval de/en_pile=+31.323/+0.003 (130s)
+[german-vpd] lr=0.01,lambda=0.1 step 0000: deCE=2.613 enKL=0.0000
+[german-vpd] lr=0.003,lambda=100 step 0100: deCE=34.195 enKL=0.0032
+[german-vpd] lr=0.01,lambda=0.1 step 0100: deCE=12.551 enKL=3.8766
+[german-vpd] lr=0.003,lambda=100 step 0200: deCE=32.696 enKL=0.0019
+[german-vpd] lr=0.01,lambda=0.1 step 0200: deCE=12.214 enKL=3.3409
+[german-vpd] lr=0.003,lambda=100 step 0300: deCE=31.964 enKL=0.0016
+[german-vpd] lr=0.01,lambda=0.1 step 0300: deCE=12.659 enKL=3.7762
+[german-vpd] lr=0.003,lambda=100 step 0399: deCE=30.806 enKL=0.0011
+[german-vpd] lr=0.003,lambda=100: dev dCE de/en=+28.125/-0.008, eval de/en_pile=+27.981/+0.014 (130s)
+[german-vpd] lr=0.01,lambda=1 step 0000: deCE=2.613 enKL=0.0000
+[german-vpd] lr=0.01,lambda=0.1 step 0399: deCE=12.720 enKL=3.2223
+[german-vpd] lr=0.01,lambda=0.1: dev dCE de/en=+9.832/+3.260, eval de/en_pile=+9.516/+8.352 (130s)
+[german-vpd] lr=0.01,lambda=10 step 0000: deCE=2.613 enKL=0.0000
+[german-vpd] lr=0.01,lambda=1 step 0100: deCE=16.730 enKL=3.8430
+[german-vpd] lr=0.01,lambda=10 step 0100: deCE=12.320 enKL=4.0340
+[german-vpd] lr=0.01,lambda=1 step 0200: deCE=15.245 enKL=3.7113
+[german-vpd] lr=0.01,lambda=10 step 0200: deCE=12.615 enKL=3.4292
+[german-vpd] lr=0.01,lambda=1 step 0300: deCE=14.103 enKL=3.6589
+[german-vpd] lr=0.01,lambda=10 step 0300: deCE=12.788 enKL=3.2223
+[german-vpd] lr=0.01,lambda=1 step 0399: deCE=13.227 enKL=3.8831
+[german-vpd] lr=0.01,lambda=1: dev dCE de/en=+10.626/+3.834, eval de/en_pile=+10.479/+8.320 (130s)
+[german-vpd] lr=0.01,lambda=30 step 0000: deCE=2.613 enKL=0.0000
+[german-vpd] lr=0.01,lambda=10 step 0399: deCE=12.915 enKL=3.2310
+[german-vpd] lr=0.01,lambda=10: dev dCE de/en=+10.766/+3.277, eval de/en_pile=+10.416/+8.377 (131s)
+[german-vpd] lr=0.01,lambda=100 step 0000: deCE=2.613 enKL=0.0000
+[german-vpd] lr=0.01,lambda=30 step 0100: deCE=12.541 enKL=3.7659
+[german-vpd] lr=0.01,lambda=100 step 0100: deCE=13.524 enKL=4.0485
+[german-vpd] lr=0.01,lambda=30 step 0200: deCE=12.298 enKL=3.8293
+[german-vpd] lr=0.01,lambda=100 step 0200: deCE=13.169 enKL=3.6960
+[german-vpd] lr=0.01,lambda=30 step 0300: deCE=12.325 enKL=3.1352
+[german-vpd] lr=0.01,lambda=100 step 0300: deCE=12.922 enKL=3.6546
+[german-vpd] lr=0.01,lambda=30 step 0399: deCE=12.550 enKL=3.1067
+[german-vpd] lr=0.01,lambda=30: dev dCE de/en=+10.135/+3.192, eval de/en_pile=+9.941/+8.357 (129s)
+[german-vpd] lr=0.03,lambda=0.1 step 0000: deCE=2.613 enKL=0.0000
+[german-vpd] lr=0.01,lambda=100 step 0399: deCE=12.990 enKL=3.9445
+[german-vpd] lr=0.01,lambda=100: dev dCE de/en=+10.198/+3.803, eval de/en_pile=+10.029/+8.542 (132s)
+[german-vpd] lr=0.03,lambda=1 step 0000: deCE=2.613 enKL=0.0000
+[german-vpd] lr=0.03,lambda=0.1 step 0100: deCE=13.289 enKL=3.8280
+[german-vpd] lr=0.03,lambda=1 step 0100: deCE=13.215 enKL=3.9653
+[german-vpd] lr=0.03,lambda=0.1 step 0200: deCE=13.157 enKL=3.5590
+[german-vpd] lr=0.03,lambda=1 step 0200: deCE=13.344 enKL=3.7286
+[german-vpd] lr=0.03,lambda=0.1 step 0300: deCE=13.266 enKL=3.2310
+[german-vpd] lr=0.03,lambda=1 step 0300: deCE=13.003 enKL=3.6669
+[german-vpd] lr=0.03,lambda=0.1 step 0399: deCE=12.616 enKL=3.4839
+[german-vpd] lr=0.03,lambda=0.1: dev dCE de/en=+10.413/+3.616, eval de/en_pile=+10.128/+8.711 (130s)
+[german-vpd] lr=0.03,lambda=10 step 0000: deCE=2.613 enKL=0.0000
+[german-vpd] lr=0.03,lambda=1 step 0399: deCE=12.845 enKL=3.9007
+[german-vpd] lr=0.03,lambda=1: dev dCE de/en=+10.148/+3.908, eval de/en_pile=+10.027/+8.565 (132s)
+[german-vpd] lr=0.03,lambda=30 step 0000: deCE=2.613 enKL=0.0000
+[german-vpd] lr=0.03,lambda=10 step 0100: deCE=13.873 enKL=3.9569
+[german-vpd] lr=0.03,lambda=30 step 0100: deCE=14.018 enKL=3.9511
+[german-vpd] lr=0.03,lambda=10 step 0200: deCE=13.412 enKL=3.2672
+[german-vpd] lr=0.03,lambda=30 step 0200: deCE=13.430 enKL=3.6780
+[german-vpd] lr=0.03,lambda=10 step 0300: deCE=12.943 enKL=3.1628
+[german-vpd] lr=0.03,lambda=30 step 0300: deCE=12.990 enKL=3.6357
+[german-vpd] lr=0.03,lambda=10 step 0399: deCE=12.715 enKL=4.1797
+[german-vpd] lr=0.03,lambda=10: dev dCE de/en=+10.458/+4.049, eval de/en_pile=+10.231/+8.807 (130s)
+[german-vpd] lr=0.03,lambda=100 step 0000: deCE=2.613 enKL=0.0000
+[german-vpd] lr=0.03,lambda=30 step 0399: deCE=12.714 enKL=3.8641
+[german-vpd] lr=0.03,lambda=30: dev dCE de/en=+10.274/+3.734, eval de/en_pile=+10.086/+8.442 (132s)
+[german-vpd] lr=0.03,lambda=100 step 0100: deCE=14.548 enKL=3.8860
+[german-vpd] lr=0.03,lambda=100 step 0200: deCE=14.183 enKL=3.6206
+[german-vpd] lr=0.03,lambda=100 step 0300: deCE=13.830 enKL=3.4887
+[german-vpd] lr=0.03,lambda=100 step 0399: deCE=13.389 enKL=3.6506
+[german-vpd] lr=0.03,lambda=100: dev dCE de/en=+10.687/+4.216, eval de/en_pile=+10.687/+8.553 (128s)
+[german-vpd] selected lr=0.003 lambda=10: dev dCE de/en=+50.149/-0.020
+[german-vpd] wrote result /dev/shm/geo1b/run1m_stream/german_lora_r1.json
+[german-vpd] wrote best adapter /dev/shm/geo1b/run1m_stream/german_lora_r1_best.pt

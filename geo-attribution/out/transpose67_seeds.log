@@ -1,0 +1,48 @@
+[geo67] tokens: torch.Size([168, 512]) (4.8s)
+[geo67] model loaded: 24 matrices, 28.3M decomposable params
+[geo67] captured 8192 positions (0.7s)
+[geo67] features [8192, 65522] (0.1s)
+[geo67] k-means: rows 0.1s, cols 0.5s
+[geo67] base CE 2.4923
+[geo67] rows_sph     removable 32/256  gini 0.718  max 0.2120  bank 1.0s
+[geo67] rows_euclid  removable 48/256  gini 0.774  max 0.2774  bank 1.0s
+[geo67] cols_sph     removable 32/256  gini 0.859  max 1.1632  bank 1.0s
+[geo67] cols_euclid  removable 32/256  gini 0.847  max 1.1930  bank 1.0s
+[geo67] timing {"data": 4.8, "capture": 0.7, "features": 0.1, "pca": 0.2, "kmeans_rows": 0.1, "kmeans_cols": 0.5, "bank_rows_sph": 1.0, "bank_rows_euclid": 1.0, "bank_cols_sph": 1.0, "bank_cols_euclid": 1.0, "total": 30.0}
+[geo67] wrote out/transpose67_s1.json  (total 30.0s)
+[geo67] tokens: torch.Size([168, 512]) (5.0s)
+[geo67] model loaded: 24 matrices, 28.3M decomposable params
+[geo67] captured 8192 positions (0.8s)
+[geo67] features [8192, 65522] (0.2s)
+[geo67] k-means: rows 0.1s, cols 0.5s
+[geo67] base CE 2.4923
+[geo67] rows_sph     removable 24/256  gini 0.763  max 0.3759  bank 1.0s
+[geo67] rows_euclid  removable 48/256  gini 0.746  max 0.1635  bank 1.0s
+[geo67] cols_sph     removable 28/256  gini 0.577  max 0.0708  bank 1.0s
+[geo67] cols_euclid  removable 28/256  gini 0.644  max 0.0793  bank 1.0s
+[geo67] timing {"data": 5.0, "capture": 0.8, "features": 0.2, "pca": 0.2, "kmeans_rows": 0.1, "kmeans_cols": 0.5, "bank_rows_sph": 1.0, "bank_rows_euclid": 1.0, "bank_cols_sph": 1.0, "bank_cols_euclid": 1.0, "total": 30.2}
+[geo67] wrote out/transpose67_s2.json  (total 30.2s)
+[geo67] tokens: torch.Size([168, 512]) (4.8s)
+[geo67] model loaded: 24 matrices, 28.3M decomposable params
+[geo67] captured 8192 positions (0.7s)
+[geo67] features [8192, 65525] (0.2s)
+[geo67] k-means: rows 0.1s, cols 0.5s
+[geo67] base CE 2.4923
+[geo67] rows_sph     removable 28/256  gini 0.626  max 0.1222  bank 1.0s
+[geo67] rows_euclid  removable 32/256  gini 0.882  max 1.3753  bank 1.0s
+[geo67] cols_sph     removable 32/256  gini 0.864  max 1.3216  bank 1.0s
+[geo67] cols_euclid  removable 32/256  gini 0.888  max 1.8570  bank 1.0s
+[geo67] timing {"data": 4.8, "capture": 0.7, "features": 0.2, "pca": 0.2, "kmeans_rows": 0.1, "kmeans_cols": 0.5, "bank_rows_sph": 1.0, "bank_rows_euclid": 1.0, "bank_cols_sph": 1.0, "bank_cols_euclid": 1.0, "total": 30.1}
+[geo67] wrote out/transpose67_s3.json  (total 30.1s)
+[geo67] tokens: torch.Size([168, 512]) (4.9s)
+[geo67] model loaded: 24 matrices, 28.3M decomposable params
+[geo67] captured 8192 positions (0.8s)
+[geo67] features [8192, 65523] (0.1s)
+[geo67] k-means: rows 0.1s, cols 0.5s
+[geo67] base CE 2.4923
+[geo67] rows_sph     removable 28/256  gini 0.651  max 0.0877  bank 1.0s
+[geo67] rows_euclid  removable 40/256  gini 0.782  max 0.3439  bank 1.0s
+[geo67] cols_sph     removable 32/256  gini 0.820  max 0.7959  bank 1.0s
+[geo67] cols_euclid  removable 32/256  gini 0.820  max 0.8262  bank 1.0s
+[geo67] timing {"data": 4.9, "capture": 0.8, "features": 0.1, "pca": 0.2, "kmeans_rows": 0.1, "kmeans_cols": 0.5, "bank_rows_sph": 1.0, "bank_rows_euclid": 1.0, "bank_cols_sph": 1.0, "bank_cols_euclid": 1.0, "total": 30.4}
+[geo67] wrote out/transpose67_s4.json  (total 30.4s)

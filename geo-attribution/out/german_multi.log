@@ -1,0 +1,109 @@
+[german-vpd] multilingual scalar fine-tune over [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]
+[german-vpd] reusing cached protocol data /dev/shm/geo1b/run1b_streamC4096/german_vpd_data.pt
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 16/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 32/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 48/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 64/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 80/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 96/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 112/112 matrices
+[german-vpd] replicated component editor on cuda:1
+[german-vpd] warm-start pool: 373 vectors
+[german-vpd] warm init (l_en=3, l_rom=3): [+1,+1,+1,+1,+1,+20,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1] [one_hot:c1406] deCE=3.14 enKL=0.011 romKL=0.128
+[german-vpd] warm init (l_en=10, l_rom=10): [+1,+1,+1,+1,+1,+0,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1] [one_hot:c1406] deCE=2.69 enKL=0.001 romKL=0.001
+[german-vpd] warm init (l_en=10, l_rom=30): [+1,+1,+1,+1,+2,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1] [one_hot:c2803] deCE=2.69 enKL=0.001 romKL=0.001
+[german-vpd] warm init (l_en=30, l_rom=30): [+1,+1,+1,+1,+1,+0,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1] [one_hot:c1406] deCE=2.69 enKL=0.001 romKL=0.001
+[german-vpd] warm init (l_en=30, l_rom=100): [+1,+1,+1,+1,+2,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1] [one_hot:c2803] deCE=2.69 enKL=0.001 romKL=0.001
+Traceback (most recent call last):
+  File "/workspace/param-clustering/geo-attribution/german_vpd_multi.py", line 397, in <module>
+    main()
+  File "/workspace/param-clustering/geo-attribution/german_vpd_multi.py", line 277, in main
+    trained, history = train(
+                       ^^^^^^
+  File "/workspace/param-clustering/geo-attribution/german_vpd_multi.py", line 188, in train
+    outputs = [future.result() for future in futures]
+               ^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 456, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/usr/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/param-clustering/geo-attribution/german_vpd_multi.py", line 116, in _train_worker
+    logits = editor.logits(batch, alpha_batch)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/param-clustering/geo-attribution/german_vpd_1b.py", line 424, in logits
+    return self.target(idx)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1773, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1784, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/param-clustering/geo-attribution/geo1b.py", line 46, in forward
+    return self.hf(input_ids=idx, use_cache=False).logits
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1773, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1784, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py", line 918, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/models/llama/modeling_llama.py", line 459, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+                                       ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1773, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1784, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py", line 1072, in wrapper
+    outputs = func(self, *args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/models/llama/modeling_llama.py", line 395, in forward
+    hidden_states = decoder_layer(
+                    ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py", line 94, in __call__
+    return super().__call__(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1773, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1784, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/utils/deprecation.py", line 172, in wrapped_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/models/llama/modeling_llama.py", line 294, in forward
+    hidden_states, _ = self.self_attn(
+                       ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1773, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1784, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/utils/deprecation.py", line 172, in wrapped_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/transformers/models/llama/modeling_llama.py", line 264, in forward
+    attn_output = self.o_proj(attn_output)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1773, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1784, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/param-clustering/geo-attribution/german_vpd_1b.py", line 410, in forward
+    out = out + (scale[:, slot].view(shape).to(out.dtype)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 30.00 MiB. GPU 0 has a total capacity of 178.35 GiB of which 11.81 MiB is free. Including non-PyTorch memory, this process has 178.32 GiB memory in use. Of the allocated memory 177.29 GiB is allocated by PyTorch, and 225.29 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)

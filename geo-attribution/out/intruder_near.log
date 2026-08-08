@@ -1,0 +1,18 @@
+[german-vpd] 500 components with enough evidence (of 4095)
+[german-vpd] nearest-neighbour intruders (rank 1); mean cosine 0.8098
+[german-vpd] 50/500  running accuracy 0.870 (99,735 in / 21,440 out)
+[german-vpd] 100/500  running accuracy 0.887 (159,281 in / 34,264 out)
+[german-vpd] 150/500  running accuracy 0.901 (225,697 in / 48,466 out)
+[german-vpd] 200/500  running accuracy 0.911 (277,531 in / 59,296 out)
+[german-vpd] 250/500  running accuracy 0.894 (334,370 in / 71,352 out)
+[german-vpd] 300/500  running accuracy 0.890 (395,183 in / 84,278 out)
+[german-vpd] 350/500  running accuracy 0.903 (455,976 in / 97,628 out)
+[german-vpd] 400/500  running accuracy 0.877 (521,036 in / 112,144 out)
+[german-vpd] 450/500  running accuracy 0.880 (596,947 in / 129,334 out)
+[german-vpd] 500/500  running accuracy 0.888 (621,203 in / 134,625 out)
+[german-vpd] 
+intruder detection accuracy 0.8881 on 277 trials (chance 0.20)
+[german-vpd]   mono     0.9091  (n=253)
+[german-vpd]   partial  0.6667  (n=24)
+[german-vpd] guesses {1: 67, 2: 46, 3: 53, 4: 64, 5: 47}  truths {1: 67, 2: 47, 3: 52, 4: 63, 5: 48}
+[german-vpd] wrote /dev/shm/geo1b/run1b_streamC4096/intruder_near.json

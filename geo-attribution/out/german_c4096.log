@@ -1,0 +1,84 @@
++ cd /workspace/param-clustering/geo-attribution
++ CUDA_VISIBLE_DEVICES=0
++ python3.12 german_vpd_1b.py --tag run1b_streamC4096 --rank_only
+[german-vpd] streaming 5632 aligned German/English Europarl tokens
+Repo card metadata block was not found. Setting CardData to empty.
+[german-vpd] cached protocol data at /dev/shm/geo1b/run1b_streamC4096/german_vpd_data.pt
+[german-vpd] selected component 4030; top German-specific candidates [4030, 2637, 841, 1668, 2803] (0.7s)
+[german-vpd] rank-only run complete: /dev/shm/geo1b/run1b_streamC4096/german_vpd_ranking.json
++ test -f /dev/shm/geo1b/run1b_streamC4096/german_vpd_ranking.json
+++ python3.12 -c '
+import json
+d=json.load(open('\''/dev/shm/geo1b/run1b_streamC4096/german_vpd_ranking.json'\''))
+print('\'' '\''.join(str(r['\''component'\'']) for r in d['\''inspected_candidates'\''][:8]))'
++ COMPS='4030 2637 841 1668 2803 1406 1093 3634'
++ echo 'TOP8=4030 2637 841 1668 2803 1406 1093 3634'
+TOP8=4030 2637 841 1668 2803 1406 1093 3634
++ python3.12 german_vpd_1b.py --tag run1b_streamC4096 --components 4030 2637 841 1668 2803 1406 1093 3634 --kl_lambdas 0.1 1.0 10.0 30.0 100.0
+[german-vpd] reusing cached protocol data /dev/shm/geo1b/run1b_streamC4096/german_vpd_data.pt
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634]: 16/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634]: 32/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634]: 48/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634]: 64/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634]: 80/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634]: 96/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634]: 112/112 matrices
+[german-vpd] replicated component editor on cuda:1
+[german-vpd] components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634] squared-weight mass fractions 3.944135e-05, 6.027644e-05, 3.267323e-05, 9.553155e-06, 1.619053e-06, 1.530578e-06, 3.181329e-05, 3.459200e-05; editors on ['cuda:0', 'cuda:1']
+[german-vpd] warm-start scan over 146 vectors; most destructive: [-20,-20,-20,-20,-20,-20,-20,-20]:deCE=14.87/enKL=11.925, [-15,-15,-15,-15,-15,-15,-15,-15]:deCE=15.45/enKL=12.689, [-12,-12,-12,-12,-12,-12,-12,-12]:deCE=12.81/enKL=9.682, [+15,+15,+15,+15,+15,+15,+15,+15]:deCE=14.25/enKL=10.075, [+20,+20,+20,+20,+20,+20,+20,+20]:deCE=19.36/enKL=16.557, [+1,-20,+1,+1,+1,+1,+1,+1]:deCE=14.69/enKL=11.676, [+1,-12,+1,+1,+1,+1,+1,+1]:deCE=12.26/enKL=8.468, [+1,+20,+1,+1,+1,+1,+1,+1]:deCE=12.23/enKL=7.962
+[german-vpd] warm-start inits lambda=0.1->[+1,+20,+1,+1,+1,+1,+1,+1], lambda=1->[+1,+1,+1,+20,+1,+1,+1,+1], lambda=10->[+1,+1,+1,+20,+1,+1,+1,+1], lambda=30->[+1,+1,+1,+1,+1,+20,+1,+1], lambda=100->[+1,+1,+1,+1,+1,+1,+1,+1]
+[german-vpd] step 0000: lambda=0.1 alpha=[+1.1,+19.9,+0.9,+1.1,+0.9,+0.9,+0.9,+1.1] deCE=12.418 enKL=7.8247, lambda=1 alpha=[+0.9,+0.9,+0.9,+20.1,+1.1,+0.9,+0.9,+1.1] deCE=6.882 enKL=0.1622, lambda=10 alpha=[+0.9,+0.9,+1.1,+19.9,+1.1,+0.9,+0.9,+1.1] deCE=6.882 enKL=0.1622, lambda=30 alpha=[+0.9,+1.1,+0.9,+0.9,+1.1,+20.1,+1.1,+0.9] deCE=3.041 enKL=0.0098, lambda=100 alpha=[+0.9,+0.9,+1.1,+1.1,+1.1,+0.9,+0.9,+0.9] deCE=2.613 enKL=0.0000
+[german-vpd] step 0025: lambda=0.1 alpha=[+0.896,+20.5,-0.245,+1.58,+1.02,-0.207,+1.61,+1.46] deCE=12.595 enKL=7.9521, lambda=1 alpha=[-1.46,-0.108,-1.56,+22.6,+3.21,-1.49,-1.51,+3.72] deCE=7.994 enKL=0.1823, lambda=10 alpha=[-0.775,+0.509,+1.76,+20.7,+2.6,-1.5,-1.42,+3.35] deCE=7.078 enKL=0.1475, lambda=30 alpha=[+0.589,+1.03,+0.789,+1.83,+0.996,+22.4,+1.22,+0.0528] deCE=3.482 enKL=0.0135, lambda=100 alpha=[+0.924,+1.05,+1.06,+1.14,+1.14,+0.362,+1,+1] deCE=2.885 enKL=0.0007
+[german-vpd] step 0050: lambda=0.1 alpha=[+0.784,+20.5,-0.766,+1.14,+1.14,-0.662,+1.69,+1.46] deCE=12.391 enKL=8.4901, lambda=1 alpha=[-2.71,+0.689,-3.37,+25.2,+3.63,-4.17,-4.14,+6.51] deCE=10.056 enKL=0.6055, lambda=10 alpha=[-2.24,+0.834,+2.13,+21.6,+2.59,-4.23,-2.66,+5.72] deCE=7.926 enKL=0.2906, lambda=30 alpha=[+0.392,+1.03,+0.812,+1.92,+0.933,+24.6,+1.22,-0.0831] deCE=3.589 enKL=0.0179, lambda=100 alpha=[+0.965,+1,+1.02,+1.09,+1.15,+0.387,+1.06,+0.995] deCE=2.655 enKL=0.0007
+[german-vpd] step 0075: lambda=0.1 alpha=[+0.812,+20.2,-1.15,+0.909,+1.48,-1.24,+1.48,+2.25] deCE=11.753 enKL=7.7502, lambda=1 alpha=[-2.6,+2.13,-3.94,+27.2,+3.58,-6.61,-6.16,+9] deCE=12.102 enKL=1.1816, lambda=10 alpha=[-2.6,+0.754,+2.53,+21.9,+2.6,-7.06,-2.28,+6.62] deCE=8.709 enKL=0.4699, lambda=30 alpha=[+0.149,+0.996,+0.816,+2.21,+0.889,+26.6,+1.25,-0.496] deCE=3.553 enKL=0.0309, lambda=100 alpha=[+0.981,+0.993,+1.02,+1.05,+1.13,+0.45,+0.976,+1.02] deCE=2.621 enKL=0.0007
+[german-vpd] step 0100: lambda=0.1 alpha=[+1.83,+20.7,-1.93,+1.39,+2.28,-2.06,+2.14,+3.82] deCE=12.572 enKL=7.7145, lambda=1 alpha=[-2.92,+2.08,-2.71,+27.4,+4.44,-7.75,-6.25,+9.08] deCE=12.408 enKL=0.7332, lambda=10 alpha=[-2.45,+0.716,+2.77,+21.9,+2.83,-9.66,-1.71,+6.56] deCE=9.185 enKL=0.2471, lambda=30 alpha=[-0.183,+0.951,+0.86,+2.38,+0.858,+28.5,+1.22,-1.14] deCE=3.925 enKL=0.0304, lambda=100 alpha=[+0.955,+0.96,+1.01,+1.08,+1.13,+0.441,+1.02,+1.09] deCE=2.616 enKL=0.0007
+[german-vpd] step 0125: lambda=0.1 alpha=[+1.9,+20.9,-2.24,+1.58,+2.27,-2.19,+2.36,+4.06] deCE=12.632 enKL=7.5778, lambda=1 alpha=[-3.23,+2.03,-1.3,+27.2,+5.27,-8.69,-5.87,+9.22] deCE=11.351 enKL=0.6483, lambda=10 alpha=[-2.15,+0.726,+2.81,+22,+3.1,-12.1,-1.63,+6.56] deCE=8.463 enKL=0.2052, lambda=30 alpha=[-0.414,+0.894,+0.904,+2.43,+0.862,+30.3,+1.18,-2.05] deCE=4.640 enKL=0.0358, lambda=100 alpha=[+0.966,+1,+0.996,+1.11,+1.14,+0.398,+0.996,+1.02] deCE=2.882 enKL=0.0007
+[german-vpd] step 0150: lambda=0.1 alpha=[+2.04,+20.7,-2.39,+1.59,+2.14,-2.46,+2.47,+4.1] deCE=12.423 enKL=8.5533, lambda=1 alpha=[-3.64,+2.2,-1.09,+27.2,+5.62,-9.65,-5.9,+9.18] deCE=11.775 enKL=0.9028, lambda=10 alpha=[-1.91,+0.712,+2.77,+22,+3.21,-14.5,-1.69,+6.55] deCE=8.567 enKL=0.3319, lambda=30 alpha=[-0.679,+0.855,+0.88,+2.18,+0.845,+31.8,+1.05,-3.4] deCE=4.886 enKL=0.0475, lambda=100 alpha=[+0.942,+0.957,+1.03,+1.07,+1.11,+0.402,+1,+1.04] deCE=2.655 enKL=0.0007
+[german-vpd] step 0175: lambda=0.1 alpha=[+2.15,+20.7,-2.46,+1.57,+2.14,-2.6,+2.53,+4.1] deCE=11.805 enKL=8.1111, lambda=1 alpha=[-4.29,+2.04,-0.936,+27.2,+6.07,-10.7,-5.89,+9.18] deCE=12.109 enKL=1.1618, lambda=10 alpha=[-1.65,+0.728,+2.73,+22,+3.01,-16.8,-1.75,+6.56] deCE=8.912 enKL=0.4690, lambda=30 alpha=[-0.934,+0.795,+0.886,+2.42,+0.888,+32.6,+0.881,-4.2] deCE=4.543 enKL=0.0815, lambda=100 alpha=[+0.976,+0.939,+1.03,+1.12,+1.2,+0.509,+1.03,+1.02] deCE=2.623 enKL=0.0007
+[german-vpd] step 0200: lambda=0.1 alpha=[+2.16,+20.7,-2.51,+1.55,+1.87,-3.02,+2.36,+4.15] deCE=12.547 enKL=7.7259, lambda=1 alpha=[-5.61,+1.88,-0.865,+27.2,+6.2,-11.6,-5.9,+9.13] deCE=12.295 enKL=0.6948, lambda=10 alpha=[-1.32,+0.735,+2.72,+21.9,+3.24,-19.1,-1.83,+6.54] deCE=9.247 enKL=0.2436, lambda=30 alpha=[-1.03,+0.731,+0.927,+3.44,+0.897,+32.9,+0.86,-4.51] deCE=5.138 enKL=0.0664, lambda=100 alpha=[+0.943,+1.01,+1.01,+1.11,+1.13,+0.419,+0.985,+1.01] deCE=2.614 enKL=0.0007
+[german-vpd] step 0225: lambda=0.1 alpha=[+2.14,+20.7,-2.59,+1.52,+1.95,-3.15,+2.26,+4.2] deCE=12.554 enKL=7.6013, lambda=1 alpha=[-7.21,+1.6,-0.827,+27.3,+6.15,-12.5,-5.99,+9.19] deCE=11.473 enKL=0.6470, lambda=10 alpha=[-1.25,+0.784,+2.69,+21.8,+3.49,-21.6,-1.95,+6.54] deCE=8.516 enKL=0.2039, lambda=30 alpha=[-1.19,+0.659,+0.959,+5.37,+0.866,+33.1,+0.845,-4.72] deCE=5.666 enKL=0.0554, lambda=100 alpha=[+0.983,+0.974,+1.06,+1.07,+1.11,+0.427,+1.01,+1.02] deCE=2.883 enKL=0.0007
+[german-vpd] step 0250: lambda=0.1 alpha=[+2.62,+20.1,-2.78,+1.53,+1.68,-3.53,+2.36,+4.24] deCE=12.294 enKL=8.3020, lambda=1 alpha=[-8.65,+1.68,-0.571,+27.3,+6.21,-13.2,-5.9,+9.25] deCE=11.767 enKL=0.8854, lambda=10 alpha=[-1.36,+0.771,+2.58,+21.8,+3.4,-24,-2.05,+6.56] deCE=8.616 enKL=0.3128, lambda=30 alpha=[-1.35,+0.385,+1.03,+9.92,+0.921,+33.3,+0.782,-5.04] deCE=5.800 enKL=0.0714, lambda=100 alpha=[+0.951,+1.02,+1.05,+1.07,+1.15,+0.386,+1.03,+1.05] deCE=2.656 enKL=0.0007
+[german-vpd] step 0275: lambda=0.1 alpha=[+2.36,+19.8,-2.76,+1.55,+1.19,-4.57,+1.9,+4.3] deCE=11.731 enKL=7.3718, lambda=1 alpha=[-10.3,+1.72,-0.326,+27.3,+6.55,-13.6,-5.73,+9.43] deCE=12.222 enKL=1.1352, lambda=10 alpha=[-1.49,+0.741,+2.57,+21.7,+3.2,-26.8,-2.08,+6.53] deCE=9.002 enKL=0.4587, lambda=30 alpha=[-1.62,+0.271,+1.27,+10.3,+0.775,+33.3,+0.558,-5.15] deCE=5.293 enKL=0.1077, lambda=100 alpha=[+0.957,+1.04,+0.985,+1.15,+1.12,+0.469,+1.05,+1.07] deCE=2.625 enKL=0.0007
+[german-vpd] step 0300: lambda=0.1 alpha=[+1.88,+20.4,-3.03,+1.59,+1.62,-6.08,+1.96,+4.14] deCE=12.508 enKL=7.6734, lambda=1 alpha=[-10.5,+1.54,+0.306,+27.2,+7.16,-13.9,-5.37,+9.34] deCE=12.450 enKL=0.7224, lambda=10 alpha=[-1.74,+0.725,+2.52,+21.6,+3.05,-29.2,-2.22,+6.53] deCE=9.346 enKL=0.2363, lambda=30 alpha=[-1.54,+0.26,+1.16,+10.2,+0.87,+33.2,+0.66,-5.18] deCE=5.718 enKL=0.0839, lambda=100 alpha=[+0.969,+1.01,+0.993,+1.08,+1.12,+0.42,+1.05,+1.06] deCE=2.617 enKL=0.0006
+[german-vpd] step 0325: lambda=0.1 alpha=[+3.1,+21.7,-4.04,+2.04,+3.05,-5.31,+3.18,+3.52] deCE=12.800 enKL=8.4483, lambda=1 alpha=[-10.3,+1.5,+0.34,+27.3,+7.63,-14.4,-5.5,+9.32] deCE=11.533 enKL=0.6521, lambda=10 alpha=[-1.87,+0.71,+2.43,+21.6,+2.98,-31.6,-2.32,+6.48] deCE=8.609 enKL=0.2066, lambda=30 alpha=[-1.56,+0.274,+1.18,+10.2,+0.861,+33.2,+0.639,-5.19] deCE=6.107 enKL=0.0632, lambda=100 alpha=[+0.949,+0.991,+1.05,+1.07,+1.1,+0.471,+0.977,+1.03] deCE=2.883 enKL=0.0007
+[german-vpd] step 0350: lambda=0.1 alpha=[+3.17,+21.8,-4.13,+2.05,+3.14,-5.33,+3.26,+3.46] deCE=12.521 enKL=8.6962, lambda=1 alpha=[-10.1,+1.63,+0.159,+27.5,+7.76,-14.9,-5.61,+9.15] deCE=11.778 enKL=0.8995, lambda=10 alpha=[-1.96,+0.696,+2.23,+21.5,+2.78,-33.7,-2.4,+6.38] deCE=8.700 enKL=0.2974, lambda=30 alpha=[-1.56,+0.287,+1.16,+10.2,+0.85,+33.1,+0.654,-5.21] deCE=5.836 enKL=0.0729, lambda=100 alpha=[+0.975,+0.967,+1.03,+1.09,+1.17,+0.415,+1.03,+1.01] deCE=2.655 enKL=0.0007
+[german-vpd] step 0375: lambda=0.1 alpha=[+3.04,+21.6,-4.17,+2.05,+3,-5.42,+3.27,+3.31] deCE=12.124 enKL=8.1466, lambda=1 alpha=[-10.4,+1.66,-0.222,+27.4,+7.65,-15.3,-5.51,+9.4] deCE=12.220 enKL=1.1384, lambda=10 alpha=[-1.67,+0.818,+1.95,+21.4,+2.77,-35.4,-2.56,+6.32] deCE=8.957 enKL=0.4377, lambda=30 alpha=[-1.56,+0.274,+1.18,+10.2,+0.859,+33.1,+0.645,-5.21] deCE=5.289 enKL=0.1084, lambda=100 alpha=[+0.954,+0.936,+1.01,+1.06,+1.15,+0.411,+1.02,+1.05] deCE=2.623 enKL=0.0007
+[german-vpd] step 0399: lambda=0.1 alpha=[+2.66,+21,-4.2,+2.03,+2.41,-5.65,+3.36,+3.04] deCE=11.879 enKL=8.1673, lambda=1 alpha=[-10.5,+1.52,-0.182,+27.2,+7.76,-15.5,-5,+9.83] deCE=12.219 enKL=1.1388, lambda=10 alpha=[-1.42,+0.801,+1.66,+21.3,+2.8,-36.5,-2.53,+6.29] deCE=8.980 enKL=0.4400, lambda=30 alpha=[-1.57,+0.284,+1.18,+10.2,+0.864,+33.1,+0.638,-5.2] deCE=5.291 enKL=0.1074, lambda=100 alpha=[+0.952,+1.06,+0.995,+1.09,+1.1,+0.399,+1.02,+0.99] deCE=2.622 enKL=0.0007
+[german-vpd] selected source=refine, alpha=[+1,+1,+1,+21,+1,+1,+1,+1]; dev dCE de/en=+4.901/+0.075
+[german-vpd] eval german_europarl: CE 2.664 -> 7.103 (+4.439), KL=4.4994
+[german-vpd] eval english_pile: CE 2.070 -> 2.429 (+0.359), KL=0.3661
+[german-vpd] eval english_europarl: CE 3.041 -> 3.114 (+0.074), KL=0.2296
+[german-vpd] eval french_europarl: CE 2.527 -> 5.353 (+2.826), KL=2.9257
+[german-vpd] eval spanish_europarl: CE 2.836 -> 5.475 (+2.640), KL=2.7432
+[german-vpd] eval italian_europarl: CE 2.523 -> 6.278 (+3.754), KL=3.8248
+[german-vpd] eval codeparrot: CE 1.697 -> 1.889 (+0.192), KL=0.1978
+[german-vpd] literal weight-edit equivalence: max |delta logit|=0.000e+00
+[german-vpd] wrote result /dev/shm/geo1b/run1b_streamC4096/german_vpd_prop1b_k8.json
+[german-vpd] wrote replayable scalar adapter /dev/shm/geo1b/run1b_streamC4096/german_vpd_prop1b_k8_adapter.pt
++ python3.12 german_vpd_guard.py --tag run1b_streamC4096 --result_name german_vpd_prop1b_k8.json
+[german-vpd] guarded reselection over components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634]
+[german-vpd] reusing cached protocol data /dev/shm/geo1b/run1b_streamC4096/german_vpd_data.pt
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634]: 16/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634]: 32/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634]: 48/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634]: 64/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634]: 80/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634]: 96/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634]: 112/112 matrices
+[german-vpd] replicated component editor on cuda:1
+[german-vpd] screening 263 candidates
+[german-vpd] screening done (35s)
+[german-vpd] guard<1: [+1,+1,+1,+13,+1,+1,+1,+1] (guard_refine) dev de=+1.513 en=-0.024 romance_max=+0.869
+[german-vpd] guard<0.5: [+1,+1,+1,+1,+1,+1,+1,+8] (prior:dev_screen) dev de=+0.953 en=-0.016 romance_max=+0.347
+[german-vpd] guard<0.3: [+1,+1,+1,+10,+1,+1,+1,+1] (one_hot:c1668) dev de=+0.638 en=-0.018 romance_max=+0.275
+[german-vpd] eval german_europarl: CE 2.664 -> 3.925 (+1.261)
+[german-vpd] eval english_pile: CE 2.070 -> 2.089 (+0.018)
+[german-vpd] eval english_europarl: CE 3.041 -> 3.021 (-0.020)
+[german-vpd] eval codeparrot: CE 1.697 -> 1.724 (+0.027)
+[german-vpd] eval french_europarl_heldout: CE 2.518 -> 2.977 (+0.459)
+[german-vpd] eval spanish_europarl_heldout: CE 2.816 -> 3.476 (+0.660)
+[german-vpd] eval italian_europarl_heldout: CE 2.609 -> 3.331 (+0.722)
+[german-vpd] literal weight-edit equivalence: max |delta logit|=0.000e+00
+[german-vpd] wrote /dev/shm/geo1b/run1b_streamC4096/german_vpd_prop1b_k8_guarded.json
++ echo GERMAN_C4096_DONE
+GERMAN_C4096_DONE

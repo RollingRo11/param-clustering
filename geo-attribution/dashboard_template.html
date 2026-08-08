@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auto-interp — Llama-3.2-1B, C=4096 parameter decomposition</title>
+<style>
+:root {
+  color-scheme: light;
+  --plane:      #f9f9f7;
+  --surface:    #fcfcfb;
+  --ink:        #0b0b0b;
+  --ink-2:      #52514e;
+  --muted:      #898781;
+  --grid:       #e1e0d9;
+  --axis:       #c3c2b7;
+  --border:     rgba(11,11,11,0.10);
+  --mono:       #1c5cab;
+  --partial:    #3987e5;
+  --poly:       #86b6ef;
+  --seq:        #2a78d6;
+  --wash:       rgba(42,120,214,0.07);
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --plane:   #0d0d0d;
+    --surface: #1a1a19;
+    --ink:     #ffffff;
+    --ink-2:   #c3c2b7;
+    --muted:   #898781;
+    --grid:    #2c2c2a;
+    --axis:    #383835;
+    --border:  rgba(255,255,255,0.10);
+    --mono:    #9ec5f4;
+    --partial: #3987e5;
+    --poly:    #184f95;
+    --seq:     #3987e5;
+    --wash:    rgba(57,135,229,0.13);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --plane:   #0d0d0d;
+  --surface: #1a1a19;
+  --ink:     #ffffff;
+  --ink-2:   #c3c2b7;
+  --muted:   #898781;
+  --grid:    #2c2c2a;
+  --axis:    #383835;
+  --border:  rgba(255,255,255,0.10);
+  --mono:    #9ec5f4;
+  --partial: #3987e5;
+  --poly:    #184f95;
+  --seq:     #3987e5;
+  --wash:    rgba(57,135,229,0.13);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--plane); color: var(--ink);
+  font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1180px; margin: 0 auto; padding: 34px 22px 80px; }
+
+header h1 { font-size: 24px; font-weight: 640; margin: 0 0 6px; letter-spacing: -0.01em; }
+header p  { margin: 0; color: var(--ink-2); font-size: 14px; max-width: 78ch; }
+header .prov { color: var(--muted); font-size: 12.5px; margin-top: 9px; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; }
+
+.theme-toggle {
+  position: absolute; top: 26px; right: 22px; background: var(--surface);
+  border: 1px solid var(--border); color: var(--ink-2); border-radius: 7px;
+  padding: 6px 11px; font: inherit; font-size: 12.5px; cursor: pointer;
+}
+.theme-toggle:hover { background: var(--wash); }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+         gap: 12px; margin: 26px 0 8px; }
+.tile { background: var(--surface); border: 1px solid var(--border);
+        border-radius: 11px; padding: 15px 17px; }
+.tile .v { font-size: 27px; font-weight: 630; letter-spacing: -0.02em; line-height: 1.15; }
+.tile .k { color: var(--ink-2); font-size: 12.5px; margin-top: 3px; }
+.tile .s { color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+
+.card { background: var(--surface); border: 1px solid var(--border);
+        border-radius: 12px; padding: 19px 21px 17px; margin-top: 16px; }
+.card h2 { font-size: 15.5px; font-weight: 615; margin: 0 0 3px; }
+.card .sub { color: var(--ink-2); font-size: 13px; margin: 0 0 15px; max-width: 82ch; }
+.card .note { color: var(--muted); font-size: 12px; margin: 13px 0 0; max-width: 82ch; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+
+.legend { display: flex; flex-wrap: wrap; gap: 15px; margin: 0 0 13px;
+          font-size: 12.5px; color: var(--ink-2); }
+.legend i { width: 11px; height: 11px; border-radius: 3px; display: inline-block;
+            margin-right: 6px; vertical-align: -1px; }
+
+/* ---- stacked bar ---- */
+.stack { display: flex; width: 100%; height: 34px; border-radius: 5px;
+         overflow: hidden; gap: 2px; background: var(--surface); }
+.stack span { display: block; height: 100%; position: relative; cursor: default; }
+.stack span:first-child { border-radius: 5px 0 0 5px; }
+.stack span:last-child  { border-radius: 0 5px 5px 0; }
+.stacklabels { display: flex; gap: 18px; margin-top: 9px; font-size: 12.5px;
+               color: var(--ink-2); flex-wrap: wrap; }
+.stacklabels b { color: var(--ink); font-weight: 620; font-variant-numeric: tabular-nums; }
+
+.calrow { margin-bottom: 17px; }
+.calrow .who { font-size: 12.5px; color: var(--ink-2); margin-bottom: 6px;
+               display: flex; justify-content: space-between; }
+.calrow .who em { font-style: normal; color: var(--muted); }
+
+/* ---- evidence-budget shift ---- */
+.shiftrow { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.shiftlab { width: 74px; flex: none; font-size: 12.5px; color: var(--ink-2);
+            text-align: right; font-variant-numeric: tabular-nums; }
+.shiftrow .stack { height: 30px; }
+.shifttiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+              margin-top: 18px; }
+.shifttiles div { background: var(--surface); border: 1px solid var(--border);
+                  border-radius: 8px; padding: 11px 12px; }
+.shifttiles .v { font-size: 21px; font-weight: 630; letter-spacing: -0.02em; }
+.shifttiles .k { color: var(--ink-2); font-size: 12px; margin-top: 2px; }
+table.shiftmat th { font-size: 11.5px; text-transform: uppercase;
+                    letter-spacing: 0.04em; color: var(--muted);
+                    padding: 4px 9px; font-weight: 600; }
+table.shiftmat th.num, table.shiftmat td.num { text-align: right; }
+table.shiftmat td { padding: 6px 9px; font-variant-numeric: tabular-nums; }
+table.shiftmat td.rowlab { color: var(--ink-2); white-space: nowrap; }
+table.shiftmat td.diag { color: var(--muted); }
+table.shiftmat td.up { color: var(--seq); font-weight: 640; }
+table.shiftmat td.down { color: var(--ink); font-weight: 640; }
+
+/* ---- category bars ---- */
+table.cats { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.cats td { padding: 5px 0; vertical-align: middle; }
+table.cats td.name { white-space: nowrap; padding-right: 13px; color: var(--ink-2); }
+table.cats td.n { text-align: right; padding-left: 11px; color: var(--muted);
+                  font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.cats td.pct { text-align: right; padding-left: 13px; font-variant-numeric: tabular-nums;
+                    color: var(--ink); font-weight: 600; white-space: nowrap; }
+.cbar { display: flex; height: 17px; gap: 2px; border-radius: 3px; }
+.cbar span { display: block; height: 100%; }
+.cbar span:first-child { border-radius: 3px 0 0 3px; }
+.cbar span:last-child  { border-radius: 0 3px 3px 0; }
+
+/* ---- histogram ---- */
+.hist { display: flex; align-items: flex-end; gap: 3px; height: 150px;
+        border-bottom: 1px solid var(--axis); padding-bottom: 0; }
+.hist div { flex: 1; background: var(--seq); border-radius: 3px 3px 0 0; min-height: 2px; }
+.histax { display: flex; justify-content: space-between; font-size: 11.5px;
+          color: var(--muted); margin-top: 7px; font-variant-numeric: tabular-nums; }
+.histrow { display: flex; gap: 9px; }
+.histy { display: flex; flex-direction: column; justify-content: space-between;
+         height: 150px; font-size: 11.5px; color: var(--muted); text-align: right;
+         font-variant-numeric: tabular-nums; }
+.histcap { font-size: 11.5px; color: var(--muted); text-align: center; margin-top: 5px; }
+
+/* ---- browser ---- */
+.controls { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; margin-bottom: 14px; }
+input[type=search], select {
+  font: inherit; font-size: 13.5px; padding: 7px 11px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--plane); color: var(--ink);
+}
+input[type=search] { flex: 1 1 260px; min-width: 200px; }
+input[type=search]::placeholder { color: var(--muted); }
+.chip { font: inherit; font-size: 12.5px; padding: 6px 11px; border-radius: 999px;
+        border: 1px solid var(--border); background: var(--plane); color: var(--ink-2);
+        cursor: pointer; }
+.chip:hover { background: var(--wash); }
+.chip[aria-pressed="true"] { background: var(--seq); border-color: var(--seq); color: #fff; }
+
+table.browse { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.browse th {
+  text-align: left; font-weight: 590; font-size: 11.5px; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--muted); padding: 7px 9px;
+  border-bottom: 1px solid var(--axis); white-space: nowrap; cursor: pointer;
+  position: sticky; top: 0; background: var(--surface); z-index: 1;
+}
+table.browse th.num, table.browse td.num { text-align: right; font-variant-numeric: tabular-nums; }
+table.browse td { padding: 8px 9px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+table.browse tr.r { cursor: pointer; }
+table.browse tr.r:hover td { background: var(--wash); }
+td.id { font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+td.cat { color: var(--ink-2); white-space: nowrap; font-size: 12.5px; }
+.gtag { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px;
+        color: var(--ink-2); white-space: nowrap; }
+.gtag i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+tr.ex td { background: var(--plane); padding: 4px 9px 13px 42px; }
+.exline { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+          font-size: 11.5px; color: var(--ink-2); padding: 3px 0;
+          white-space: pre-wrap; word-break: break-word; }
+.exline b { color: var(--ink); background: var(--wash); font-weight: 600;
+            border-radius: 3px; padding: 0 2px; }
+.exline em { font-style: normal; color: var(--muted); margin-right: 8px;
+             font-variant-numeric: tabular-nums; }
+.count { color: var(--muted); font-size: 12.5px; margin: 11px 0 0; }
+.scroll { overflow-x: auto; }
+.tablewrap { max-height: 620px; overflow-y: auto; overflow-x: auto; margin-top: 4px; }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeBtn" type="button">Dark</button>
+<div class="wrap">
+
+<header>
+  <h1>Auto-interp — 4,096 parameter components</h1>
+  <p>Every component of the Llama-3.2-1B attribution-geometry decomposition, labeled and
+     graded for monosemanticity. Evidence is the frozen fingerprint posterior; each component's
+     examples are drawn from <strong>distinct source documents</strong>, so an apparent pattern
+     cannot be memorization of a single document.</p>
+  <p class="prov" id="prov"></p>
+</header>
+
+<div class="tiles" id="tiles"></div>
+
+<div class="grid2">
+  <section class="card">
+    <h2>Monosemanticity, all 4,096</h2>
+    <p class="sub">Grade comes from <em>fit</em> — the share of a component's examples that its
+       own label actually covers. mono ≥ 85 · partial 55–84 · poly &lt; 55.</p>
+    <div class="legend" id="legend"></div>
+    <div class="stack" id="overallStack"></div>
+    <div class="stacklabels" id="overallLabels"></div>
+    <p class="note" id="overallNote"></p>
+  </section>
+
+  <section class="card">
+    <h2>Grader calibration</h2>
+    <p class="sub">The same 80 components, graded by two independent human graders and by the
+       model. Same shape, different strictness — read the model's number as a floor.</p>
+    <div id="calibration"></div>
+    <p class="note" id="calNote">The model was recalibrated once mid-run: a first pass graded 22%
+       mono because it penalized narrow <em>families</em>
+       (&ldquo;surname subword continuations&rdquo;) for having varying surface tokens — which is
+       generalization, not incoherence.</p>
+  </section>
+</div>
+
+<section class="card" id="shiftCard" hidden>
+  <h2>What the evidence budget was hiding</h2>
+  <p class="sub" id="shiftSub"></p>
+  <div class="grid2" style="margin-top:14px">
+    <div>
+      <div class="shiftrow"><span class="shiftlab" id="shiftFromLab"></span>
+        <div class="stack" id="shiftFromStack"></div></div>
+      <div class="shiftrow"><span class="shiftlab" id="shiftToLab"></span>
+        <div class="stack" id="shiftToStack"></div></div>
+      <div class="stacklabels" id="shiftLegend"></div>
+      <div class="shifttiles" id="shiftTiles"></div>
+    </div>
+    <div class="scroll">
+      <table class="cats shiftmat"><thead><tr>
+        <th></th><th colspan="3" style="text-align:center" id="shiftColHead"></th></tr>
+        <tr><th id="shiftRowHead"></th><th class="num">mono</th><th class="num">partial</th>
+        <th class="num">poly</th></tr></thead>
+        <tbody id="shiftMatrix"></tbody></table>
+    </div>
+  </div>
+  <p class="note" id="shiftNote"></p>
+</section>
+
+<section class="card">
+  <h2>Composition by category</h2>
+  <p class="sub">Bar width is the number of components; the percentage is the monosemantic share
+     within that category.</p>
+  <div class="legend" id="legend2"></div>
+  <div class="scroll"><table class="cats"><tbody id="catRows"></tbody></table></div>
+  <p class="note" id="catNote"></p>
+</section>
+
+<section class="card">
+  <h2>Label fit distribution</h2>
+  <p class="sub">Percent of each component's examples covered by its label. Bimodal: a dense
+     mass at 90–95 and a long shoulder, with very little below 50.</p>
+  <div class="histrow">
+    <div class="histy"><span id="hmax"></span><span>0</span></div>
+    <div style="flex:1">
+      <div class="hist" id="hist"></div>
+      <div class="histax"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
+      <div class="histcap">label fit (% of examples covered)</div>
+    </div>
+  </div>
+  <p class="note" id="histNote"></p>
+</section>
+
+<section class="card">
+  <h2>Component browser</h2>
+  <p class="sub">All 4,096 components. Click a row for its top evidence windows — the firing token
+     is <b>highlighted</b>. Click a column header to sort.</p>
+  <div class="controls">
+    <input type="search" id="q" placeholder="Search labels or a component number…">
+    <select id="fg"><option value="">All grades</option><option>mono</option><option>partial</option><option>poly</option></select>
+    <select id="fc"><option value="">All categories</option></select>
+    <button class="chip" id="pGer" aria-pressed="false" type="button">German-edit components</button>
+    <button class="chip" id="pEmo" aria-pressed="false" type="button">Emoticon candidates</button>
+    <button class="chip" id="pInd" aria-pressed="false" type="button">Induction components</button>
+  </div>
+  <div class="tablewrap"><table class="browse">
+    <thead><tr>
+      <th data-k="c">#</th>
+      <th data-k="l">Label</th>
+      <th data-k="cat">Category</th>
+      <th data-k="g">Grade</th>
+      <th data-k="f" class="num">Fit</th>
+      <th data-k="fr" class="num">Fire&nbsp;rate</th>
+    </tr></thead>
+    <tbody id="rows"></tbody>
+  </table></div>
+  <p class="count" id="count"></p>
+</section>
+
+</div>
+<script>
+const DATA = /*__PAYLOAD__*/null;
+const GRADES = ["mono", "partial", "poly"];
+const COLOR = { mono: "var(--mono)", partial: "var(--partial)", poly: "var(--poly)" };
+const esc = s => s.replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+const pct = (n, d) => (100 * n / d).toFixed(1);
+
+/* theme toggle — the stamp must beat the OS setting in both directions */
+const btn = document.getElementById("themeBtn");
+const startDark = matchMedia("(prefers-color-scheme: dark)").matches;
+document.documentElement.dataset.theme = startDark ? "dark" : "light";
+const syncBtn = () => btn.textContent =
+  document.documentElement.dataset.theme === "dark" ? "Light" : "Dark";
+syncBtn();
+btn.onclick = () => {
+  document.documentElement.dataset.theme =
+    document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  syncBtn();
+};
+
+/* ---- provenance + tiles ---- */
+document.getElementById("prov").innerHTML =
+  `Run <code>run1b_streamC4096</code> · evidence <code>${esc(DATA.sweepScript)}</code> ` +
+  `(${DATA.positions.toLocaleString()} positions, <code>--max_per_doc 1</code>) · ` +
+  `labels <code>autointerp_label.py</code> with <code>claude-sonnet-5</code>, 20 examples per component`;
+
+const monoPct = pct(DATA.overall.mono, DATA.graded);
+document.getElementById("tiles").innerHTML = [
+  ["4,096", "components labeled", DATA.total - DATA.graded + " ungraded (API refusal)"],
+  [DATA.positionsLabel, "positions swept", DATA.meanExamples + " examples per component"],
+  [monoPct + "%", "monosemantic", "model grade — humans said 80% on the 5M evidence"],
+  [DATA.fitMean, "mean label fit", "% of examples the label covers"],
+].map(([v, k, s]) => `<div class="tile"><div class="v">${v}</div><div class="k">${k}</div><div class="s">${s}</div></div>`).join("");
+
+/* ---- legends (identity is never color-alone) ---- */
+const legendHTML = GRADES.map(g =>
+  `<span><i style="background:${COLOR[g]}"></i>${g}</span>`).join("");
+document.getElementById("legend").innerHTML = legendHTML;
+document.getElementById("legend2").innerHTML = legendHTML;
+
+/* ---- overall stack ---- */
+function stack(el, counts, total) {
+  el.innerHTML = GRADES.map(g => {
+    const w = 100 * counts[g] / total;
+    return `<span style="width:${w}%;background:${COLOR[g]}" title="${g}: ${counts[g]} of ${total} (${pct(counts[g], total)}%)"></span>`;
+  }).join("");
+}
+stack(document.getElementById("overallStack"), DATA.overall, DATA.graded);
+document.getElementById("overallLabels").innerHTML = GRADES.map(g =>
+  `<span><i style="display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:${COLOR[g]}"></i>${g} <b>${pct(DATA.overall[g], DATA.graded)}%</b> <span style="color:var(--muted)">(${DATA.overall[g].toLocaleString()})</span></span>`).join("");
+document.getElementById("overallNote").textContent =
+  `${DATA.graded.toLocaleString()} of ${DATA.total.toLocaleString()} components graded; ` +
+  `${DATA.total - DATA.graded} could not be labeled because its evidence windows tripped the API's safety classifier on every retry.`;
+
+/* ---- calibration ---- */
+document.getElementById("calibration").innerHTML = DATA.calibration.map(r => `
+  <div class="calrow">
+    <div class="who"><span>${esc(r.who)}</span><em>${pct(r.counts.mono, r.n)}% mono</em></div>
+    <div class="stack" style="height:26px">${GRADES.map(g =>
+      `<span style="width:${100 * r.counts[g] / r.n}%;background:${COLOR[g]}" title="${g}: ${r.counts[g]} of ${r.n}"></span>`).join("")}</div>
+  </div>`).join("");
+
+/* ---- evidence-budget shift ---- */
+if (DATA.shift) {
+  const s = DATA.shift;
+  /* The human survey was run against the 5M evidence, so it calibrates the
+     rubric, not this run's grades. Say so rather than implying a paired test. */
+  document.getElementById("calNote").innerHTML =
+    `The human survey was run against the <strong>5M</strong> evidence, so it calibrates the ` +
+    `rubric rather than pairing with this run's grades. The model was also recalibrated once ` +
+    `mid-run: a first pass graded 22% mono because it penalized narrow <em>families</em> ` +
+    `(&ldquo;surname subword continuations&rdquo;) for having varying surface tokens — which is ` +
+    `generalization, not incoherence.`;
+  document.getElementById("shiftCard").hidden = false;
+  document.getElementById("shiftSub").innerHTML =
+    `The same ${s.n.toLocaleString()} components, the same rubric and the same grader — the only ` +
+    `change is how much text the top-32 examples were drawn from. Grades move almost entirely one ` +
+    `way, so the earlier number was a statement about the <em>evidence</em>, not about the decomposition.`;
+  document.getElementById("shiftFromLab").textContent = s.from;
+  document.getElementById("shiftToLab").textContent = s.to;
+  document.getElementById("shiftColHead").textContent = "grade at " + s.to;
+  document.getElementById("shiftRowHead").textContent = "grade at " + s.from;
+  stack(document.getElementById("shiftFromStack"), s.fromCounts, s.n);
+  stack(document.getElementById("shiftToStack"), s.toCounts, s.n);
+  document.getElementById("shiftLegend").innerHTML = GRADES.map(g =>
+    `<span><i style="display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:${COLOR[g]}"></i>${g} <b>${pct(s.fromCounts[g], s.n)}% → ${pct(s.toCounts[g], s.n)}%</b></span>`).join("");
+  document.getElementById("shiftTiles").innerHTML = [
+    [s.better.toLocaleString(), "sharpened", pct(s.better, s.n) + "%"],
+    [s.same.toLocaleString(), "unchanged", pct(s.same, s.n) + "%"],
+    [s.worse.toLocaleString(), "degraded", pct(s.worse, s.n) + "%"],
+  ].map(([v, k, p]) => `<div><div class="v">${v}</div><div class="k">${k} <span style="color:var(--muted)">${p}</span></div></div>`).join("");
+  const rank = { mono: 0, partial: 1, poly: 2 };
+  document.getElementById("shiftMatrix").innerHTML = GRADES.map(g => `
+    <tr><td class="rowlab"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:7px;vertical-align:-1px;background:${COLOR[g]}"></i>${g}</td>
+    ${GRADES.map(h => {
+      const cls = rank[h] < rank[g] ? "up" : rank[h] > rank[g] ? "down" : "diag";
+      return `<td class="num ${cls}">${s.matrix[g][h].toLocaleString()}</td>`;
+    }).join("")}</tr>`).join("");
+  document.getElementById("shiftNote").textContent =
+    `Mean label fit rose from ${s.fitFrom} to ${s.fitTo}. ${s.better} components got a cleaner ` +
+    `grade and only ${s.worse} got a worse one — a ${(s.better / s.worse).toFixed(1)}:1 ratio. ` +
+    `Off-diagonal cells above the diagonal are components whose pattern was always there and only ` +
+    `became legible once enough examples of it existed to see.`;
+}
+
+/* ---- category rows ---- */
+document.getElementById("catRows").innerHTML = DATA.byCat.map(c => {
+  const max = DATA.byCat[0].n;
+  return `<tr>
+    <td class="name">${esc(c.cat)}</td>
+    <td style="width:100%"><div class="cbar" style="width:${100 * c.n / max}%">${
+      GRADES.map(g => c.counts[g] ? `<span style="width:${100 * c.counts[g] / c.n}%;background:${COLOR[g]}" title="${c.cat} — ${g}: ${c.counts[g]}"></span>` : "").join("")
+    }</div></td>
+    <td class="n">${c.n}</td>
+    <td class="pct">${pct(c.counts.mono, c.n)}%</td>
+  </tr>`;
+}).join("");
+/* Which category is cleanest and which is weakest is a result, not a caption —
+   read it off the data so the note cannot go stale against a relabel. */
+const bigCats = DATA.byCat.filter(c => c.n >= 100)
+  .map(c => ({ cat: c.cat, r: c.counts.mono / c.n }))
+  .sort((a, b) => b.r - a.r);
+const best = bigCats[0], worst = bigCats[bigCats.length - 1];
+document.getElementById("catNote").innerHTML =
+  `Cleanest: <strong>${esc(best.cat)}</strong> at ${(100 * best.r).toFixed(1)}% mono. ` +
+  `Weakest: <strong>${esc(worst.cat)}</strong> at ${(100 * worst.r).toFixed(1)}%. ` +
+  `Topical features are both rare and the most likely to co-host related concepts, which is ` +
+  `where a finer C would help most. Categories under 100 components are excluded from this ` +
+  `comparison.`;
+
+/* ---- histogram ---- */
+const hmax = Math.max(...DATA.hist);
+document.getElementById("hmax").textContent = hmax.toLocaleString();
+document.getElementById("hist").innerHTML = DATA.hist.map((v, i) =>
+  `<div style="height:${100 * v / hmax}%" title="fit ${i * 5}–${i * 5 + 4}: ${v} components"></div>`).join("");
+const below = DATA.hist.slice(0, 10).reduce((a, b) => a + b, 0);
+document.getElementById("histNote").textContent =
+  `Only ${below} components (${pct(below, DATA.graded)}%) fall below fit 50 — the decomposition ` +
+  `rarely produces a component that resists any specific description.`;
+
+/* ---- browser ---- */
+const rows = DATA.rows, tbody = document.getElementById("rows");
+const q = document.getElementById("q"), fg = document.getElementById("fg"), fc = document.getElementById("fc");
+const pGer = document.getElementById("pGer"), pEmo = document.getElementById("pEmo");
+fc.innerHTML += DATA.byCat.map(c => `<option>${esc(c.cat)}</option>`).join("");
+let sortKey = "c", sortDir = 1, preset = null, open = new Set();
+
+function marked(t) {
+  return esc(t).replace(/«([\s\S]*?)»/g, (_, m) => `<b>${m || "␠"}</b>`);
+}
+function render() {
+  const term = q.value.trim().toLowerCase();
+  let out = rows.filter(r =>
+    (!term || r.l.toLowerCase().includes(term) || String(r.c) === term) &&
+    (!fg.value || r.g === fg.value) &&
+    (!fc.value || r.cat === fc.value) &&
+    (!preset || preset.includes(r.c)));
+  out.sort((a, b) => {
+    const x = a[sortKey], y = b[sortKey];
+    if (x === y) return a.c - b.c;
+    if (x === null || x === undefined) return 1;
+    if (y === null || y === undefined) return -1;
+    return (typeof x === "string" ? x.localeCompare(y) : x - y) * sortDir;
+  });
+  tbody.innerHTML = out.slice(0, 400).map(r => {
+    const head = `<tr class="r" data-c="${r.c}">
+      <td class="id">c${r.c}</td>
+      <td>${esc(r.l)}</td>
+      <td class="cat">${esc(r.cat)}</td>
+      <td><span class="gtag"><i style="background:${COLOR[r.g] || "var(--muted)"}"></i>${r.g}</span></td>
+      <td class="num">${r.f ?? "—"}</td>
+      <td class="num">${r.fr.toFixed(3)}%</td></tr>`;
+    if (!open.has(r.c)) return head;
+    return head + `<tr class="ex"><td colspan="6">${r.ex.map(e =>
+      `<div class="exline"><em>p=${e.p}</em>${marked(e.t)}</div>`).join("")}</td></tr>`;
+  }).join("");
+  document.getElementById("count").textContent =
+    `${out.length.toLocaleString()} component${out.length === 1 ? "" : "s"}` +
+    (out.length > 400 ? " — showing the first 400; narrow the filters to see more." : "");
+}
+tbody.onclick = e => {
+  const tr = e.target.closest("tr.r");
+  if (!tr) return;
+  const c = +tr.dataset.c;
+  open.has(c) ? open.delete(c) : open.add(c);
+  render();
+};
+document.querySelectorAll("table.browse th").forEach(th => th.onclick = () => {
+  const k = th.dataset.k;
+  sortDir = sortKey === k ? -sortDir : (k === "fr" || k === "f" ? -1 : 1);
+  sortKey = k; render();
+});
+[q, fg, fc].forEach(el => el.oninput = render);
+const CHIPS = [[pGer, DATA.german], [pEmo, DATA.emoticon], [pInd, DATA.induction]];
+function togglePreset(btn, list) {
+  const on = btn.getAttribute("aria-pressed") === "true";
+  CHIPS.forEach(([b]) => b.setAttribute("aria-pressed", "false"));
+  btn.setAttribute("aria-pressed", String(!on));
+  preset = on ? null : list;
+  render();
+}
+CHIPS.forEach(([b, list]) => b.onclick = () => togglePreset(b, list));
+render();
+</script>
+</body>
+</html>

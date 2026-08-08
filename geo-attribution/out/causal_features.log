@@ -1,0 +1,24 @@
+[german-vpd] bank resident (17s, 37 GiB)
+[german-vpd]   path step 1/16 (wscale 0.062)
+[german-vpd]   path step 2/16 (wscale 0.125)
+[german-vpd]   path step 3/16 (wscale 0.188)
+[german-vpd]   path step 4/16 (wscale 0.250)
+[german-vpd]   path step 5/16 (wscale 0.312)
+[german-vpd]   path step 6/16 (wscale 0.375)
+[german-vpd]   path step 7/16 (wscale 0.438)
+[german-vpd]   path step 8/16 (wscale 0.500)
+[german-vpd]   path step 9/16 (wscale 0.562)
+[german-vpd]   path step 10/16 (wscale 0.625)
+[german-vpd]   path step 11/16 (wscale 0.688)
+[german-vpd]   path step 12/16 (wscale 0.750)
+[german-vpd]   path step 13/16 (wscale 0.812)
+[german-vpd]   path step 14/16 (wscale 0.875)
+[german-vpd]   path step 15/16 (wscale 0.938)
+[german-vpd]   path step 16/16 (wscale 1.000)
+[german-vpd] measured 96 true ablations (27s)
+[german-vpd] first_order_grad_x_weight  pearson +0.7042  spearman +0.9639  completeness Σattr/R -0.9413
+[german-vpd] ig_2                       pearson +0.7071  spearman +0.9594  completeness Σattr/R -0.8791
+[german-vpd] ig_4                       pearson +0.6615  spearman +0.8461  completeness Σattr/R -0.5601
+[german-vpd] ig_8                       pearson +0.5456  spearman +0.4794  completeness Σattr/R 1.2995
+[german-vpd] ig_16_full                 pearson +0.4124  spearman +0.2961  completeness Σattr/R 0.9504
+[german-vpd] wrote /dev/shm/geo1b/run1b_streamC4096/causal_features.json  (total 27s)

@@ -19,7 +19,7 @@ from contextlib import contextmanager, nullcontext
 import hashlib
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import torch
 import torch.nn.functional as F
@@ -78,10 +78,18 @@ class _GimSDPA(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_out):
         q, k, v, stored_mask = ctx.saved_tensors
-        # Matmuls remain bf16 tensor-core operations; only the normalization is
-        # promoted to fp32.  This mirrors HF's eager attention numerics.
-        scores = torch.matmul(q, k.transpose(-2, -1)) * ctx.scaling
-        scores = scores.float()
+        # Custom autograd Functions are autocast boundaries. Residual paths can
+        # therefore hand backward a mixture of fp32 and bf16 tensors even when
+        # q/k/v came from autocast linears. Use one compute dtype, then return
+        # each input gradient in that input's original dtype.
+        low_precision = {torch.float16, torch.bfloat16}
+        compute_dtype = (q.dtype if q.dtype in low_precision else torch.float32)
+        qb = q.to(compute_dtype)
+        kb = k.to(compute_dtype)
+        vb = v.to(compute_dtype)
+        go = grad_out.to(compute_dtype)
+        scores = (torch.matmul(qb, kb.transpose(-2, -1))
+                  * ctx.scaling).float()
         if ctx.has_mask:
             scores = scores + stored_mask.float()
         elif ctx.is_causal:
@@ -89,17 +97,18 @@ class _GimSDPA(torch.autograd.Function):
                                 device=scores.device).triu(1)
             scores = scores.masked_fill(causal, float("-inf"))
 
-        p = torch.softmax(scores, dim=-1).to(q.dtype)
-        pt = torch.softmax(scores / ctx.tau, dim=-1).to(q.dtype)
-        dp = torch.matmul(grad_out, v.transpose(-2, -1))
+        p = torch.softmax(scores, dim=-1).to(compute_dtype)
+        pt = torch.softmax(scores / ctx.tau, dim=-1).to(compute_dtype)
+        dp = torch.matmul(go, vb.transpose(-2, -1))
         ds = (dp - (dp * pt).sum(-1, keepdim=True)) * pt
 
         # Grad norm from GIM: the Q/K product jointly receives half the credit
         # (split equally), and the attention/value product receives the other
         # half.  repeat_kv outside this Function sums grouped-head gradients.
-        dq = torch.matmul(ds, k) * (ctx.scaling / 4.0)
-        dk = torch.matmul(ds.transpose(-2, -1), q) * (ctx.scaling / 4.0)
-        dv = torch.matmul(p.transpose(-2, -1), grad_out) / 2.0
+        dq = (torch.matmul(ds, kb) * (ctx.scaling / 4.0)).to(q.dtype)
+        dk = (torch.matmul(ds.transpose(-2, -1), qb)
+              * (ctx.scaling / 4.0)).to(k.dtype)
+        dv = (torch.matmul(p.transpose(-2, -1), go) / 2.0).to(v.dtype)
         return dq, dk, dv, None, None, None, None
 
 
@@ -113,7 +122,8 @@ class _HalfBackward(torch.autograd.Function):
         return grad / 2.0
 
 
-def install_llama_gim(target: torch.nn.Module, tau: float = 2.0) -> None:
+def install_llama_gim(target: torch.nn.Module, tau: float = 2.0,
+                      *, unpadded_causal: bool = False) -> None:
     """Install the full GIM recipe on a Hugging Face Llama model.
 
     Forward values are unchanged.  The patch is idempotent and local to the
@@ -132,11 +142,19 @@ def install_llama_gim(target: torch.nn.Module, tau: float = 2.0) -> None:
         if module.num_key_value_groups > 1:
             key = repeat_kv(key, module.num_key_value_groups)
             value = repeat_kv(value, module.num_key_value_groups)
-        causal = (query.shape[2] > 1 and attention_mask is None
-                  and (module.is_causal if is_causal is None else is_causal))
+        if module._gim_unpadded_causal:
+            # The collector passes only dense, unpadded token rows. Recent HF
+            # versions nevertheless materialize a 4-D causal mask, while
+            # PyTorch Flash SDPA requires the equivalent null-mask/is_causal
+            # representation.
+            attention_mask = None
+            causal = query.shape[2] > 1
+        else:
+            causal = (query.shape[2] > 1 and attention_mask is None
+                      and (module.is_causal if is_causal is None else is_causal))
         out = _GimSDPA.apply(query, key, value, attention_mask,
                              module.scaling if scaling is None else scaling,
-                             causal, tau)
+                             causal, module._gim_tau)
         return out.transpose(1, 2).contiguous(), None
 
     # Registering is safe when several targets are constructed in one process.
@@ -161,16 +179,30 @@ def install_llama_gim(target: torch.nn.Module, tau: float = 2.0) -> None:
                 up = _HalfBackward.apply(_module.up_proj(x))
                 return _module.down_proj(_module.act_fn(gate) * up)
             module.forward = mlp_forward
+        elif name == "LlamaAttention":
+            module._gim_tau = float(tau)
+            module._gim_unpadded_causal = bool(unpadded_causal)
 
     # The wrapper stores the actual HF module as ``hf``.
     hf = getattr(target, "hf", target)
     hf.config._attn_implementation = "gim_flash_sdpa"
 
 
-def compile_model(model: torch.nn.Module, enabled: bool,
-                  mode: str = "reduce-overhead") -> torch.nn.Module:
-    if not enabled:
-        return model
-    torch.set_float32_matmul_precision("high")
-    return torch.compile(model, mode=mode, fullgraph=False, dynamic=False)
+def linear_kernel(enabled: bool,
+                  mode: str = "default") -> Callable:
+    """Return a pure eager or compiled linear kernel for :class:`Capture`.
 
+    The cache-writing wrapper must remain outside this boundary. A whole-model
+    compiled graph cannot expose gradients with respect to sibling captured
+    outputs, while compiling a side-effecting capture closure loses its cache
+    tensors. A pure ``F.linear`` boundary preserves both autograd connectivity
+    and Inductor cache reuse across the repeated Llama projection shapes.
+    ``reduce-overhead`` is intentionally not the default: its CUDA graphs wait
+    for backward calls that do not exist for every captured output and trigger
+    repeated graph capture in this workload.
+    """
+    if not enabled:
+        return F.linear
+    torch.set_float32_matmul_precision("high")
+    return torch.compile(
+        F.linear, mode=mode, fullgraph=True, dynamic=False)

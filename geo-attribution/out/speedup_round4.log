@@ -1,0 +1,58 @@
++ cd /workspace/param-clustering/geo-attribution
++ for D in 32768 65536
++ CUDA_VISIBLE_DEVICES=1
++ python3.12 collect_fast.py spec_stats --tag stream_spec_stats_d32768 --val_tag run1m_stream --feat_dim 32768
+[r0] spec_stats: D=32768 stat-weighted proposal from 2048 reservoir rows -> /dev/shm/geo1b/stream_spec_stats_d32768/spec.pt
++ CUDA_VISIBLE_DEVICES=0
++ python3.12 collect_fast.py validate_fresh --spec_tag stream_spec_stats_d32768 --pos_per_seq 64 --batch_seqs 8 --val_n 512
+[r0] VALIDATE-FRESH D=32768 sensor=gim: corr_raw=0.9283, corr_normalized=0.9184, diag_corr=0.9765 -> /dev/shm/geo1b/stream_spec_stats_d32768/validate_fresh_D32768_gim.json
++ for D in 32768 65536
++ CUDA_VISIBLE_DEVICES=1
++ python3.12 collect_fast.py spec_stats --tag stream_spec_stats_d65536 --val_tag run1m_stream --feat_dim 65536
+[r0] spec_stats: D=65536 stat-weighted proposal from 2048 reservoir rows -> /dev/shm/geo1b/stream_spec_stats_d65536/spec.pt
++ CUDA_VISIBLE_DEVICES=0
++ python3.12 collect_fast.py validate_fresh --spec_tag stream_spec_stats_d65536 --pos_per_seq 64 --batch_seqs 8 --val_n 512
+[r0] VALIDATE-FRESH D=65536 sensor=gim: corr_raw=0.9462, corr_normalized=0.9547, diag_corr=0.9457 -> /dev/shm/geo1b/stream_spec_stats_d65536/validate_fresh_D65536_gim.json
++ torchrun --nproc_per_node=2 collect_fast.py benchmark --profile optimized --spec_tag stream_spec_stats_d32768 --synthetic_data --pos_per_seq 506 --batch_seqs 32 --benchmark_batches 8 --master_dtype bfloat16 --output out/bench_fast_bs32_d32768_bf16.json
+W0804 00:49:56.379000 87840 torch/distributed/run.py:774] 
+W0804 00:49:56.379000 87840 torch/distributed/run.py:774] *****************************************
+W0804 00:49:56.379000 87840 torch/distributed/run.py:774] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0804 00:49:56.379000 87840 torch/distributed/run.py:774] *****************************************
+{
+  "attention_backend": "flash_only",
+  "batch_seqs_per_gpu": 32,
+  "bf16": true,
+  "compile": true,
+  "compile_mode": "default",
+  "cuda": "12.8",
+  "feature_dim": 32768,
+  "feature_spec_sha256": "c1373eb76d0b1eebdfc1c814f42d810cef1acddb8351f73e16bcc450f0f62955",
+  "fused_attention": true,
+  "gpu": "NVIDIA B200",
+  "ig_k": 1,
+  "input": "synthetic_uniform_v1",
+  "master_dtype": "bfloat16",
+  "model": {
+    "id": "unsloth/Llama-3.2-1B",
+    "revision": "9535bd9b1d1dea6acafbdc4813b728796aeb28da"
+  },
+  "pass_dtype": "bfloat16",
+  "peak_gpu_gib_max_rank": 51.46324157714844,
+  "pos_per_seq": 506,
+  "positions": 259072,
+  "positions_per_second": 107966.23638102421,
+  "profile": "optimized",
+  "scalar": "equal_reward",
+  "seconds_max_rank": 2.3995649814605713,
+  "sensor": "gim",
+  "seq_len": 512,
+  "sequence_tokens_per_second": 109246.46843297311,
+  "timed_batches": 8,
+  "torch": "2.8.0+cu128",
+  "transformers": "4.57.6",
+  "warmup_batches": 2,
+  "warmup_seconds_max_rank": 2.7012460231781006,
+  "world": 2
+}
++ echo ROUND4_DONE
+ROUND4_DONE

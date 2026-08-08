@@ -1,0 +1,61 @@
+[german-vpd] reusing cached protocol data /dev/shm/geo1b/run1b_streamC4096/german_vpd_data.pt
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 16/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 32/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 48/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 64/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 80/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 96/112 matrices
+[german-vpd] materialized components [1668, 42, 2207, 1406, 3634, 3600, 493, 2161, 2318, 3749, 928, 2111, 749, 2520, 2921, 2200]: 112/112 matrices
+[german-vpd] replicated component editor on cuda:1
+[german-vpd] k=16 step 0000: deCE=7.38 enKL=0.231 romKL=2.769
+[german-vpd] k=8 step 0000: deCE=7.05 enKL=0.207 romKL=2.746
+[german-vpd] k=16 step 0050: deCE=11.61 enKL=0.064 romKL=0.393
+[german-vpd] k=8 step 0050: deCE=9.00 enKL=0.076 romKL=0.547
+[german-vpd] k=8 step 0100: deCE=11.85 enKL=0.111 romKL=0.157
+[german-vpd] k=16 step 0100: deCE=14.28 enKL=0.033 romKL=0.104
+[german-vpd] k=8 step 0150: deCE=12.14 enKL=0.034 romKL=0.097
+[german-vpd] k=16 step 0150: deCE=11.94 enKL=0.022 romKL=0.065
+[german-vpd] k=8 step 0200: deCE=11.71 enKL=0.065 romKL=0.074
+[german-vpd] k=16 step 0200: deCE=13.95 enKL=0.017 romKL=0.046
+[german-vpd] k=8 step 0250: deCE=12.37 enKL=0.025 romKL=0.063
+[german-vpd] k=16 step 0250: deCE=11.95 enKL=0.014 romKL=0.035
+[german-vpd] k=8 step 0300: deCE=11.68 enKL=0.046 romKL=0.053
+[german-vpd] k=16 step 0300: deCE=14.06 enKL=0.013 romKL=0.028
+[german-vpd] k=8 step 0350: deCE=12.36 enKL=0.021 romKL=0.048
+[german-vpd] k=16 step 0350: deCE=12.40 enKL=0.011 romKL=0.024
+[german-vpd] k=8 step 0399: deCE=11.74 enKL=0.027 romKL=0.043
+[german-vpd] k=16 step 0399: deCE=13.93 enKL=0.013 romKL=0.026
+[german-vpd] RESULT k=8: de=+9.082 en_pile=+0.065 en_euro=+0.029 fr/es/it=+0.063/+0.052/+0.059 (203s)
+[german-vpd] k=2 step 0000: deCE=6.23 enKL=0.150 romKL=2.498
+[german-vpd] RESULT k=16: de=+9.604 en_pile=+0.066 en_euro=+0.033 fr/es/it=+0.057/+0.038/+0.025 (204s)
+[german-vpd] k=4 step 0000: deCE=6.52 enKL=0.165 romKL=2.720
+[german-vpd] k=2 step 0050: deCE=4.17 enKL=0.049 romKL=0.571
+[german-vpd] k=4 step 0050: deCE=5.43 enKL=0.051 romKL=0.520
+[german-vpd] k=2 step 0100: deCE=5.52 enKL=0.025 romKL=0.228
+[german-vpd] k=4 step 0100: deCE=7.89 enKL=0.035 romKL=0.260
+[german-vpd] k=2 step 0150: deCE=6.85 enKL=0.022 romKL=0.239
+[german-vpd] k=4 step 0150: deCE=10.79 enKL=0.027 romKL=0.270
+[german-vpd] k=2 step 0200: deCE=9.55 enKL=0.032 romKL=0.268
+[german-vpd] k=4 step 0200: deCE=11.79 enKL=0.026 romKL=0.208
+[german-vpd] k=2 step 0250: deCE=11.37 enKL=0.028 romKL=0.292
+[german-vpd] k=4 step 0250: deCE=11.86 enKL=0.024 romKL=0.173
+[german-vpd] k=2 step 0300: deCE=11.71 enKL=0.033 romKL=0.251
+[german-vpd] k=4 step 0300: deCE=11.90 enKL=0.022 romKL=0.150
+[german-vpd] k=2 step 0350: deCE=11.98 enKL=0.033 romKL=0.219
+[german-vpd] k=4 step 0350: deCE=11.96 enKL=0.023 romKL=0.135
+[german-vpd] k=2 step 0399: deCE=11.70 enKL=0.047 romKL=0.180
+[german-vpd] k=4 step 0399: deCE=11.88 enKL=0.042 romKL=0.108
+[german-vpd] RESULT k=2: de=+7.895 en_pile=+0.023 en_euro=+0.035 fr/es/it=+0.071/+0.096/+0.278 (199s)
+[german-vpd] RESULT k=4: de=+7.940 en_pile=+0.018 en_euro=+0.035 fr/es/it=+0.066/+0.051/+0.177 (199s)
+[german-vpd] k=1 step 0000: deCE=3.85 enKL=0.031 romKL=0.766
+[german-vpd] k=1 step 0050: deCE=4.18 enKL=0.014 romKL=0.223
+[german-vpd] k=1 step 0100: deCE=5.42 enKL=0.018 romKL=0.198
+[german-vpd] k=1 step 0150: deCE=5.84 enKL=0.011 romKL=0.205
+[german-vpd] k=1 step 0200: deCE=6.08 enKL=0.022 romKL=0.203
+[german-vpd] k=1 step 0250: deCE=6.20 enKL=0.011 romKL=0.203
+[german-vpd] k=1 step 0300: deCE=6.34 enKL=0.025 romKL=0.206
+[german-vpd] k=1 step 0350: deCE=6.47 enKL=0.012 romKL=0.209
+[german-vpd] k=1 step 0399: deCE=6.72 enKL=0.034 romKL=0.201
+[german-vpd] RESULT k=1: de=+3.284 en_pile=+0.017 en_euro=+0.013 fr/es/it=+0.102/+0.132/+0.290 (198s)
+[german-vpd] literal surgery (k=16): max |dlogit|=1.250e-01
+[german-vpd] wrote /dev/shm/geo1b/run1b_streamC4096/german_permatrix.json

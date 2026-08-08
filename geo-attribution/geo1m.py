@@ -23,11 +23,8 @@ import argparse
 import json
 import math
 import os
-import sys
 import time
 from pathlib import Path
-
-sys.path.insert(0, "/workspace/circuit-decomp/geo-attribution")
 
 import numpy as np
 import torch
@@ -37,7 +34,7 @@ import geo1b  # noqa: F401 — patches geo67 for the 1B target
 import geo67
 from geo67 import Capture, ddp_setup, log, normalize_gram, scalar_sum
 
-SHM = Path("/dev/shm/geo1b")
+SHM = geo1b.SHM_ROOT
 
 
 # -------------------------------------------------------------------- spec ----

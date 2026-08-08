@@ -1,0 +1,18 @@
+[german-vpd] reusing cached protocol data /dev/shm/geo1b/run1b_streamC4096/german_vpd_data.pt
+[german-vpd] lora B=8 l=10/10 lr=0.003: de=+0.26 en=+0.010 rom=+0.008
+[german-vpd] lora B=8 l=10/10 lr=0.01: de=+8.06 en=+8.986 rom=+5.560
+[german-vpd] lora B=8 l=30/30 lr=0.003: de=+0.04 en=+0.068 rom=-0.001
+[german-vpd] lora B=8 l=30/30 lr=0.01: de=+8.50 en=+9.442 rom=+6.007
+[german-vpd] lora B=64 l=10/10 lr=0.003: de=+2.20 en=+0.205 rom=+0.088
+[german-vpd] lora B=64 l=10/10 lr=0.01: de=+8.48 en=+8.770 rom=+5.892
+[german-vpd] lora B=64 l=30/30 lr=0.003: de=+9.54 en=+9.199 rom=+6.942
+[german-vpd] lora B=64 l=30/30 lr=0.01: de=+8.44 en=+9.062 rom=+5.852
+[german-vpd] lora B=512 l=10/10 lr=0.003: de=+23.72 en=+0.203 rom=+0.054
+[german-vpd] lora B=512 l=10/10 lr=0.01: de=+9.17 en=+9.451 rom=+5.507
+[german-vpd] lora B=512 l=30/30 lr=0.003: de=+8.76 en=+0.167 rom=+0.043
+[german-vpd] lora B=512 l=30/30 lr=0.01: de=+9.01 en=+9.565 rom=+5.975
+[german-vpd] lora B=2048 l=10/10 lr=0.003: de=+12.08 en=+2.775 rom=+0.741
+[german-vpd] lora B=2048 l=10/10 lr=0.01: de=+9.32 en=+9.633 rom=+6.908
+[german-vpd] lora B=2048 l=30/30 lr=0.003: de=+23.10 en=+2.410 rom=+0.782
+[german-vpd] lora B=2048 l=30/30 lr=0.01: de=+9.16 en=+8.996 rom=+5.731
+[german-vpd] wrote lora arm json

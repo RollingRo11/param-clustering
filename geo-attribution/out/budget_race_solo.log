@@ -1,0 +1,33 @@
+[german-vpd] reusing cached protocol data /dev/shm/geo1b/run1b_streamC4096/german_vpd_data.pt
+[german-vpd] materialized components [3634]: 16/112 matrices
+[german-vpd] materialized components [3634]: 32/112 matrices
+[german-vpd] materialized components [3634]: 48/112 matrices
+[german-vpd] materialized components [3634]: 64/112 matrices
+[german-vpd] materialized components [3634]: 80/112 matrices
+[german-vpd] materialized components [3634]: 96/112 matrices
+[german-vpd] materialized components [3634]: 112/112 matrices
+[german-vpd] solo c3634 multilingual B=8: de=+3.48 en=+0.007 rom=+0.024
+[german-vpd] lora multilingual B=8 lr=0.003: de=+0.18 en=+0.015 rom=-0.007
+[german-vpd] solo c3634 multilingual B=64: de=+6.90 en=+0.010 rom=+0.045
+[german-vpd] lora multilingual B=8 lr=0.01: de=+8.32 en=+9.113 rom=+6.190
+[german-vpd] lora multilingual B=64 lr=0.003: de=+9.00 en=+9.066 rom=+6.227
+[german-vpd] lora multilingual B=64 lr=0.01: de=+8.60 en=+9.274 rom=+6.028
+[german-vpd] solo c3634 multilingual B=512: de=+8.24 en=+0.013 rom=+0.062
+[german-vpd] lora multilingual B=512 lr=0.003: de=+9.12 en=+9.183 rom=+5.886
+[german-vpd] solo c3634 multilingual B=2048: de=+8.72 en=+0.012 rom=+0.069
+[german-vpd] solo c3634 english_only B=8: de=+3.31 en=+0.009 rom=+0.029
+[german-vpd] solo c3634 english_only B=64: de=+6.93 en=+0.010 rom=+0.046
+[german-vpd] lora multilingual B=512 lr=0.01: de=+9.09 en=+9.020 rom=+5.959
+[german-vpd] solo c3634 english_only B=512: de=+8.65 en=+0.013 rom=+0.332
+[german-vpd] lora multilingual B=2048 lr=0.003: de=+9.74 en=+9.711 rom=+6.520
+[german-vpd] solo c3634 english_only B=2048: de=+8.91 en=+0.013 rom=+0.415
+[german-vpd] lora multilingual B=2048 lr=0.01: de=+9.07 en=+9.061 rom=+6.006
+[german-vpd] lora english_only B=8 lr=0.003: de=+9.65 en=+10.325 rom=+10.322
+[german-vpd] lora english_only B=8 lr=0.01: de=+10.30 en=+9.487 rom=+9.747
+[german-vpd] lora english_only B=64 lr=0.003: de=+11.57 en=+10.719 rom=+10.551
+[german-vpd] lora english_only B=64 lr=0.01: de=+9.91 en=+10.080 rom=+9.678
+[german-vpd] lora english_only B=512 lr=0.003: de=+10.03 en=+9.528 rom=+10.902
+[german-vpd] lora english_only B=512 lr=0.01: de=+10.77 en=+9.791 rom=+10.042
+[german-vpd] lora english_only B=2048 lr=0.003: de=+11.22 en=+10.773 rom=+11.979
+[german-vpd] lora english_only B=2048 lr=0.01: de=+11.64 en=+10.488 rom=+11.139
+[german-vpd] wrote /dev/shm/geo1b/run1b_streamC4096/budget_race_solo.json (24 arms)

@@ -1,0 +1,56 @@
+[german-vpd] reusing cached protocol data /dev/shm/geo1b/run1b_streamC4096/german_vpd_data.pt
+[german-vpd] loaded ownership encoding 32/112
+[german-vpd] loaded ownership encoding 64/112
+[german-vpd] loaded ownership encoding 96/112
+[german-vpd] loaded ownership encoding 112/112
+[german-vpd] loaded ownership encoding 32/112
+[german-vpd] loaded ownership encoding 64/112
+[german-vpd] loaded ownership encoding 96/112
+[german-vpd] loaded ownership encoding 112/112
+[german-vpd] seed: sweep best [+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+10,+1,+1,+3,+0] on [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]
+[german-vpd] seed: sweep best [+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+10,+1,+1,+3,+0] on [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]
+[german-vpd] full-mask fine-tune: C=4096, 4 configs
+[german-vpd] identity,l_en=10,l_rom=10 step 0000: deCE=2.61 enKL=0.000 romKL=0.000 moved=4096
+[german-vpd] seeded,l_en=10,l_rom=10 step 0000: deCE=4.43 enKL=0.121 romKL=1.278 moved=4096
+[german-vpd] identity,l_en=10,l_rom=10 step 0050: deCE=12.29 enKL=0.135 romKL=0.248 moved=3661
+[german-vpd] seeded,l_en=10,l_rom=10 step 0050: deCE=12.46 enKL=0.091 romKL=0.131 moved=3605
+[german-vpd] identity,l_en=10,l_rom=10 step 0100: deCE=12.81 enKL=0.057 romKL=0.079 moved=3512
+[german-vpd] seeded,l_en=10,l_rom=10 step 0100: deCE=14.16 enKL=0.048 romKL=0.083 moved=3471
+[german-vpd] identity,l_en=10,l_rom=10 step 0150: deCE=13.85 enKL=0.171 romKL=0.233 moved=3803
+[german-vpd] seeded,l_en=10,l_rom=10 step 0150: deCE=20.20 enKL=0.081 romKL=0.112 moved=3598
+[german-vpd] identity,l_en=10,l_rom=10 step 0200: deCE=17.96 enKL=0.064 romKL=0.090 moved=3596
+[german-vpd] seeded,l_en=10,l_rom=10 step 0200: deCE=18.63 enKL=0.053 romKL=0.080 moved=3488
+[german-vpd] identity,l_en=10,l_rom=10 step 0250: deCE=15.91 enKL=0.044 romKL=0.067 moved=3508
+[german-vpd] seeded,l_en=10,l_rom=10 step 0250: deCE=12.31 enKL=0.070 romKL=0.078 moved=3556
+[german-vpd] identity,l_en=10,l_rom=10 step 0300: deCE=16.32 enKL=0.043 romKL=0.063 moved=3457
+[german-vpd] seeded,l_en=10,l_rom=10 step 0300: deCE=16.93 enKL=0.051 romKL=0.070 moved=3392
+[german-vpd] identity,l_en=10,l_rom=10 step 0350: deCE=13.58 enKL=0.055 romKL=0.064 moved=3483
+[german-vpd] seeded,l_en=10,l_rom=10 step 0350: deCE=12.21 enKL=0.035 romKL=0.045 moved=3277
+[german-vpd] identity,l_en=10,l_rom=10 step 0399: deCE=16.51 enKL=0.041 romKL=0.046 moved=3400
+[german-vpd] seeded,l_en=10,l_rom=10 step 0399: deCE=16.53 enKL=0.062 romKL=0.060 moved=3342
+[german-vpd] identity,l_en=10,l_rom=10: de=+11.257 en_pile=+0.072 fr/es/it=+0.144/+0.096/+0.133 moved=3400 (375s)
+[german-vpd] seeded,l_en=10,l_rom=10: de=+12.912 en_pile=+0.287 fr/es/it=+0.036/+0.016/+0.099 moved=3342 (376s)
+[german-vpd] identity,l_en=30,l_rom=30 step 0000: deCE=2.61 enKL=0.000 romKL=0.000 moved=4096
+[german-vpd] seeded,l_en=30,l_rom=30 step 0000: deCE=4.43 enKL=0.121 romKL=1.278 moved=4096
+[german-vpd] identity,l_en=30,l_rom=30 step 0050: deCE=2.87 enKL=0.018 romKL=0.019 moved=2364
+[german-vpd] seeded,l_en=30,l_rom=30 step 0050: deCE=11.01 enKL=0.088 romKL=0.119 moved=3475
+[german-vpd] identity,l_en=30,l_rom=30 step 0100: deCE=2.81 enKL=0.012 romKL=0.016 moved=2594
+[german-vpd] seeded,l_en=30,l_rom=30 step 0100: deCE=13.46 enKL=0.041 romKL=0.063 moved=3318
+[german-vpd] identity,l_en=30,l_rom=30 step 0150: deCE=11.86 enKL=0.062 romKL=0.080 moved=3487
+[german-vpd] seeded,l_en=30,l_rom=30 step 0150: deCE=12.42 enKL=0.060 romKL=0.050 moved=3248
+[german-vpd] identity,l_en=30,l_rom=30 step 0200: deCE=12.53 enKL=0.040 romKL=0.056 moved=3406
+[german-vpd] seeded,l_en=30,l_rom=30 step 0200: deCE=14.23 enKL=0.035 romKL=0.047 moved=3229
+[german-vpd] identity,l_en=30,l_rom=30 step 0250: deCE=11.73 enKL=0.053 romKL=0.057 moved=3403
+[german-vpd] seeded,l_en=30,l_rom=30 step 0250: deCE=12.08 enKL=0.058 romKL=0.053 moved=3206
+[german-vpd] identity,l_en=30,l_rom=30 step 0300: deCE=13.28 enKL=0.031 romKL=0.047 moved=3297
+[german-vpd] seeded,l_en=30,l_rom=30 step 0300: deCE=15.98 enKL=0.048 romKL=0.058 moved=3261
+[german-vpd] identity,l_en=30,l_rom=30 step 0350: deCE=12.74 enKL=0.027 romKL=0.039 moved=3258
+[german-vpd] seeded,l_en=30,l_rom=30 step 0350: deCE=11.89 enKL=0.033 romKL=0.037 moved=3180
+[german-vpd] identity,l_en=30,l_rom=30 step 0399: deCE=12.78 enKL=0.063 romKL=0.053 moved=3301
+[german-vpd] seeded,l_en=30,l_rom=30 step 0399: deCE=14.76 enKL=0.037 romKL=0.039 moved=3177
+[german-vpd] identity,l_en=30,l_rom=30: de=+10.396 en_pile=+0.190 fr/es/it=+0.074/+0.006/+0.051 moved=3301 (372s)
+[german-vpd] seeded,l_en=30,l_rom=30: de=+9.548 en_pile=+0.297 fr/es/it=+0.131/+0.113/+0.135 moved=3177 (374s)
+[german-vpd] literal surgery check: max |dlogit|=0.000e+00
+[german-vpd] selected seeded,l_en=10,l_rom=10
+[german-vpd] wrote /dev/shm/geo1b/run1b_streamC4096/german_fullmask.json
+EXP3_DONE

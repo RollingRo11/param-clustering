@@ -1,0 +1,42 @@
+[german-vpd] multilingual scalar fine-tune over [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]
+[german-vpd] reusing cached protocol data /dev/shm/geo1b/run1b_streamC4096/german_vpd_data.pt
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 16/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 32/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 48/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 64/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 80/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 96/112 matrices
+[german-vpd] materialized components [4030, 2637, 841, 1668, 2803, 1406, 1093, 3634, 2257, 3902, 2929, 42, 1414, 3065, 2207, 2318]: 112/112 matrices
+[german-vpd] replicated component editor on cuda:1
+[german-vpd] warm-start pool: 373 vectors
+[german-vpd] warm init (l_en=3, l_rom=3): [+1,+1,+1,+1,+1,+20,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1] [one_hot:c1406] deCE=3.14 enKL=0.011 romKL=0.128
+[german-vpd] warm init (l_en=10, l_rom=10): [+1,+1,+1,+1,+1,+0,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1] [one_hot:c1406] deCE=2.69 enKL=0.001 romKL=0.001
+[german-vpd] warm init (l_en=10, l_rom=30): [+1,+1,+1,+1,+2,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1] [one_hot:c2803] deCE=2.69 enKL=0.001 romKL=0.001
+[german-vpd] warm init (l_en=30, l_rom=30): [+1,+1,+1,+1,+1,+0,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1] [one_hot:c1406] deCE=2.69 enKL=0.001 romKL=0.001
+[german-vpd] warm init (l_en=30, l_rom=100): [+1,+1,+1,+1,+2,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1,+1] [one_hot:c2803] deCE=2.69 enKL=0.001 romKL=0.001
+[german-vpd] step 0000: (l_en=3,l_rom=3) deCE=3.04 enKL=0.010 romKL=0.116, (l_en=10,l_rom=10) deCE=2.62 enKL=0.001 romKL=0.001, (l_en=10,l_rom=30) deCE=2.61 enKL=0.001 romKL=0.001, (l_en=30,l_rom=30) deCE=2.62 enKL=0.001 romKL=0.001, (l_en=30,l_rom=100) deCE=2.61 enKL=0.001 romKL=0.001
+[german-vpd] step 0025: (l_en=3,l_rom=3) deCE=3.88 enKL=0.026 romKL=0.265, (l_en=10,l_rom=10) deCE=2.88 enKL=0.001 romKL=0.001, (l_en=10,l_rom=30) deCE=2.88 enKL=0.001 romKL=0.001, (l_en=30,l_rom=30) deCE=2.88 enKL=0.001 romKL=0.001, (l_en=30,l_rom=100) deCE=2.88 enKL=0.001 romKL=0.001
+[german-vpd] step 0050: (l_en=3,l_rom=3) deCE=6.43 enKL=0.072 romKL=0.574, (l_en=10,l_rom=10) deCE=2.65 enKL=0.001 romKL=0.001, (l_en=10,l_rom=30) deCE=2.66 enKL=0.001 romKL=0.001, (l_en=30,l_rom=30) deCE=2.66 enKL=0.001 romKL=0.001, (l_en=30,l_rom=100) deCE=2.65 enKL=0.001 romKL=0.001
+[german-vpd] step 0075: (l_en=3,l_rom=3) deCE=9.54 enKL=0.359 romKL=1.148, (l_en=10,l_rom=10) deCE=2.62 enKL=0.001 romKL=0.001, (l_en=10,l_rom=30) deCE=2.62 enKL=0.001 romKL=0.001, (l_en=30,l_rom=30) deCE=2.62 enKL=0.001 romKL=0.001, (l_en=30,l_rom=100) deCE=2.62 enKL=0.001 romKL=0.001
+[german-vpd] step 0100: (l_en=3,l_rom=3) deCE=9.73 enKL=0.182 romKL=1.096, (l_en=10,l_rom=10) deCE=2.61 enKL=0.001 romKL=0.001, (l_en=10,l_rom=30) deCE=2.61 enKL=0.001 romKL=0.001, (l_en=30,l_rom=30) deCE=2.61 enKL=0.001 romKL=0.001, (l_en=30,l_rom=100) deCE=2.62 enKL=0.001 romKL=0.001
+[german-vpd] step 0125: (l_en=3,l_rom=3) deCE=10.01 enKL=0.135 romKL=1.013, (l_en=10,l_rom=10) deCE=2.88 enKL=0.001 romKL=0.001, (l_en=10,l_rom=30) deCE=2.88 enKL=0.001 romKL=0.001, (l_en=30,l_rom=30) deCE=2.88 enKL=0.001 romKL=0.001, (l_en=30,l_rom=100) deCE=2.88 enKL=0.001 romKL=0.001
+[german-vpd] step 0150: (l_en=3,l_rom=3) deCE=10.94 enKL=0.216 romKL=1.060, (l_en=10,l_rom=10) deCE=2.65 enKL=0.001 romKL=0.001, (l_en=10,l_rom=30) deCE=2.66 enKL=0.001 romKL=0.001, (l_en=30,l_rom=30) deCE=2.66 enKL=0.001 romKL=0.001, (l_en=30,l_rom=100) deCE=2.66 enKL=0.001 romKL=0.001
+[german-vpd] step 0175: (l_en=3,l_rom=3) deCE=9.40 enKL=0.344 romKL=0.991, (l_en=10,l_rom=10) deCE=2.63 enKL=0.001 romKL=0.001, (l_en=10,l_rom=30) deCE=2.63 enKL=0.001 romKL=0.001, (l_en=30,l_rom=30) deCE=2.62 enKL=0.001 romKL=0.001, (l_en=30,l_rom=100) deCE=2.62 enKL=0.001 romKL=0.001
+[german-vpd] step 0200: (l_en=3,l_rom=3) deCE=9.61 enKL=0.169 romKL=1.056, (l_en=10,l_rom=10) deCE=2.61 enKL=0.001 romKL=0.001, (l_en=10,l_rom=30) deCE=2.61 enKL=0.001 romKL=0.001, (l_en=30,l_rom=30) deCE=2.61 enKL=0.001 romKL=0.001, (l_en=30,l_rom=100) deCE=2.62 enKL=0.001 romKL=0.001
+[german-vpd] step 0225: (l_en=3,l_rom=3) deCE=9.97 enKL=0.133 romKL=0.993, (l_en=10,l_rom=10) deCE=2.88 enKL=0.001 romKL=0.001, (l_en=10,l_rom=30) deCE=2.88 enKL=0.001 romKL=0.001, (l_en=30,l_rom=30) deCE=2.88 enKL=0.001 romKL=0.001, (l_en=30,l_rom=100) deCE=2.88 enKL=0.001 romKL=0.001
+[german-vpd] step 0250: (l_en=3,l_rom=3) deCE=10.95 enKL=0.215 romKL=1.061, (l_en=10,l_rom=10) deCE=2.65 enKL=0.001 romKL=0.001, (l_en=10,l_rom=30) deCE=2.65 enKL=0.001 romKL=0.001, (l_en=30,l_rom=30) deCE=2.66 enKL=0.001 romKL=0.001, (l_en=30,l_rom=100) deCE=2.66 enKL=0.001 romKL=0.001
+[german-vpd] step 0275: (l_en=3,l_rom=3) deCE=9.41 enKL=0.345 romKL=0.992, (l_en=10,l_rom=10) deCE=2.63 enKL=0.001 romKL=0.001, (l_en=10,l_rom=30) deCE=2.62 enKL=0.001 romKL=0.001, (l_en=30,l_rom=30) deCE=2.62 enKL=0.001 romKL=0.001, (l_en=30,l_rom=100) deCE=2.62 enKL=0.001 romKL=0.001
+[german-vpd] step 0299: (l_en=3,l_rom=3) deCE=9.41 enKL=0.343 romKL=0.989, (l_en=10,l_rom=10) deCE=2.63 enKL=0.001 romKL=0.001, (l_en=10,l_rom=30) deCE=2.62 enKL=0.001 romKL=0.001, (l_en=30,l_rom=30) deCE=2.62 enKL=0.001 romKL=0.001, (l_en=30,l_rom=100) deCE=2.62 enKL=0.001 romKL=0.001
+[german-vpd] training done (643s)
+[german-vpd] guard<1: [+1.43,+1.93,+0.867,-0.0455,+3.54,+19.2,+1.36,-12.1,+1.26,-2.41,+0.46,+1.09,+11,+2.41,+1.18,-0.43] (guard_refine) dev de=+7.502 en=+0.088 romance=+0.964
+[german-vpd] guard<0.5: [+1,+1,+1,+1,+1,+1,+1,+8,+1,+1,+1,+1,+1,+1,+1,+1] (one_hot:c3634) dev de=+0.953 en=-0.016 romance=+0.321
+[german-vpd] eval german_europarl: CE 2.664 -> 10.089 (+7.425)
+[german-vpd] eval english_pile: CE 2.070 -> 2.174 (+0.104)
+[german-vpd] eval english_europarl: CE 3.041 -> 3.307 (+0.266)
+[german-vpd] eval codeparrot: CE 1.697 -> 1.780 (+0.083)
+[german-vpd] eval french_europarl_heldout: CE 2.518 -> 3.257 (+0.740)
+[german-vpd] eval spanish_europarl_heldout: CE 2.816 -> 3.752 (+0.936)
+[german-vpd] eval italian_europarl_heldout: CE 2.609 -> 3.821 (+1.213)
+[german-vpd] literal weight-edit equivalence: max |delta logit|=1.250e+00
+[german-vpd] wrote /dev/shm/geo1b/run1b_streamC4096/german_vpd_multilingual.json
+EXP1_DONE

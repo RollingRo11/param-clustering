@@ -1,0 +1,11 @@
+[german-vpd] pilot: 48 sequences x 170 positions = 8160
+[german-vpd] features [8160, 65536] collected (18s)
+[german-vpd] embedded to 256d; ||phi|| range 0.68..542.50, ratio p99/p50 5.9
+[german-vpd] plain        cluster sizes: min 3 median 28 max 92, 0 empty
+[german-vpd] magweighted  cluster sizes: min 1 median 25 max 109, 0 empty
+[german-vpd] plain: bank built (43s)
+[german-vpd] magweighted: bank built (42s)
+[german-vpd] base CE 1.8132
+[german-vpd] plain        removable within ΔCE .05: 16/256  | gini 0.558  max single 0.1513  median 0.00633
+[german-vpd] magweighted  removable within ΔCE .05: 16/256  | gini 0.551  max single 0.0874  median 0.00672
+[german-vpd] wrote /dev/shm/geo1b/run1b_streamC4096/kmeans_ablation_study.json  (total 141s)

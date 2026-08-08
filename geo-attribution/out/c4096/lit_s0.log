@@ -1,0 +1,12 @@
+[geo67] tokens: torch.Size([168, 512]) (5.1s)
+[geo67] model loaded: 24 matrices, 28.3M decomposable params
+[geo67] captured 8192 positions (0.8s)
+[geo67] features [8192, 65524] (0.1s)
+[geo67] k-means: rows 0.1s, cols 3.7s
+[geo67] base CE 2.4923
+[geo67] rows_sph     removable 1123/4096  gini 0.966  max 0.4044  bank 16.1s
+[geo67] rows_euclid  removable 1123/4096  gini 0.959  max 0.3428  bank 16.1s
+[geo67] cols_sph     removable 645/4096  gini 0.973  max 0.6096  bank 16.7s
+[geo67] cols_euclid  removable 776/4096  gini 0.971  max 0.6706  bank 16.8s
+[geo67] timing {"data": 5.1, "capture": 0.8, "features": 0.1, "pca": 0.2, "kmeans_rows": 0.1, "kmeans_cols": 3.7, "bank_rows_sph": 16.1, "bank_rows_euclid": 16.1, "bank_cols_sph": 16.7, "bank_cols_euclid": 16.8, "total": 98.7}
+[geo67] wrote out/c4096/lit_s0.json  (total 98.7s)

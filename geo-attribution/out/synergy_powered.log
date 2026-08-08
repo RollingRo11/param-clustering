@@ -1,0 +1,493 @@
+[german-vpd] screening 48 components by single ablation
+[german-vpd] materialized components [1040]: 16/112 matrices
+[german-vpd] materialized components [1040]: 32/112 matrices
+[german-vpd] materialized components [1040]: 48/112 matrices
+[german-vpd] materialized components [1040]: 64/112 matrices
+[german-vpd] materialized components [1040]: 80/112 matrices
+[german-vpd] materialized components [1040]: 96/112 matrices
+[german-vpd] materialized components [1040]: 112/112 matrices
+[german-vpd] materialized components [2798]: 16/112 matrices
+[german-vpd] materialized components [2798]: 32/112 matrices
+[german-vpd] materialized components [2798]: 48/112 matrices
+[german-vpd] materialized components [2798]: 64/112 matrices
+[german-vpd] materialized components [2798]: 80/112 matrices
+[german-vpd] materialized components [2798]: 96/112 matrices
+[german-vpd] materialized components [2798]: 112/112 matrices
+[german-vpd] materialized components [536]: 16/112 matrices
+[german-vpd] materialized components [536]: 32/112 matrices
+[german-vpd] materialized components [536]: 48/112 matrices
+[german-vpd] materialized components [536]: 64/112 matrices
+[german-vpd] materialized components [536]: 80/112 matrices
+[german-vpd] materialized components [536]: 96/112 matrices
+[german-vpd] materialized components [536]: 112/112 matrices
+[german-vpd] materialized components [3428]: 16/112 matrices
+[german-vpd] materialized components [3428]: 32/112 matrices
+[german-vpd] materialized components [3428]: 48/112 matrices
+[german-vpd] materialized components [3428]: 64/112 matrices
+[german-vpd] materialized components [3428]: 80/112 matrices
+[german-vpd] materialized components [3428]: 96/112 matrices
+[german-vpd] materialized components [3428]: 112/112 matrices
+[german-vpd] materialized components [32]: 16/112 matrices
+[german-vpd] materialized components [32]: 32/112 matrices
+[german-vpd] materialized components [32]: 48/112 matrices
+[german-vpd] materialized components [32]: 64/112 matrices
+[german-vpd] materialized components [32]: 80/112 matrices
+[german-vpd] materialized components [32]: 96/112 matrices
+[german-vpd] materialized components [32]: 112/112 matrices
+[german-vpd] materialized components [565]: 16/112 matrices
+[german-vpd] materialized components [565]: 32/112 matrices
+[german-vpd] materialized components [565]: 48/112 matrices
+[german-vpd] materialized components [565]: 64/112 matrices
+[german-vpd] materialized components [565]: 80/112 matrices
+[german-vpd] materialized components [565]: 96/112 matrices
+[german-vpd] materialized components [565]: 112/112 matrices
+[german-vpd] materialized components [1692]: 16/112 matrices
+[german-vpd] materialized components [1692]: 32/112 matrices
+[german-vpd] materialized components [1692]: 48/112 matrices
+[german-vpd] materialized components [1692]: 64/112 matrices
+[german-vpd] materialized components [1692]: 80/112 matrices
+[german-vpd] materialized components [1692]: 96/112 matrices
+[german-vpd] materialized components [1692]: 112/112 matrices
+[german-vpd] materialized components [1691]: 16/112 matrices
+[german-vpd] materialized components [1691]: 32/112 matrices
+[german-vpd] materialized components [1691]: 48/112 matrices
+[german-vpd] materialized components [1691]: 64/112 matrices
+[german-vpd] materialized components [1691]: 80/112 matrices
+[german-vpd] materialized components [1691]: 96/112 matrices
+[german-vpd] materialized components [1691]: 112/112 matrices
+[german-vpd]   screened 8/48
+[german-vpd] materialized components [3936]: 16/112 matrices
+[german-vpd] materialized components [3936]: 32/112 matrices
+[german-vpd] materialized components [3936]: 48/112 matrices
+[german-vpd] materialized components [3936]: 64/112 matrices
+[german-vpd] materialized components [3936]: 80/112 matrices
+[german-vpd] materialized components [3936]: 96/112 matrices
+[german-vpd] materialized components [3936]: 112/112 matrices
+[german-vpd] materialized components [3407]: 16/112 matrices
+[german-vpd] materialized components [3407]: 32/112 matrices
+[german-vpd] materialized components [3407]: 48/112 matrices
+[german-vpd] materialized components [3407]: 64/112 matrices
+[german-vpd] materialized components [3407]: 80/112 matrices
+[german-vpd] materialized components [3407]: 96/112 matrices
+[german-vpd] materialized components [3407]: 112/112 matrices
+[german-vpd] materialized components [2328]: 16/112 matrices
+[german-vpd] materialized components [2328]: 32/112 matrices
+[german-vpd] materialized components [2328]: 48/112 matrices
+[german-vpd] materialized components [2328]: 64/112 matrices
+[german-vpd] materialized components [2328]: 80/112 matrices
+[german-vpd] materialized components [2328]: 96/112 matrices
+[german-vpd] materialized components [2328]: 112/112 matrices
+[german-vpd] materialized components [1728]: 16/112 matrices
+[german-vpd] materialized components [1728]: 32/112 matrices
+[german-vpd] materialized components [1728]: 48/112 matrices
+[german-vpd] materialized components [1728]: 64/112 matrices
+[german-vpd] materialized components [1728]: 80/112 matrices
+[german-vpd] materialized components [1728]: 96/112 matrices
+[german-vpd] materialized components [1728]: 112/112 matrices
+[german-vpd] materialized components [3820]: 16/112 matrices
+[german-vpd] materialized components [3820]: 32/112 matrices
+[german-vpd] materialized components [3820]: 48/112 matrices
+[german-vpd] materialized components [3820]: 64/112 matrices
+[german-vpd] materialized components [3820]: 80/112 matrices
+[german-vpd] materialized components [3820]: 96/112 matrices
+[german-vpd] materialized components [3820]: 112/112 matrices
+[german-vpd] materialized components [399]: 16/112 matrices
+[german-vpd] materialized components [399]: 32/112 matrices
+[german-vpd] materialized components [399]: 48/112 matrices
+[german-vpd] materialized components [399]: 64/112 matrices
+[german-vpd] materialized components [399]: 80/112 matrices
+[german-vpd] materialized components [399]: 96/112 matrices
+[german-vpd] materialized components [399]: 112/112 matrices
+[german-vpd] materialized components [1836]: 16/112 matrices
+[german-vpd] materialized components [1836]: 32/112 matrices
+[german-vpd] materialized components [1836]: 48/112 matrices
+[german-vpd] materialized components [1836]: 64/112 matrices
+[german-vpd] materialized components [1836]: 80/112 matrices
+[german-vpd] materialized components [1836]: 96/112 matrices
+[german-vpd] materialized components [1836]: 112/112 matrices
+[german-vpd] materialized components [1742]: 16/112 matrices
+[german-vpd] materialized components [1742]: 32/112 matrices
+[german-vpd] materialized components [1742]: 48/112 matrices
+[german-vpd] materialized components [1742]: 64/112 matrices
+[german-vpd] materialized components [1742]: 80/112 matrices
+[german-vpd] materialized components [1742]: 96/112 matrices
+[german-vpd] materialized components [1742]: 112/112 matrices
+[german-vpd]   screened 16/48
+[german-vpd] materialized components [1373]: 16/112 matrices
+[german-vpd] materialized components [1373]: 32/112 matrices
+[german-vpd] materialized components [1373]: 48/112 matrices
+[german-vpd] materialized components [1373]: 64/112 matrices
+[german-vpd] materialized components [1373]: 80/112 matrices
+[german-vpd] materialized components [1373]: 96/112 matrices
+[german-vpd] materialized components [1373]: 112/112 matrices
+[german-vpd] materialized components [154]: 16/112 matrices
+[german-vpd] materialized components [154]: 32/112 matrices
+[german-vpd] materialized components [154]: 48/112 matrices
+[german-vpd] materialized components [154]: 64/112 matrices
+[german-vpd] materialized components [154]: 80/112 matrices
+[german-vpd] materialized components [154]: 96/112 matrices
+[german-vpd] materialized components [154]: 112/112 matrices
+[german-vpd] materialized components [3327]: 16/112 matrices
+[german-vpd] materialized components [3327]: 32/112 matrices
+[german-vpd] materialized components [3327]: 48/112 matrices
+[german-vpd] materialized components [3327]: 64/112 matrices
+[german-vpd] materialized components [3327]: 80/112 matrices
+[german-vpd] materialized components [3327]: 96/112 matrices
+[german-vpd] materialized components [3327]: 112/112 matrices
+[german-vpd] materialized components [972]: 16/112 matrices
+[german-vpd] materialized components [972]: 32/112 matrices
+[german-vpd] materialized components [972]: 48/112 matrices
+[german-vpd] materialized components [972]: 64/112 matrices
+[german-vpd] materialized components [972]: 80/112 matrices
+[german-vpd] materialized components [972]: 96/112 matrices
+[german-vpd] materialized components [972]: 112/112 matrices
+[german-vpd] materialized components [701]: 16/112 matrices
+[german-vpd] materialized components [701]: 32/112 matrices
+[german-vpd] materialized components [701]: 48/112 matrices
+[german-vpd] materialized components [701]: 64/112 matrices
+[german-vpd] materialized components [701]: 80/112 matrices
+[german-vpd] materialized components [701]: 96/112 matrices
+[german-vpd] materialized components [701]: 112/112 matrices
+[german-vpd] materialized components [2036]: 16/112 matrices
+[german-vpd] materialized components [2036]: 32/112 matrices
+[german-vpd] materialized components [2036]: 48/112 matrices
+[german-vpd] materialized components [2036]: 64/112 matrices
+[german-vpd] materialized components [2036]: 80/112 matrices
+[german-vpd] materialized components [2036]: 96/112 matrices
+[german-vpd] materialized components [2036]: 112/112 matrices
+[german-vpd] materialized components [954]: 16/112 matrices
+[german-vpd] materialized components [954]: 32/112 matrices
+[german-vpd] materialized components [954]: 48/112 matrices
+[german-vpd] materialized components [954]: 64/112 matrices
+[german-vpd] materialized components [954]: 80/112 matrices
+[german-vpd] materialized components [954]: 96/112 matrices
+[german-vpd] materialized components [954]: 112/112 matrices
+[german-vpd] materialized components [144]: 16/112 matrices
+[german-vpd] materialized components [144]: 32/112 matrices
+[german-vpd] materialized components [144]: 48/112 matrices
+[german-vpd] materialized components [144]: 64/112 matrices
+[german-vpd] materialized components [144]: 80/112 matrices
+[german-vpd] materialized components [144]: 96/112 matrices
+[german-vpd] materialized components [144]: 112/112 matrices
+[german-vpd]   screened 24/48
+[german-vpd] materialized components [802]: 16/112 matrices
+[german-vpd] materialized components [802]: 32/112 matrices
+[german-vpd] materialized components [802]: 48/112 matrices
+[german-vpd] materialized components [802]: 64/112 matrices
+[german-vpd] materialized components [802]: 80/112 matrices
+[german-vpd] materialized components [802]: 96/112 matrices
+[german-vpd] materialized components [802]: 112/112 matrices
+[german-vpd] materialized components [2873]: 16/112 matrices
+[german-vpd] materialized components [2873]: 32/112 matrices
+[german-vpd] materialized components [2873]: 48/112 matrices
+[german-vpd] materialized components [2873]: 64/112 matrices
+[german-vpd] materialized components [2873]: 80/112 matrices
+[german-vpd] materialized components [2873]: 96/112 matrices
+[german-vpd] materialized components [2873]: 112/112 matrices
+[german-vpd] materialized components [22]: 16/112 matrices
+[german-vpd] materialized components [22]: 32/112 matrices
+[german-vpd] materialized components [22]: 48/112 matrices
+[german-vpd] materialized components [22]: 64/112 matrices
+[german-vpd] materialized components [22]: 80/112 matrices
+[german-vpd] materialized components [22]: 96/112 matrices
+[german-vpd] materialized components [22]: 112/112 matrices
+[german-vpd] materialized components [419]: 16/112 matrices
+[german-vpd] materialized components [419]: 32/112 matrices
+[german-vpd] materialized components [419]: 48/112 matrices
+[german-vpd] materialized components [419]: 64/112 matrices
+[german-vpd] materialized components [419]: 80/112 matrices
+[german-vpd] materialized components [419]: 96/112 matrices
+[german-vpd] materialized components [419]: 112/112 matrices
+[german-vpd] materialized components [3496]: 16/112 matrices
+[german-vpd] materialized components [3496]: 32/112 matrices
+[german-vpd] materialized components [3496]: 48/112 matrices
+[german-vpd] materialized components [3496]: 64/112 matrices
+[german-vpd] materialized components [3496]: 80/112 matrices
+[german-vpd] materialized components [3496]: 96/112 matrices
+[german-vpd] materialized components [3496]: 112/112 matrices
+[german-vpd] materialized components [2839]: 16/112 matrices
+[german-vpd] materialized components [2839]: 32/112 matrices
+[german-vpd] materialized components [2839]: 48/112 matrices
+[german-vpd] materialized components [2839]: 64/112 matrices
+[german-vpd] materialized components [2839]: 80/112 matrices
+[german-vpd] materialized components [2839]: 96/112 matrices
+[german-vpd] materialized components [2839]: 112/112 matrices
+[german-vpd] materialized components [3506]: 16/112 matrices
+[german-vpd] materialized components [3506]: 32/112 matrices
+[german-vpd] materialized components [3506]: 48/112 matrices
+[german-vpd] materialized components [3506]: 64/112 matrices
+[german-vpd] materialized components [3506]: 80/112 matrices
+[german-vpd] materialized components [3506]: 96/112 matrices
+[german-vpd] materialized components [3506]: 112/112 matrices
+[german-vpd] materialized components [2554]: 16/112 matrices
+[german-vpd] materialized components [2554]: 32/112 matrices
+[german-vpd] materialized components [2554]: 48/112 matrices
+[german-vpd] materialized components [2554]: 64/112 matrices
+[german-vpd] materialized components [2554]: 80/112 matrices
+[german-vpd] materialized components [2554]: 96/112 matrices
+[german-vpd] materialized components [2554]: 112/112 matrices
+[german-vpd]   screened 32/48
+[german-vpd] materialized components [1817]: 16/112 matrices
+[german-vpd] materialized components [1817]: 32/112 matrices
+[german-vpd] materialized components [1817]: 48/112 matrices
+[german-vpd] materialized components [1817]: 64/112 matrices
+[german-vpd] materialized components [1817]: 80/112 matrices
+[german-vpd] materialized components [1817]: 96/112 matrices
+[german-vpd] materialized components [1817]: 112/112 matrices
+[german-vpd] materialized components [3994]: 16/112 matrices
+[german-vpd] materialized components [3994]: 32/112 matrices
+[german-vpd] materialized components [3994]: 48/112 matrices
+[german-vpd] materialized components [3994]: 64/112 matrices
+[german-vpd] materialized components [3994]: 80/112 matrices
+[german-vpd] materialized components [3994]: 96/112 matrices
+[german-vpd] materialized components [3994]: 112/112 matrices
+[german-vpd] materialized components [1436]: 16/112 matrices
+[german-vpd] materialized components [1436]: 32/112 matrices
+[german-vpd] materialized components [1436]: 48/112 matrices
+[german-vpd] materialized components [1436]: 64/112 matrices
+[german-vpd] materialized components [1436]: 80/112 matrices
+[german-vpd] materialized components [1436]: 96/112 matrices
+[german-vpd] materialized components [1436]: 112/112 matrices
+[german-vpd] materialized components [118]: 16/112 matrices
+[german-vpd] materialized components [118]: 32/112 matrices
+[german-vpd] materialized components [118]: 48/112 matrices
+[german-vpd] materialized components [118]: 64/112 matrices
+[german-vpd] materialized components [118]: 80/112 matrices
+[german-vpd] materialized components [118]: 96/112 matrices
+[german-vpd] materialized components [118]: 112/112 matrices
+[german-vpd] materialized components [1559]: 16/112 matrices
+[german-vpd] materialized components [1559]: 32/112 matrices
+[german-vpd] materialized components [1559]: 48/112 matrices
+[german-vpd] materialized components [1559]: 64/112 matrices
+[german-vpd] materialized components [1559]: 80/112 matrices
+[german-vpd] materialized components [1559]: 96/112 matrices
+[german-vpd] materialized components [1559]: 112/112 matrices
+[german-vpd] materialized components [1274]: 16/112 matrices
+[german-vpd] materialized components [1274]: 32/112 matrices
+[german-vpd] materialized components [1274]: 48/112 matrices
+[german-vpd] materialized components [1274]: 64/112 matrices
+[german-vpd] materialized components [1274]: 80/112 matrices
+[german-vpd] materialized components [1274]: 96/112 matrices
+[german-vpd] materialized components [1274]: 112/112 matrices
+[german-vpd] materialized components [3747]: 16/112 matrices
+[german-vpd] materialized components [3747]: 32/112 matrices
+[german-vpd] materialized components [3747]: 48/112 matrices
+[german-vpd] materialized components [3747]: 64/112 matrices
+[german-vpd] materialized components [3747]: 80/112 matrices
+[german-vpd] materialized components [3747]: 96/112 matrices
+[german-vpd] materialized components [3747]: 112/112 matrices
+[german-vpd] materialized components [1224]: 16/112 matrices
+[german-vpd] materialized components [1224]: 32/112 matrices
+[german-vpd] materialized components [1224]: 48/112 matrices
+[german-vpd] materialized components [1224]: 64/112 matrices
+[german-vpd] materialized components [1224]: 80/112 matrices
+[german-vpd] materialized components [1224]: 96/112 matrices
+[german-vpd] materialized components [1224]: 112/112 matrices
+[german-vpd]   screened 40/48
+[german-vpd] materialized components [853]: 16/112 matrices
+[german-vpd] materialized components [853]: 32/112 matrices
+[german-vpd] materialized components [853]: 48/112 matrices
+[german-vpd] materialized components [853]: 64/112 matrices
+[german-vpd] materialized components [853]: 80/112 matrices
+[german-vpd] materialized components [853]: 96/112 matrices
+[german-vpd] materialized components [853]: 112/112 matrices
+[german-vpd] materialized components [2079]: 16/112 matrices
+[german-vpd] materialized components [2079]: 32/112 matrices
+[german-vpd] materialized components [2079]: 48/112 matrices
+[german-vpd] materialized components [2079]: 64/112 matrices
+[german-vpd] materialized components [2079]: 80/112 matrices
+[german-vpd] materialized components [2079]: 96/112 matrices
+[german-vpd] materialized components [2079]: 112/112 matrices
+[german-vpd] materialized components [2200]: 16/112 matrices
+[german-vpd] materialized components [2200]: 32/112 matrices
+[german-vpd] materialized components [2200]: 48/112 matrices
+[german-vpd] materialized components [2200]: 64/112 matrices
+[german-vpd] materialized components [2200]: 80/112 matrices
+[german-vpd] materialized components [2200]: 96/112 matrices
+[german-vpd] materialized components [2200]: 112/112 matrices
+[german-vpd] materialized components [1602]: 16/112 matrices
+[german-vpd] materialized components [1602]: 32/112 matrices
+[german-vpd] materialized components [1602]: 48/112 matrices
+[german-vpd] materialized components [1602]: 64/112 matrices
+[german-vpd] materialized components [1602]: 80/112 matrices
+[german-vpd] materialized components [1602]: 96/112 matrices
+[german-vpd] materialized components [1602]: 112/112 matrices
+[german-vpd] materialized components [264]: 16/112 matrices
+[german-vpd] materialized components [264]: 32/112 matrices
+[german-vpd] materialized components [264]: 48/112 matrices
+[german-vpd] materialized components [264]: 64/112 matrices
+[german-vpd] materialized components [264]: 80/112 matrices
+[german-vpd] materialized components [264]: 96/112 matrices
+[german-vpd] materialized components [264]: 112/112 matrices
+[german-vpd] materialized components [1123]: 16/112 matrices
+[german-vpd] materialized components [1123]: 32/112 matrices
+[german-vpd] materialized components [1123]: 48/112 matrices
+[german-vpd] materialized components [1123]: 64/112 matrices
+[german-vpd] materialized components [1123]: 80/112 matrices
+[german-vpd] materialized components [1123]: 96/112 matrices
+[german-vpd] materialized components [1123]: 112/112 matrices
+[german-vpd] materialized components [2201]: 16/112 matrices
+[german-vpd] materialized components [2201]: 32/112 matrices
+[german-vpd] materialized components [2201]: 48/112 matrices
+[german-vpd] materialized components [2201]: 64/112 matrices
+[german-vpd] materialized components [2201]: 80/112 matrices
+[german-vpd] materialized components [2201]: 96/112 matrices
+[german-vpd] materialized components [2201]: 112/112 matrices
+[german-vpd] materialized components [1294]: 16/112 matrices
+[german-vpd] materialized components [1294]: 32/112 matrices
+[german-vpd] materialized components [1294]: 48/112 matrices
+[german-vpd] materialized components [1294]: 64/112 matrices
+[german-vpd] materialized components [1294]: 80/112 matrices
+[german-vpd] materialized components [1294]: 96/112 matrices
+[german-vpd] materialized components [1294]: 112/112 matrices
+[german-vpd]   screened 48/48
+[german-vpd] kept: c3994(+0.0119), c1692(+0.0049), c2201(+0.0036), c32(+0.0036), c3327(+0.0035), c565(+0.0031), c1602(+0.0029), c2554(+0.0028), c3820(+0.0028), c118(+0.0028), c3747(+0.0022), c536(-0.0018), c954(+0.0016), c264(+0.0013)
+[german-vpd] 91 pairs in pool; high-lift range 5.2..15.3, low-lift range 0.000..0.000
+[german-vpd] materialized components [3994, 118]: 16/112 matrices
+[german-vpd] materialized components [3994, 118]: 32/112 matrices
+[german-vpd] materialized components [3994, 118]: 48/112 matrices
+[german-vpd] materialized components [3994, 118]: 64/112 matrices
+[german-vpd] materialized components [3994, 118]: 80/112 matrices
+[german-vpd] materialized components [3994, 118]: 96/112 matrices
+[german-vpd] materialized components [3994, 118]: 112/112 matrices
+[german-vpd] high_lift  [1/9] c3994 x c118 lift    15.30: da +0.0119 db +0.0028 both +0.0172 -> syn +0.00245 rel +0.166
+[german-vpd] materialized components [1602, 118]: 16/112 matrices
+[german-vpd] materialized components [1602, 118]: 32/112 matrices
+[german-vpd] materialized components [1602, 118]: 48/112 matrices
+[german-vpd] materialized components [1602, 118]: 64/112 matrices
+[german-vpd] materialized components [1602, 118]: 80/112 matrices
+[german-vpd] materialized components [1602, 118]: 96/112 matrices
+[german-vpd] materialized components [1602, 118]: 112/112 matrices
+[german-vpd] high_lift  [2/9] c1602 x c118 lift    10.50: da +0.0029 db +0.0028 both +0.0065 -> syn +0.00084 rel +0.147
+[german-vpd] materialized components [32, 264]: 16/112 matrices
+[german-vpd] materialized components [32, 264]: 32/112 matrices
+[german-vpd] materialized components [32, 264]: 48/112 matrices
+[german-vpd] materialized components [32, 264]: 64/112 matrices
+[german-vpd] materialized components [32, 264]: 80/112 matrices
+[german-vpd] materialized components [32, 264]: 96/112 matrices
+[german-vpd] materialized components [32, 264]: 112/112 matrices
+[german-vpd] high_lift  [3/9] c32 x c264 lift     6.88: da +0.0036 db +0.0013 both +0.0049 -> syn +0.00002 rel +0.005
+[german-vpd] materialized components [3820, 264]: 16/112 matrices
+[german-vpd] materialized components [3820, 264]: 32/112 matrices
+[german-vpd] materialized components [3820, 264]: 48/112 matrices
+[german-vpd] materialized components [3820, 264]: 64/112 matrices
+[german-vpd] materialized components [3820, 264]: 80/112 matrices
+[german-vpd] materialized components [3820, 264]: 96/112 matrices
+[german-vpd] materialized components [3820, 264]: 112/112 matrices
+[german-vpd] high_lift  [4/9] c3820 x c264 lift     6.74: da +0.0028 db +0.0013 both +0.0040 -> syn -0.00012 rel -0.030
+[german-vpd] materialized components [2554, 954]: 16/112 matrices
+[german-vpd] materialized components [2554, 954]: 32/112 matrices
+[german-vpd] materialized components [2554, 954]: 48/112 matrices
+[german-vpd] materialized components [2554, 954]: 64/112 matrices
+[german-vpd] materialized components [2554, 954]: 80/112 matrices
+[german-vpd] materialized components [2554, 954]: 96/112 matrices
+[german-vpd] materialized components [2554, 954]: 112/112 matrices
+[german-vpd] high_lift  [5/9] c2554 x c954 lift     6.47: da +0.0028 db +0.0016 both +0.0051 -> syn +0.00064 rel +0.144
+[german-vpd] materialized components [1692, 264]: 16/112 matrices
+[german-vpd] materialized components [1692, 264]: 32/112 matrices
+[german-vpd] materialized components [1692, 264]: 48/112 matrices
+[german-vpd] materialized components [1692, 264]: 64/112 matrices
+[german-vpd] materialized components [1692, 264]: 80/112 matrices
+[german-vpd] materialized components [1692, 264]: 96/112 matrices
+[german-vpd] materialized components [1692, 264]: 112/112 matrices
+[german-vpd] high_lift  [6/9] c1692 x c264 lift     6.15: da +0.0049 db +0.0013 both +0.0061 -> syn -0.00003 rel -0.004
+[german-vpd] materialized components [1692, 2201]: 16/112 matrices
+[german-vpd] materialized components [1692, 2201]: 32/112 matrices
+[german-vpd] materialized components [1692, 2201]: 48/112 matrices
+[german-vpd] materialized components [1692, 2201]: 64/112 matrices
+[german-vpd] materialized components [1692, 2201]: 80/112 matrices
+[german-vpd] materialized components [1692, 2201]: 96/112 matrices
+[german-vpd] materialized components [1692, 2201]: 112/112 matrices
+[german-vpd] high_lift  [7/9] c1692 x c2201 lift     5.93: da +0.0049 db +0.0036 both +0.0093 -> syn +0.00078 rel +0.092
+[german-vpd] materialized components [32, 3820]: 16/112 matrices
+[german-vpd] materialized components [32, 3820]: 32/112 matrices
+[german-vpd] materialized components [32, 3820]: 48/112 matrices
+[german-vpd] materialized components [32, 3820]: 64/112 matrices
+[german-vpd] materialized components [32, 3820]: 80/112 matrices
+[german-vpd] materialized components [32, 3820]: 96/112 matrices
+[german-vpd] materialized components [32, 3820]: 112/112 matrices
+[german-vpd] high_lift  [8/9] c32 x c3820 lift     5.20: da +0.0036 db +0.0028 both +0.0067 -> syn +0.00036 rel +0.057
+[german-vpd] materialized components [1692, 3820]: 16/112 matrices
+[german-vpd] materialized components [1692, 3820]: 32/112 matrices
+[german-vpd] materialized components [1692, 3820]: 48/112 matrices
+[german-vpd] materialized components [1692, 3820]: 64/112 matrices
+[german-vpd] materialized components [1692, 3820]: 80/112 matrices
+[german-vpd] materialized components [1692, 3820]: 96/112 matrices
+[german-vpd] materialized components [1692, 3820]: 112/112 matrices
+[german-vpd] high_lift  [9/9] c1692 x c3820 lift     5.15: da +0.0049 db +0.0028 both +0.0079 -> syn +0.00022 rel +0.028
+[german-vpd] materialized components [1602, 264]: 16/112 matrices
+[german-vpd] materialized components [1602, 264]: 32/112 matrices
+[german-vpd] materialized components [1602, 264]: 48/112 matrices
+[german-vpd] materialized components [1602, 264]: 64/112 matrices
+[german-vpd] materialized components [1602, 264]: 80/112 matrices
+[german-vpd] materialized components [1602, 264]: 96/112 matrices
+[german-vpd] materialized components [1602, 264]: 112/112 matrices
+[german-vpd] low_lift   [1/9] c1602 x c264 lift     0.00: da +0.0029 db +0.0013 both +0.0036 -> syn -0.00055 rel -0.131
+[german-vpd] materialized components [3994, 536]: 16/112 matrices
+[german-vpd] materialized components [3994, 536]: 32/112 matrices
+[german-vpd] materialized components [3994, 536]: 48/112 matrices
+[german-vpd] materialized components [3994, 536]: 64/112 matrices
+[german-vpd] materialized components [3994, 536]: 80/112 matrices
+[german-vpd] materialized components [3994, 536]: 96/112 matrices
+[german-vpd] materialized components [3994, 536]: 112/112 matrices
+[german-vpd] low_lift   [2/9] c3994 x c536 lift     0.00: da +0.0119 db -0.0018 both +0.0095 -> syn -0.00061 rel -0.044
+[german-vpd] materialized components [32, 118]: 16/112 matrices
+[german-vpd] materialized components [32, 118]: 32/112 matrices
+[german-vpd] materialized components [32, 118]: 48/112 matrices
+[german-vpd] materialized components [32, 118]: 64/112 matrices
+[german-vpd] materialized components [32, 118]: 80/112 matrices
+[german-vpd] materialized components [32, 118]: 96/112 matrices
+[german-vpd] materialized components [32, 118]: 112/112 matrices
+[german-vpd] low_lift   [3/9] c32 x c118 lift     0.00: da +0.0036 db +0.0028 both +0.0060 -> syn -0.00032 rel -0.050
+[german-vpd] materialized components [3994, 3820]: 16/112 matrices
+[german-vpd] materialized components [3994, 3820]: 32/112 matrices
+[german-vpd] materialized components [3994, 3820]: 48/112 matrices
+[german-vpd] materialized components [3994, 3820]: 64/112 matrices
+[german-vpd] materialized components [3994, 3820]: 80/112 matrices
+[german-vpd] materialized components [3994, 3820]: 96/112 matrices
+[german-vpd] materialized components [3994, 3820]: 112/112 matrices
+[german-vpd] low_lift   [4/9] c3994 x c3820 lift     0.00: da +0.0119 db +0.0028 both +0.0149 -> syn +0.00013 rel +0.009
+[german-vpd] materialized components [32, 1602]: 16/112 matrices
+[german-vpd] materialized components [32, 1602]: 32/112 matrices
+[german-vpd] materialized components [32, 1602]: 48/112 matrices
+[german-vpd] materialized components [32, 1602]: 64/112 matrices
+[german-vpd] materialized components [32, 1602]: 80/112 matrices
+[german-vpd] materialized components [32, 1602]: 96/112 matrices
+[german-vpd] materialized components [32, 1602]: 112/112 matrices
+[german-vpd] low_lift   [5/9] c32 x c1602 lift     0.00: da +0.0036 db +0.0029 both +0.0061 -> syn -0.00033 rel -0.052
+[german-vpd] materialized components [3994, 1692]: 16/112 matrices
+[german-vpd] materialized components [3994, 1692]: 32/112 matrices
+[german-vpd] materialized components [3994, 1692]: 48/112 matrices
+[german-vpd] materialized components [3994, 1692]: 64/112 matrices
+[german-vpd] materialized components [3994, 1692]: 80/112 matrices
+[german-vpd] materialized components [3994, 1692]: 96/112 matrices
+[german-vpd] materialized components [3994, 1692]: 112/112 matrices
+[german-vpd] low_lift   [6/9] c3994 x c1692 lift     0.00: da +0.0119 db +0.0049 both +0.0166 -> syn -0.00021 rel -0.012
+[german-vpd] materialized components [32, 3327]: 16/112 matrices
+[german-vpd] materialized components [32, 3327]: 32/112 matrices
+[german-vpd] materialized components [32, 3327]: 48/112 matrices
+[german-vpd] materialized components [32, 3327]: 64/112 matrices
+[german-vpd] materialized components [32, 3327]: 80/112 matrices
+[german-vpd] materialized components [32, 3327]: 96/112 matrices
+[german-vpd] materialized components [32, 3327]: 112/112 matrices
+[german-vpd] low_lift   [7/9] c32 x c3327 lift     0.00: da +0.0036 db +0.0035 both +0.0066 -> syn -0.00042 rel -0.059
+[german-vpd] materialized components [3994, 264]: 16/112 matrices
+[german-vpd] materialized components [3994, 264]: 32/112 matrices
+[german-vpd] materialized components [3994, 264]: 48/112 matrices
+[german-vpd] materialized components [3994, 264]: 64/112 matrices
+[german-vpd] materialized components [3994, 264]: 80/112 matrices
+[german-vpd] materialized components [3994, 264]: 96/112 matrices
+[german-vpd] materialized components [3994, 264]: 112/112 matrices
+[german-vpd] low_lift   [8/9] c3994 x c264 lift     0.00: da +0.0119 db +0.0013 both +0.0130 -> syn -0.00020 rel -0.015
+[german-vpd] materialized components [3994, 32]: 16/112 matrices
+[german-vpd] materialized components [3994, 32]: 32/112 matrices
+[german-vpd] materialized components [3994, 32]: 48/112 matrices
+[german-vpd] materialized components [3994, 32]: 64/112 matrices
+[german-vpd] materialized components [3994, 32]: 80/112 matrices
+[german-vpd] materialized components [3994, 32]: 96/112 matrices
+[german-vpd] materialized components [3994, 32]: 112/112 matrices
+[german-vpd] low_lift   [9/9] c3994 x c32 lift     0.00: da +0.0119 db +0.0036 both +0.0156 -> syn +0.00012 rel +0.007
+[german-vpd] high_lift  relative synergy +0.0674 (median +0.0569, sd 0.0732, 78% positive, n=9)
+[german-vpd] low_lift   relative synergy -0.0386 (median -0.0440, sd 0.0431, 22% positive, n=9)
+[german-vpd] Welch t (relative) = +3.74
+[german-vpd] wrote /dev/shm/geo1b/run1b_streamC4096/synergy_powered.json

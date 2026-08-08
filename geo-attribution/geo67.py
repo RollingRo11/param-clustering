@@ -30,9 +30,11 @@ import os
 import sys
 import time
 from pathlib import Path
+from typing import Callable
 
-sys.path.insert(0, "/workspace/param-decomp")
+sys.path.insert(0, os.environ.get("PARAM_DECOMP_ROOT", "/workspace/param-decomp"))
 
+import numpy as np
 import torch
 import torch.distributed as dist
 import torch.nn.functional as F
@@ -55,10 +57,13 @@ def ddp_setup():
     ddp = "RANK" in os.environ
     rank = int(os.environ.get("RANK", 0))
     world = int(os.environ.get("WORLD_SIZE", 1))
-    device = f"cuda:{rank}" if ddp else "cuda"
+    local_rank = int(os.environ.get("LOCAL_RANK", rank))
+    device = f"cuda:{local_rank}" if ddp else "cuda"
     if ddp:
-        dist.init_process_group("nccl")
-        torch.cuda.set_device(rank)
+        # Establish the CUDA mapping before NCCL is initialized so barriers do
+        # not have to guess which device belongs to this process.
+        torch.cuda.set_device(local_rank)
+        dist.init_process_group("nccl", device_id=torch.device(device))
     return ddp, rank, world, device
 
 
@@ -138,12 +143,20 @@ def apply_gim(target: nn.Module, tau: float = 2.0):
 
 
 class Capture:
-    """Monkeypatch decomposed linears: weight scaling for the IG path + pre cache."""
+    """Monkeypatch decomposed linears: weight scaling for the IG path + pre cache.
 
-    def __init__(self, target: nn.Module):
+    ``linear_kernel`` is injectable so the fast collector can compile the pure
+    linear operation while leaving cache mutation in eager Python. Compiling
+    the cache-writing closure itself disconnects its side-effect-only tensors
+    from AOTAutograd; keeping mutation outside the compiled boundary makes the
+    captured outputs ordinary autograd graph nodes.
+    """
+
+    def __init__(self, target: nn.Module, linear_kernel: Callable = F.linear):
         self.target = target
         self.wscale = 1.0
         self.cache: dict[str, dict] = {}
+        self.linear_kernel = linear_kernel
         for path in MODULES:
             lin = target.get_submodule(path)
             lin._path = path
@@ -153,7 +166,7 @@ class Capture:
     def _mk(self, lin: nn.Linear):
         def fwd(x: Tensor) -> Tensor:
             w = lin.weight if self.wscale == 1.0 else lin.weight * self.wscale
-            out = F.linear(x, w, lin.bias)
+            out = self.linear_kernel(x, w, lin.bias)
             self.cache[lin._path] = {"pre": x, "post": out}
             return out
         return fwd
@@ -177,6 +190,14 @@ def scalar_sum(logits: Tensor, idx: Tensor, mode: str = "ce") -> Tensor:
     the argmax token (saturation-free direct-logit attribution)."""
     if mode == "ce":
         return ce_sum(logits, idx)
+    if mode == "equal_reward":
+        # The streaming collector uses this GIM objective: every observed
+        # next-token logit receives the same unit output cotangent. Keeping the
+        # implementation here as well ensures reusable banks are ranked with
+        # the same scalar they were collected with.
+        return logits[:, :-1].float().gather(-1, idx[:, 1:, None]).sum()
+    if mode not in {"logp_pred", "logit_pred"}:
+        raise ValueError(f"unknown attribution scalar: {mode}")
     pred = logits[:, :-1].argmax(-1).detach()
     z = (F.log_softmax(logits[:, :-1].float(), -1) if mode == "logp_pred"
          else logits[:, :-1].float())
@@ -259,6 +280,65 @@ def load_collect(dirp: Path) -> dict:
                   "g": torch.cat([q[p]["g"] for q in parts], dim=1)}
     out["n"] = out["tok"].shape[0]
     return out
+
+
+def load_extract_collect(dirp: Path) -> dict:
+    """Load extraction metadata, leaving streamed module tensors on disk."""
+    manifest_path = dirp / "stream_collection.json"
+    if not manifest_path.exists():
+        return load_collect(dirp)
+    manifest = json.loads(manifest_path.read_text())
+    if manifest.get("format") != "module_shards_v1":
+        raise ValueError(f"unsupported collection format in {manifest_path}")
+    parts = [torch.load(dirp / f"stream_meta_rank{rank}.pt",
+                        weights_only=True, map_location="cpu")
+             for rank in range(int(manifest["world"]))]
+    if any(not part.get("complete") for part in parts):
+        raise ValueError(f"stream collection in {dirp} has incomplete rank metadata")
+    valid = [part["labels"] >= 0 for part in parts]
+    out = {
+        "modules": manifest["modules"], "ig_k": int(manifest["ig_k"]),
+        "sensor": manifest.get("sensor", "ig"),
+        "scalar": manifest.get("scalar", "ce"),
+        "gim_tau": manifest.get("gim_tau", 2.0),
+        "tok": torch.cat([p["tok"][m] for p, m in zip(parts, valid)]),
+        "next": torch.cat([p["next"][m] for p, m in zip(parts, valid)]),
+        "_stream_manifest": manifest, "_stream_parts": parts,
+        "_stream_dir": dirp,
+    }
+    out["n"] = out["tok"].shape[0]
+    return out
+
+
+def load_extract_module(col: dict, path: str) -> dict[str, Tensor]:
+    """Load one module from BF16 stream shards; legacy collections pass through."""
+    if "_stream_manifest" not in col:
+        return col[path]
+    manifest = col["_stream_manifest"]
+    module_index = manifest["modules"].index(path)
+    pieces = {"p": [], "g": []}
+    for rank, part in enumerate(col["_stream_parts"]):
+        quota = int(part["quota"])
+        capacity = int(manifest["C"]) * quota
+        if part["labels"].numel() != capacity:
+            raise ValueError(f"rank {rank} reservoir metadata has the wrong capacity")
+        slots = (part["labels"] >= 0).nonzero(as_tuple=False).flatten().numpy()
+        if not len(slots):
+            continue
+        for kind in ("p", "g"):
+            dim = int(manifest["dims"][path][kind])
+            file = (col["_stream_dir"] / f"reservoir_rank{rank}"
+                    / f"module_{module_index:03d}_{kind}.bf16")
+            expected = int(manifest["ig_k"]) * capacity * dim * 2
+            if not file.exists() or file.stat().st_size != expected:
+                raise ValueError(f"invalid streamed module shard {file}")
+            mm = np.memmap(file, dtype=np.uint16, mode="r",
+                           shape=(int(manifest["ig_k"]), capacity, dim))
+            bits = torch.from_numpy(np.ascontiguousarray(mm[:, slots]))
+            pieces[kind].append(bits.view(torch.bfloat16))
+    if not pieces["p"]:
+        raise ValueError(f"stream reservoir contains no examples for {path}")
+    return {kind: torch.cat(values, dim=1) for kind, values in pieces.items()}
 
 
 # -------------------------------------------------------------------- gram ----
@@ -469,7 +549,7 @@ def stage_extract_p(args):
     Disjoint masses -> no cancellation between components by construction."""
     device = "cuda"
     target = load_target(device)
-    col = load_collect(args.dir)
+    col = load_extract_collect(args.dir)
     lab_path = (args.dir / f"labels_C{args.C}.pt" if args.C > 0
                 and (args.dir / f"labels_C{args.C}.pt").exists()
                 else args.dir / "labels.pt")
@@ -482,8 +562,9 @@ def stage_extract_p(args):
     for path in col["modules"]:
         W = target.get_submodule(path).weight.detach().float()
         d_out, d_in = W.shape
-        P = col[path]["p"].to(device).float().abs().reshape(K * N, d_in)
-        G = col[path]["g"].to(device).float().abs().reshape(K * N, d_out)
+        module_col = load_extract_module(col, path)
+        P = module_col["p"].to(device).float().abs().reshape(K * N, d_in)
+        G = module_col["g"].to(device).float().abs().reshape(K * N, d_out)
         labs2 = labels.repeat(K)
         Wabs = W.abs()
         sumM = torch.zeros(d_out, d_in, device=device)
@@ -510,7 +591,7 @@ def stage_extract_p(args):
         base_frac = wmass[a == 0].sum().item() / wmass.sum().item()
         report[path] = {"base_frac": base_frac}
         log(f"extract_p {path}: base mass {base_frac:.3f}")
-        del P, G, sumM, mx, am
+        del module_col, P, G, sumM, mx, am
         torch.cuda.empty_cache()
     suf = f"_{args.banks_tag}" if args.banks_tag else ""
     torch.save({"format": "partition", "assign": assign, "C": C, "m": 0,
@@ -529,7 +610,7 @@ def stage_extract_ps(args):
     sum to 1 per entry (exact faithfulness); no cancellation (positive slices)."""
     device = "cuda"
     target = load_target(device)
-    col = load_collect(args.dir)
+    col = load_extract_collect(args.dir)
     lab_path = (args.dir / f"labels_C{args.C}.pt" if args.C > 0
                 and (args.dir / f"labels_C{args.C}.pt").exists()
                 else args.dir / "labels.pt")
@@ -543,8 +624,9 @@ def stage_extract_ps(args):
     for path in col["modules"]:
         W = target.get_submodule(path).weight.detach().float()
         d_out, d_in = W.shape
-        P = col[path]["p"].to(device).float().abs().reshape(K * N, d_in)
-        G = col[path]["g"].to(device).float().abs().reshape(K * N, d_out)
+        module_col = load_extract_module(col, path)
+        P = module_col["p"].to(device).float().abs().reshape(K * N, d_in)
+        G = module_col["g"].to(device).float().abs().reshape(K * N, d_out)
         labs2 = labels.repeat(K)
         vals = torch.zeros(S, d_out, d_in, device=device)
         idxs = torch.zeros(S, d_out, d_in, dtype=torch.int16, device=device)
@@ -571,7 +653,7 @@ def stage_extract_ps(args):
         top1 = w[0].mean().item()
         report[path] = {"mean_top1_share": top1}
         log(f"extract_ps {path}: mean top-1 share {top1:.3f}")
-        del P, G, vals, idxs, w
+        del module_col, P, G, vals, idxs, w
         torch.cuda.empty_cache()
     suf = f"_{args.banks_tag}" if args.banks_tag else ""
     torch.save({"format": "softpart", "sidx": sidx, "swgt": swgt, "C": C,
@@ -1014,7 +1096,8 @@ def main():
                     help="gim = IG + GIM backward rules (softmax temperature "
                          "jacobian, frozen RMSNorm stats)")
     ap.add_argument("--gim_tau", type=float, default=2.0)
-    ap.add_argument("--scalar", choices=["ce", "logp_pred", "logit_pred"],
+    ap.add_argument("--scalar", choices=["ce", "logp_pred", "logit_pred",
+                                         "equal_reward"],
                     default="ce",
                     help="attribution scalar: ground-truth CE (default), "
                          "log-prob of the model's argmax token, or its raw "

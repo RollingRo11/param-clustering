@@ -1,0 +1,24 @@
+[german-vpd] guarded reselection over components [1014, 337, 1555, 560, 1029, 364]
+[german-vpd] reusing cached protocol data /dev/shm/geo1b/run1b_stream/german_vpd_data.pt
+[german-vpd] materialized components [1014, 337, 1555, 560, 1029, 364]: 16/112 matrices
+[german-vpd] materialized components [1014, 337, 1555, 560, 1029, 364]: 32/112 matrices
+[german-vpd] materialized components [1014, 337, 1555, 560, 1029, 364]: 48/112 matrices
+[german-vpd] materialized components [1014, 337, 1555, 560, 1029, 364]: 64/112 matrices
+[german-vpd] materialized components [1014, 337, 1555, 560, 1029, 364]: 80/112 matrices
+[german-vpd] materialized components [1014, 337, 1555, 560, 1029, 364]: 96/112 matrices
+[german-vpd] materialized components [1014, 337, 1555, 560, 1029, 364]: 112/112 matrices
+[german-vpd] replicated component editor on cuda:1
+[german-vpd] screening 204 candidates
+[german-vpd] screening done (26s)
+[german-vpd] guard<1: [+1,+1,+1,+1,+1,+12.2] (guard_refine) dev de=+1.031 en=+0.098 romance_max=+0.497
+[german-vpd] guard<0.5: [+1,+1,+1,+1,+1,+12.2] (guard_refine) dev de=+1.031 en=+0.098 romance_max=+0.497
+[german-vpd] guard<0.3: [+1,+1,+1,+1,+1,+10] (one_hot:c364) dev de=+0.535 en=+0.058 romance_max=+0.275
+[german-vpd] eval german_europarl: CE 2.664 -> 3.764 (+1.100)
+[german-vpd] eval english_pile: CE 2.070 -> 2.140 (+0.070)
+[german-vpd] eval english_europarl: CE 3.041 -> 3.105 (+0.065)
+[german-vpd] eval codeparrot: CE 1.697 -> 1.815 (+0.118)
+[german-vpd] eval french_europarl_heldout: CE 2.518 -> 2.979 (+0.461)
+[german-vpd] eval spanish_europarl_heldout: CE 2.816 -> 3.274 (+0.458)
+[german-vpd] eval italian_europarl_heldout: CE 2.609 -> 3.160 (+0.551)
+[german-vpd] literal weight-edit equivalence: max |delta logit|=0.000e+00
+[german-vpd] wrote /dev/shm/geo1b/run1b_stream/german_vpd_prop1b_k6_guarded.json

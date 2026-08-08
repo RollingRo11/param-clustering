@@ -1,0 +1,19 @@
+[german-vpd] layer 0 done (32 heads)
+[german-vpd] layer 1 done (32 heads)
+[german-vpd] layer 2 done (32 heads)
+[german-vpd] layer 3 done (32 heads)
+[german-vpd] layer 4 done (32 heads)
+[german-vpd] layer 5 done (32 heads)
+[german-vpd] layer 6 done (32 heads)
+[german-vpd] layer 7 done (32 heads)
+[german-vpd] layer 8 done (32 heads)
+[german-vpd] layer 9 done (32 heads)
+[german-vpd] layer 10 done (32 heads)
+[german-vpd] layer 11 done (32 heads)
+[german-vpd] layer 12 done (32 heads)
+[german-vpd] layer 13 done (32 heads)
+[german-vpd] layer 14 done (32 heads)
+[german-vpd] layer 15 done (32 heads)
+[german-vpd] same-component QK interaction mass: 0.0165 vs chance 0.0118  (1.40x); 91.7% of the strongest pairs are CROSS-component
+[german-vpd] diagonal fraction by RoPE offset: t=0:0.0165, t=1:0.0165, t=2:0.0165, t=3:0.0165, t=4:0.0165, t=6:0.0165, t=8:0.0164, t=12:0.0164, t=16:0.0165, t=24:0.0164, t=32:0.0164, t=64:0.0164, t=128:0.0164
+[german-vpd] wrote /dev/shm/geo1b/run1b_streamC4096/qk_interactions.json

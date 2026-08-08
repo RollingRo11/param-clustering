@@ -1,0 +1,37 @@
++ cd /workspace/param-clustering/geo-attribution
++ CUDA_VISIBLE_DEVICES=0
++ python3.12 collect_fast.py spec_stats --tag stream_spec_stats --val_tag run1m_stream --feat_dim 16384
+[r0] spec_stats: D=16384 stat-weighted proposal from 2048 reservoir rows -> /dev/shm/geo1b/stream_spec_stats/spec.pt
++ python3.12 collect_fast.py spec_subset --spec_tag stream_spec_stats --tag stream_spec_stats_d8192 --feat_dim 8192
+[r0] spec_subset: D=16384 -> 8192 at /dev/shm/geo1b/stream_spec_stats_d8192/spec.pt
++ python3.12 collect_fast.py spec_subset --spec_tag stream_spec_stats --tag stream_spec_stats_d4096 --feat_dim 4096
+[r0] spec_subset: D=16384 -> 4096 at /dev/shm/geo1b/stream_spec_stats_d4096/spec.pt
++ for tag in stream_spec stream_spec_d8192 stream_spec_d4096 stream_spec_stats stream_spec_stats_d8192 stream_spec_stats_d4096
++ CUDA_VISIBLE_DEVICES=0
++ python3.12 collect_fast.py validate --spec_tag stream_spec --val_tag run1m_stream --val_n 512 --val_rank 1 --val_gate 0.0
+[r0] VALIDATE D=16384: corr_raw=0.4290, corr_normalized=0.4349, rel_fro=0.4036 (gate 0.0) -> /dev/shm/geo1b/stream_spec/validate_D16384.json
++ for tag in stream_spec stream_spec_d8192 stream_spec_d4096 stream_spec_stats stream_spec_stats_d8192 stream_spec_stats_d4096
++ CUDA_VISIBLE_DEVICES=0
++ python3.12 collect_fast.py validate --spec_tag stream_spec_d8192 --val_tag run1m_stream --val_n 512 --val_rank 1 --val_gate 0.0
+[r0] VALIDATE D=8192: corr_raw=0.3308, corr_normalized=0.3304, rel_fro=0.5095 (gate 0.0) -> /dev/shm/geo1b/stream_spec_d8192/validate_D8192.json
++ for tag in stream_spec stream_spec_d8192 stream_spec_d4096 stream_spec_stats stream_spec_stats_d8192 stream_spec_stats_d4096
++ CUDA_VISIBLE_DEVICES=0
++ python3.12 collect_fast.py validate --spec_tag stream_spec_d4096 --val_tag run1m_stream --val_n 512 --val_rank 1 --val_gate 0.0
+[r0] VALIDATE D=4096: corr_raw=0.2281, corr_normalized=0.2290, rel_fro=0.8160 (gate 0.0) -> /dev/shm/geo1b/stream_spec_d4096/validate_D4096.json
++ for tag in stream_spec stream_spec_d8192 stream_spec_d4096 stream_spec_stats stream_spec_stats_d8192 stream_spec_stats_d4096
++ CUDA_VISIBLE_DEVICES=0
++ python3.12 collect_fast.py validate --spec_tag stream_spec_stats --val_tag run1m_stream --val_n 512 --val_rank 1 --val_gate 0.0
+[r0] VALIDATE D=16384: corr_raw=0.5941, corr_normalized=0.5796, rel_fro=0.3839 (gate 0.0) -> /dev/shm/geo1b/stream_spec_stats/validate_D16384.json
++ for tag in stream_spec stream_spec_d8192 stream_spec_d4096 stream_spec_stats stream_spec_stats_d8192 stream_spec_stats_d4096
++ CUDA_VISIBLE_DEVICES=0
++ python3.12 collect_fast.py validate --spec_tag stream_spec_stats_d8192 --val_tag run1m_stream --val_n 512 --val_rank 1 --val_gate 0.0
+[r0] VALIDATE D=8192: corr_raw=0.4404, corr_normalized=0.4403, rel_fro=0.5015 (gate 0.0) -> /dev/shm/geo1b/stream_spec_stats_d8192/validate_D8192.json
++ for tag in stream_spec stream_spec_d8192 stream_spec_d4096 stream_spec_stats stream_spec_stats_d8192 stream_spec_stats_d4096
++ CUDA_VISIBLE_DEVICES=0
++ python3.12 collect_fast.py validate --spec_tag stream_spec_stats_d4096 --val_tag run1m_stream --val_n 512 --val_rank 1 --val_gate 0.0
+[r0] VALIDATE D=4096: corr_raw=0.3475, corr_normalized=0.3349, rel_fro=0.6519 (gate 0.0) -> /dev/shm/geo1b/stream_spec_stats_d4096/validate_D4096.json
++ CUDA_VISIBLE_DEVICES=1
++ python3.12 collect_fast.py ab_master --spec_tag stream_spec --tag ab_master_check --pos_per_seq 506 --batch_seqs 4 --val_gate 0.0
+[r0] AB-MASTER: feature_corr=0.99976, gram corr raw/normalized=0.99978/0.99977 -> /dev/shm/geo1b/ab_master_check/ab_master.json
++ echo ROUND2_DONE
+ROUND2_DONE
