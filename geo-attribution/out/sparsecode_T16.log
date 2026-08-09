@@ -1,0 +1,16 @@
+[pile] cache hit strat_246bd3dda1b098a4.pt: (168, 512), 14 subsets
+[sparse] pilot N=8192 D=65525 -> E (8192, 256) (7s)
+[sparse]   dict iter 1/8: resid 0.0126, dead 0
+[sparse]   dict iter 2/8: resid 0.0098, dead 0
+[sparse]   dict iter 3/8: resid 0.0087, dead 0
+[sparse]   dict iter 4/8: resid 0.0082, dead 0
+[sparse]   dict iter 5/8: resid 0.0078, dead 0
+[sparse]   dict iter 6/8: resid 0.0075, dead 0
+[sparse]   dict iter 7/8: resid 0.0073, dead 0
+[sparse]   dict iter 8/8: resid 0.0071, dead 0
+[sparse] dictionary fit: mean atoms/token 16.0 of T=16
+[sparse] bank built (32s)
+[sparse] unablated CE on 48 eval tokens: 2.7554
+[sparse] rank arm: k needed 256/4096  CE@64 16.56  CE@256 1.92  roundtrip +1.0e-05
+[sparse] gate arm: keep only the token's own 16.0 atoms -> CE 69.45 (median 70.70, unablated 2.76)
+[sparse] wrote out/sparsecode_T16.json (total 47s)
