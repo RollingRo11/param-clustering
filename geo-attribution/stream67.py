@@ -376,7 +376,7 @@ def phase_bank(args, dev):
     valid = valid_tot.to(dev)                    # filled rows per cluster
     log(f"reservoir: {int(valid.sum())}/{C*quota} slots filled, "
         f"{int((valid == 0).sum())} empty clusters, "
-        f"{st['tokens']/1e6:.0f}M tokens streamed")
+        f"{n_tok/1e6:.0f}M tokens streamed")
     w_slot = (1.0 / valid.clamp_min(1).float())[:, None].expand(C, quota)
 
     sidx, swgt = {}, {}
@@ -413,6 +413,12 @@ def phase_bank(args, dev):
         del vals, idxs, w
         torch.cuda.empty_cache()
     log(f"bank built ({time.perf_counter()-t0:.0f}s)")
+    if args.save_bank:
+        torch.save({"sidx": {p: sidx[p].cpu() for p in MODULES},
+                    "swgt": {p: swgt[p].cpu() for p in MODULES},
+                    "C": C, "sensor": args.sensor, "tokens": n_tok},
+                   RUN / f"bank_C{C}_{args.sensor}.pt")
+        log(f"saved bank to {RUN}/bank_C{C}_{args.sensor}.pt")
     del st
     torch.cuda.empty_cache()
 
@@ -537,6 +543,7 @@ def main():
     ap.add_argument("--out", default="out/stream67.json")
     ap.add_argument("--shard", type=int, default=0)
     ap.add_argument("--nshard", type=int, default=1)
+    ap.add_argument("--save_bank", action="store_true")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
     dev = args.device

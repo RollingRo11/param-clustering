@@ -21,3 +21,6 @@ geo-attribution/out/target_local/
 .env.*
 *.pem
 *.key
+
+# Third-party clone for reference (goodfire-ai/spd)
+spd_lib/
