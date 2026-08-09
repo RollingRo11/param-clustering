@@ -1,0 +1,11 @@
+[pile] cache hit strat_246bd3dda1b098a4.pt: (168, 512), 14 subsets
+[setcover] bank built (42s)
+[setcover] refine 64/256 (4s)
+[setcover] refine 128/256 (8s)
+[setcover] refine 192/256 (12s)
+[setcover] refine 256/256 (16s)
+[setcover] refined ownership over 256 tokens (16s)
+[setcover] unablated CE on 48 eval tokens: 2.7554
+[setcover] original  k needed   256/4096  CE@64 26.55  CE@256 2.61  roundtrip -3.1e-05
+[setcover] refined   k needed   192/4096  CE@64 8.47  CE@256 1.74  roundtrip -3.7e-05
+[setcover] wrote out/setcover67.json (total 73s)
