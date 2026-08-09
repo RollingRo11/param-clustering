@@ -52,7 +52,6 @@ def main():
     ap.add_argument("--embed_dim", type=int, default=256)
     ap.add_argument("--kmeans_iters", type=int, default=25)
     ap.add_argument("--soft_s", type=int, default=8)
-    ap.add_argument("--feat_topq", type=int, default=0)
     ap.add_argument("--seq", type=int, default=512)
     ap.add_argument("--eval_seqs", type=int, default=32)
     ap.add_argument("--n_samples", type=int, default=48,
@@ -178,12 +177,6 @@ def main():
             X[:, off:off + w] = (acc / K) * scales[p][None]
             off += w
         X = X[:, :off].clamp(-6e4, 6e4)
-        if args.feat_topq and args.feat_topq < X.shape[1]:
-            # keep each token row's top-q |coords|; the weak tail is what
-            # smears cluster boundaries across circuits
-            thr = X.abs().kthvalue(X.shape[1] - args.feat_topq, dim=1,
-                                   keepdim=True).values
-            X = X * (X.abs() > thr)
         Xc = X - X.mean(0)
         q = min(X.shape[1], N, args.embed_dim + 64)
         gg = torch.Generator(device=dev).manual_seed(args.seed)
