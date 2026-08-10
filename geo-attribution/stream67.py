@@ -335,7 +335,7 @@ def phase_stream(args, dev):
     torch.save({"res_p": [{p: v.cpu() for p, v in d.items()} for d in res],
                 "res_g": [{p: v.cpu() for p, v in d.items()} for d in resg],
                 "seen": seen, "quota": quota, "tokens": done},
-               RUN / f"res_C{args.C}_{args.sensor}_s{args.shard}"
+               RUN / f"res_C{args.C}_{args.sensor}{args.tag}_s{args.shard}"
                f"of{args.nshard}.pt")
     log(f"streamed {done/1e6:.1f}M tokens; wrote reservoir")
 
@@ -346,7 +346,7 @@ def phase_bank(args, dev):
     """Softpart bank from the reservoir, then per-input sufficiency."""
     fit = torch.load(RUN / f"fit_C{args.C}_{args.sensor}.pt",
                      map_location="cpu", weights_only=False)
-    shards = sorted(RUN.glob(f"res_C{args.C}_{args.sensor}_s*of*.pt"))
+    shards = sorted(RUN.glob(f"res_C{args.C}_{args.sensor}{args.tag}_s*of*.pt"))
     assert shards, f"no reservoir shards for C={args.C} {args.sensor}"
     sts = [torch.load(f, map_location="cpu", weights_only=False)
            for f in shards]
@@ -422,19 +422,15 @@ def phase_bank(args, dev):
     del st
     torch.cuda.empty_cache()
 
-    # ---- per-input sufficiency, same protocol as sufficiency67 ----
+    # ---- refinement + per-input sufficiency, both banks ----
     from transformers import AutoTokenizer
     from pile_data import load_pile_blocks
     tok = AutoTokenizer.from_pretrained(S67.TOKENIZER)
     ids_cpu, _, _ = load_pile_blocks(tok, 168, args.seq, seed=0,
                                      tokenizer_name=S67.TOKENIZER)
-    eval_ids = ids_cpu[-args.eval_seqs:].to(dev)
-    gsel = torch.Generator().manual_seed(12345)
-    samp = [(int(torch.randint(0, eval_ids.shape[0], (1,), generator=gsel)),
-             int(torch.randint(64, args.seq - 2, (1,), generator=gsel)))
-            for _ in range(args.n_samples)]
-    KEEP = [k for k in [0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 384, 512, 768,
-                        1024, 1536, 2048, 3072, 4096, 6144, 8192] if k < C] + [C]
+    IDS = ids_cpu.to(dev)
+    fit_rows, eval_ids = IDS[:-args.eval_seqs], IDS[-args.eval_seqs:]
+    path = cfg.get("ig_path", "weights")
 
     @torch.no_grad()
     def restore():
@@ -446,15 +442,7 @@ def phase_bank(args, dev):
         lg = model(eval_ids[b:b + 1])[0, t].float()
         return float(F.cross_entropy(lg[None], eval_ids[b, t + 1][None]))
 
-    restore()
-    base = float(np.mean([tok_ce(b, t) for b, t in samp]))
-    log(f"unablated CE on {len(samp)} target tokens: {base:.4f}")
-    curves = np.zeros((len(samp), len(KEEP)))
-    rand = np.zeros((len(samp), len(KEEP)))
-    rg = torch.Generator(device=dev).manual_seed(args.seed + 31)
-    path = cfg.get("ig_path", "weights")
-    for si_, (b, t) in enumerate(samp):
-        restore()
+    def token_attr(ids_row, t):
         A = {p: torch.zeros_like(W0[p]) for p in MODULES}
         for step in range(K):
             a = (step + 1) / K
@@ -465,57 +453,113 @@ def phase_bank(args, dev):
             for p in MODULES:
                 mod = model.get_submodule(p)
 
-                def hook(m, inp, out, _p=p):
+                def hook(mm, inp, out, _p=p):
                     pre[_p] = inp[0]
                     out.retain_grad()
                     post[_p] = out
                 hs.append(mod.register_forward_hook(hook))
-            lg = model(eval_ids[b:b + 1])
+            lg = model(ids_row[None])
             for h in hs:
                 h.remove()
-            reward = lg[0, t, eval_ids[b, t + 1]].float()
+            reward = lg[0, t, ids_row[t + 1]].float()
             grads = torch.autograd.grad(reward, [post[p] for p in MODULES])
             for p, g in zip(MODULES, grads):
                 A[p] += (g[0].float().t() @ pre[p][0].float()) / K
             del pre, post, grads, lg
         restore()
-        attr = torch.zeros(C, device=dev, dtype=torch.float64)
+        return {p: A[p] * W0[p] for p in MODULES}
+
+    def comp_scores(AW, sw):
+        v = torch.zeros(C, device=dev, dtype=torch.float64)
         with torch.no_grad():
             for p in MODULES:
-                attr += torch.bincount(
-                    sidx[p].reshape(-1).int(),
-                    weights=(swgt[p].float() * (A[p] * W0[p])[None]
-                             ).reshape(-1).double(), minlength=C)
-        del A
-        for order, store in ((torch.argsort(attr, descending=True), curves),
-                             (torch.randperm(C, generator=rg, device=dev), rand)):
+                v += torch.bincount(sidx[p].reshape(-1).int(),
+                                    weights=(sw[p].float() * AW[p][None]
+                                             ).reshape(-1).double(),
+                                    minlength=C)
+        return v
+
+    # set-cover refinement on fit rows only
+    swgt_r = None
+    if args.refine_iters > 0:
+        t1 = time.perf_counter()
+        gref = torch.Generator().manual_seed(args.seed + 555)
+        ref = [(int(torch.randint(0, fit_rows.shape[0], (1,), generator=gref)),
+                int(torch.randint(64, args.seq - 2, (1,), generator=gref)))
+               for _ in range(args.refine_tokens)]
+        AWs = [{m: v.half() for m, v in token_attr(fit_rows[b], t).items()}
+               for b, t in ref]
+        swgt_r = {m: swgt[m].clone() for m in MODULES}
+        for it in range(args.refine_iters):
+            acc = {m: torch.zeros_like(swgt[m], dtype=torch.float32)
+                   for m in MODULES}
+            for AW in AWs:
+                sc = comp_scores(AW, swgt_r)
+                order = torch.argsort(sc, descending=True)
+                rank = torch.empty(C, device=dev, dtype=torch.float32)
+                rank[order] = torch.arange(C, device=dev, dtype=torch.float32)
+                gain = 1.0 / (rank + args.rank_r0)
+                with torch.no_grad():
+                    for m in MODULES:
+                        acc[m] += AW[m].float().abs()[None] * gain[sidx[m].int()]
+            with torch.no_grad():
+                for m in MODULES:
+                    w = swgt[m].float() * acc[m]
+                    tot = w.sum(0, keepdim=True)
+                    swgt_r[m] = torch.where(tot <= 0, swgt[m].float(),
+                                            w / tot.clamp_min(1e-30)).half()
+        del AWs
+        log(f"set-cover refined ({time.perf_counter()-t1:.0f}s)")
+
+    gsel = torch.Generator().manual_seed(12345)
+    samp = [(int(torch.randint(0, eval_ids.shape[0], (1,), generator=gsel)),
+             int(torch.randint(64, args.seq - 2, (1,), generator=gsel)))
+            for _ in range(args.n_samples)]
+    KEEP = [k for k in [0, 4, 8, 16, 32, 64, 128, 192, 256, 384, 512, 768,
+                        1024, 1536, 2048, 3072, 4096, 6144] if k < C] + [C]
+    restore()
+    base = float(np.mean([tok_ce(b, t) for b, t in samp]))
+    log(f"unablated CE on {len(samp)} target tokens: {base:.4f}")
+
+    results = {}
+    arms = [("original", swgt)] + ([("refined", swgt_r)] if swgt_r else [])
+    AW_cache = [token_attr(eval_ids[b], t) for b, t in samp]
+    for name, sw in arms:
+        curves = np.zeros((len(samp), len(KEEP)))
+        for j, (b, t) in enumerate(samp):
+            sc = comp_scores(AW_cache[j], sw)
+            order = torch.argsort(sc, descending=True)
             rank = torch.empty(C, dtype=torch.int32, device=dev)
             rank[order] = torch.arange(C, dtype=torch.int32, device=dev)
             with torch.no_grad():
-                R = {p: rank[sidx[p].int()] for p in MODULES}
+                R = {m: rank[sidx[m].int()] for m in MODULES}
                 for ki, kk in enumerate(KEEP):
-                    for p in MODULES:
-                        keep = (swgt[p] * (R[p] < kk)).sum(0, dtype=torch.float32)
-                        Wt[p].copy_(W0[p] * keep)
-                    store[si_, ki] = tok_ce(b, t)
+                    for m in MODULES:
+                        keep = (sw[m].float() * (R[m] < kk)
+                                ).sum(0, dtype=torch.float32)
+                        Wt[m].copy_(W0[m] * keep)
+                    curves[j, ki] = tok_ce(b, t)
                 del R
-        restore()
-    mu, mr = curves.mean(0), rand.mean(0)
-    out = {"format": "stream67_v1", "C": C, "sensor": args.sensor,
-           "tokens_streamed": n_tok, "quota": quota, "n_samples": len(samp), "keep_grid": KEEP,
-           "base_token_ce": round(base, 5),
-           "ce_attr": [round(float(v), 5) for v in mu],
-           "ce_random": [round(float(v), 5) for v in mr],
-           "roundtrip_err_at_C": round(float(mu[-1] - base), 6),
-           "empty_clusters": int((valid == 0).sum())}
-    for tol in (0.05, 0.25):
-        out[f"k_within_{tol}"] = next(
-            (k for k, v in zip(KEEP, mu) if v - base <= tol), C)
+            restore()
+        mu = curves.mean(0)
+        thr = next((k for k, v in zip(KEEP, mu) if v - base <= 0.25), C)
+        results[name] = {"ce": [round(float(v), 5) for v in mu],
+                         "k_within_0.25": thr,
+                         "roundtrip_err_at_C": round(float(mu[-1] - base), 6)}
+        log(f"{name:<9} k needed {thr:>5}/{C}  "
+            f"CE@256 {mu[KEEP.index(256)]:.2f}  "
+            f"roundtrip {results[name]['roundtrip_err_at_C']:+.1e}")
+    del AW_cache
+
+    out = {"format": "stream67_v2", "C": C, "sensor": args.sensor,
+           "tag": args.tag, "tokens_streamed": n_tok, "quota": quota,
+           "n_samples": len(samp), "base_token_ce": round(base, 5),
+           "keep_grid": KEEP, "empty_clusters": int((valid == 0).sum()),
+           "slots_filled": int(valid.sum()), "slots_total": C * quota,
+           "refine_tokens": args.refine_tokens if swgt_r else 0,
+           "results": results}
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out).write_text(json.dumps(out, indent=1))
-    log(f"k within 0.25 nats = {out['k_within_0.25']}/{C} "
-        f"({100*out['k_within_0.25']/C:.1f}%)   roundtrip "
-        f"{out['roundtrip_err_at_C']:+.1e}")
     log(f"wrote {args.out}")
 
 
@@ -544,6 +588,10 @@ def main():
     ap.add_argument("--shard", type=int, default=0)
     ap.add_argument("--nshard", type=int, default=1)
     ap.add_argument("--save_bank", action="store_true")
+    ap.add_argument("--tag", default="")
+    ap.add_argument("--refine_iters", type=int, default=1)
+    ap.add_argument("--refine_tokens", type=int, default=256)
+    ap.add_argument("--rank_r0", type=float, default=16.0)
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
     dev = args.device

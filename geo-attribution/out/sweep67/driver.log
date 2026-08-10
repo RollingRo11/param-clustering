@@ -1,0 +1,45 @@
+=== SHM FREED ===
+shm             352G   62G  290G  18% /dev/shm
+Mon Aug 10 00:17:39 UTC 2026
+[stream67] reservoir 32768 rows x 5 steps = 16.9 GiB
+[stream67] reservoir 32768 rows x 5 steps = 16.9 GiB
+[stream67] streamed 0.0M tokens; wrote reservoir
+[stream67] streamed 0.0M tokens; wrote reservoir
+=== STREAM t100k DONE ===
+Mon Aug 10 00:18:25 UTC 2026
+[stream67] reservoir 32768 rows x 5 steps = 16.9 GiB
+[stream67] reservoir 32768 rows x 5 steps = 16.9 GiB
+[stream67] streamed 5.0M tokens; wrote reservoir
+[stream67] streamed 5.0M tokens; wrote reservoir
+=== STREAM t10m DONE ===
+Mon Aug 10 00:20:06 UTC 2026
+[stream67] reservoir 32768 rows x 5 steps = 16.9 GiB
+[stream67] reservoir 32768 rows x 5 steps = 16.9 GiB
+[stream67] streamed 50.0M tokens; wrote reservoir
+[stream67] streamed 50.0M tokens; wrote reservoir
+=== STREAM t100m DONE ===
+Mon Aug 10 00:31:51 UTC 2026
+[stream67] reservoir 32768 rows x 5 steps = 16.9 GiB
+[stream67] reservoir 32768 rows x 5 steps = 16.9 GiB
+[stream67] 81.9M tokens  74.9k tok/s  filled 30260/32768  eta 93 min
+[stream67] 81.9M tokens  74.6k tok/s  filled 30276/32768  eta 93 min
+[stream67] 163.8M tokens  75.0k tok/s  filled 31618/32768  eta 75 min
+[stream67] 163.8M tokens  74.6k tok/s  filled 31634/32768  eta 75 min
+[stream67] 245.8M tokens  75.0k tok/s  filled 32021/32768  eta 56 min
+[stream67] 245.8M tokens  74.7k tok/s  filled 31984/32768  eta 57 min
+[stream67] streamed 250.0M tokens; wrote reservoir
+[stream67] streamed 250.0M tokens; wrote reservoir
+=== STREAM t500m DONE ===
+Mon Aug 10 01:28:10 UTC 2026
+=== BANK t100k DONE ===
+Mon Aug 10 01:30:24 UTC 2026
+=== BANK t10m DONE ===
+Mon Aug 10 01:30:44 UTC 2026
+=== BANK t100m DONE ===
+Mon Aug 10 01:32:44 UTC 2026
+=== BANK t500m DONE ===
+Mon Aug 10 01:33:21 UTC 2026
+=== BANK t1000m DONE ===
+Mon Aug 10 01:35:46 UTC 2026
+=== SWEEP COMPLETE ===
+Mon Aug 10 01:35:46 UTC 2026
