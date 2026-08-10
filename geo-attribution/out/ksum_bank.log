@@ -1,0 +1,7 @@
+usage: sufficiency67.py [-h] [--device DEVICE] [--C C] [--positions POSITIONS]
+                        [--feat_dim FEAT_DIM] [--embed_dim EMBED_DIM]
+                        [--kmeans_iters KMEANS_ITERS] [--soft_s SOFT_S]
+                        [--seq SEQ] [--eval_seqs EVAL_SEQS]
+                        [--n_samples N_SAMPLES] [--seed SEED]
+                        [--sensors SENSORS] [--out OUT]
+sufficiency67.py: error: unrecognized arguments: --ksum_bank

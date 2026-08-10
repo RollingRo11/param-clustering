@@ -1,0 +1,37 @@
+[stream67] spec built D=65523 (14s)
+[stream67] PCA basis frozen over 491520 positions (101s)
+[stream67] minibatch k-means done: 9383936 positions, 1 dead clusters (1124s)
+[stream67] wrote streaming fit (tag '_fs')
+=== FITSTREAM DONE ===
+[stream67] reservoir 16384 rows x 5 steps = 8.4 GiB
+[stream67] reservoir 16384 rows x 5 steps = 8.4 GiB
+[stream67] streamed 50.0M tokens; wrote reservoir
+[stream67] streamed 50.0M tokens; wrote reservoir
+=== STREAM DONE ===
+Traceback (most recent call last):
+  File "/workspace/param-clustering/geo-attribution/stream67.py", line 723, in <module>
+    main()
+  File "/workspace/param-clustering/geo-attribution/stream67.py", line 719, in main
+    phase_bank(args, dev)
+  File "/workspace/param-clustering/geo-attribution/stream67.py", line 347, in phase_bank
+    fit = torch.load(RUN / f"fit_C{args.C}_{args.sensor}{args.fit_tag}.pt",
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 1484, in load
+    with _open_file_like(f, "rb") as opened_file:
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 759, in _open_file_like
+    return _open_file(name_or_buffer, mode)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/serialization.py", line 740, in __init__
+    super().__init__(open(name, mode))
+                     ^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/dev/shm/geo67_stream/fit_C4096_ig5.pt'
+[stream67] merged 2 reservoir shard(s): quota 4 x 2 = 8/cluster
+[stream67] reservoir: 32357/32768 slots filled, 5 empty clusters, 100M tokens streamed
+[stream67] bank built (21s)
+[pile] cache hit strat_246bd3dda1b098a4.pt: (168, 512), 14 subsets
+[stream67] set-cover refined (16s)
+[stream67] unablated CE on 48 target tokens: 2.7553
+[stream67] original  k needed   384/4096  CE@256 3.62  roundtrip -2.8e-05
+[stream67] refined   k needed   256/4096  CE@256 2.45  roundtrip +7.2e-05
+[stream67] wrote out/fitstream_C4096.json

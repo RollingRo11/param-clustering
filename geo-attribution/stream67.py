@@ -276,7 +276,7 @@ def phase_fit(args, dev):
 def phase_stream(args, dev):
     from transformers import AutoTokenizer
     tok = AutoTokenizer.from_pretrained(S67.TOKENIZER)
-    fit = torch.load(RUN / f"fit_C{args.C}_{args.sensor}.pt",
+    fit = torch.load(RUN / f"fit_C{args.C}_{args.sensor}{args.fit_tag}.pt",
                      map_location=dev, weights_only=False)
     cfg = SENSORS[args.sensor]
     K = cfg["K"]
@@ -344,7 +344,7 @@ def phase_stream(args, dev):
 
 def phase_bank(args, dev):
     """Softpart bank from the reservoir, then per-input sufficiency."""
-    fit = torch.load(RUN / f"fit_C{args.C}_{args.sensor}.pt",
+    fit = torch.load(RUN / f"fit_C{args.C}_{args.sensor}{args.fit_tag}.pt",
                      map_location="cpu", weights_only=False)
     shards = sorted(RUN.glob(f"res_C{args.C}_{args.sensor}{args.tag}_s*of*.pt"))
     assert shards, f"no reservoir shards for C={args.C} {args.sensor}"
@@ -563,9 +563,116 @@ def phase_bank(args, dev):
     log(f"wrote {args.out}")
 
 
+
+def phase_fitstream(args, dev):
+    """Streaming fit: exact covariance PCA + minibatch spherical k-means.
+
+    Replaces the in-memory pilot fit. Phase A0 accumulates p^2/g^2 second
+    moments (for the spec) over the first slice; A1 accumulates the exact
+    feature covariance [D, D] and mean; B runs Sculley minibatch k-means over
+    everything after. Saves the same fit artifact phase_fit writes, so
+    stream/bank run unchanged.
+    """
+    cfg = SENSORS[args.sensor]
+    K = cfg["K"]
+    model = load67(dev, cfg["mode"])
+    W0 = {p: model.get_submodule(p).weight.detach().clone() for p in MODULES}
+    Wt = {p: model.get_submodule(p).weight for p in MODULES}
+    gcpu = torch.Generator().manual_seed(args.seed)
+    avail = torch.arange(4, args.seq - 2)
+
+    n_stats, n_cov = args.fs_stats_batches, args.fs_cov_batches
+    p2s = {p: 0.0 for p in MODULES}
+    g2s = {p: 0.0 for p in MODULES}
+    cov = mu = None
+    n_mu = 0
+    cent = None
+    counts = None
+    spec = scales = None
+    t0 = time.perf_counter()
+    for bi, (idx_cpu, _) in enumerate(binfile_stream(
+            args.seq, args.batch_blocks, args.fs_tokens)):
+        idx = idx_cpu.to(dev, non_blocking=True)
+        sel = avail[torch.randperm(avail.numel(),
+                                   generator=gcpu)[:args.pos_per_seq]].to(dev)
+        Ps, Gs = sensor_pg(model, idx, cfg, W0, Wt, sel)
+        if bi < n_stats:                                   # A0: spec moments
+            for p in MODULES:
+                p2s[p] = p2s[p] + torch.stack(
+                    [Ps[st][p].float().pow(2).mean(0) for st in range(K)]
+                ).mean(0)
+                g2s[p] = g2s[p] + torch.stack(
+                    [Gs[st][p].float().pow(2).mean(0) for st in range(K)]
+                ).mean(0)
+            del Ps, Gs
+            continue
+        if spec is None:
+            p2m = {p: v / n_stats for p, v in p2s.items()}
+            g2m = {p: v / n_stats for p, v in g2s.items()}
+            spec, scales, D = build_spec(model, args.feat_dim, args.seed,
+                                         dev, p2m, g2m)
+            cov = torch.zeros(D, D, device=dev)
+            mu = torch.zeros(D, device=dev)
+            log(f"spec built D={D} ({time.perf_counter()-t0:.0f}s)")
+        X = features(Ps, Gs, spec, scales, K, dev)
+        del Ps, Gs
+        if bi < n_stats + n_cov:                           # A1: covariance
+            cov += X.t() @ X
+            mu += X.sum(0)
+            n_mu += X.shape[0]
+            del X
+            continue
+        if cent is None:                                   # eigenbasis once
+            mu = mu / n_mu
+            cov = cov / n_mu - torch.outer(mu, mu)
+            gg = torch.Generator(device=dev).manual_seed(args.seed)
+            Q = torch.linalg.qr(torch.randn(cov.shape[0], args.embed_dim + 64,
+                                            generator=gg, device=dev))[0]
+            for _ in range(6):
+                Q = torch.linalg.qr(cov @ Q)[0]
+            w = torch.linalg.eigh(Q.t() @ cov @ Q)
+            B = (Q @ w.eigenvectors[:, w.eigenvalues.argsort(
+                descending=True)[:args.embed_dim]]).contiguous()
+            del cov, Q
+            gk = torch.Generator(device=dev).manual_seed(args.seed + 1)
+            cent = None
+            basis = B
+            log(f"PCA basis frozen over {n_mu} positions "
+                f"({time.perf_counter()-t0:.0f}s)")
+        E = F.normalize((X - mu[None]) @ basis, dim=1)
+        del X
+        if cent is None:
+            cent = E[torch.randperm(E.shape[0], generator=gk,
+                                    device=dev)[:args.C]].clone()
+            if cent.shape[0] < args.C:
+                reps = args.C // cent.shape[0] + 1
+                cent = cent.repeat(reps, 1)[:args.C]
+            counts = torch.zeros(args.C, device=dev)
+        lab = (E @ cent.t()).argmax(1)                     # B: minibatch
+        sums = torch.zeros_like(cent).index_add_(0, lab, E)
+        n_b = torch.bincount(lab, minlength=args.C).float()
+        counts += n_b
+        eta = (n_b / counts.clamp_min(1.0)).unsqueeze(1)
+        m_b = sums / n_b.clamp_min(1.0).unsqueeze(1)
+        cent = F.normalize(cent * (1 - eta) + m_b * eta, dim=1)
+    n_dead = int((counts == 0).sum())
+    log(f"minibatch k-means done: {int(counts.sum())} positions, "
+        f"{n_dead} dead clusters ({time.perf_counter()-t0:.0f}s)")
+    RUN.mkdir(parents=True, exist_ok=True)
+    torch.save({"centroids": cent.cpu(), "basis": basis.cpu(),
+                "mean": mu.cpu(),
+                "spec": {p: (spec[p][0].cpu(), spec[p][1].cpu())
+                         for p in MODULES},
+                "scales": {p: scales[p].cpu() for p in MODULES},
+                "C": args.C, "sensor": args.sensor, "D": basis.shape[0],
+                "N_pilot": int(counts.sum()), "pile": {"fitstream": True}},
+               RUN / f"fit_C{args.C}_{args.sensor}{args.tag}.pt")
+    log(f"wrote streaming fit (tag {args.tag!r})")
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("phase", choices=["prep", "fit", "stream", "bank"])
+    ap.add_argument("phase", choices=["prep", "fit", "fitstream", "stream", "bank"])
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--C", type=int, default=8192)
     ap.add_argument("--sensor", default="ig5")
@@ -589,14 +696,20 @@ def main():
     ap.add_argument("--nshard", type=int, default=1)
     ap.add_argument("--save_bank", action="store_true")
     ap.add_argument("--tag", default="")
+    ap.add_argument("--fit_tag", default="")
     ap.add_argument("--refine_iters", type=int, default=1)
     ap.add_argument("--refine_tokens", type=int, default=256)
     ap.add_argument("--rank_r0", type=float, default=16.0)
+    ap.add_argument("--fs_tokens", type=int, default=80_000_000)
+    ap.add_argument("--fs_stats_batches", type=int, default=60)
+    ap.add_argument("--fs_cov_batches", type=int, default=240)
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
     dev = args.device
     torch.cuda.set_device(int(dev.split(":")[1]))
-    if args.phase == "prep":
+    if args.phase == "fitstream":
+        phase_fitstream(args, dev)
+    elif args.phase == "prep":
         phase_prep(args)
     elif args.phase == "fit":
         phase_fit(args, dev)
