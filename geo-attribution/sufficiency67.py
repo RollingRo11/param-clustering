@@ -52,6 +52,7 @@ def main():
     ap.add_argument("--embed_dim", type=int, default=256)
     ap.add_argument("--kmeans_iters", type=int, default=25)
     ap.add_argument("--soft_s", type=int, default=8)
+    ap.add_argument("--ksum_bank", action="store_true")
     ap.add_argument("--seq", type=int, default=512)
     ap.add_argument("--eval_seqs", type=int, default=32)
     ap.add_argument("--n_samples", type=int, default=48,
@@ -209,14 +210,27 @@ def main():
                 for c0 in range(0, args.C, 32):
                     cc = min(32, args.C - c0)
                     Mm = torch.zeros(cc, d_out, d_in, device=dev)
-                    for st in range(K):
-                        Pa = Ps[st][p].float().abs()
-                        Ga = Gs[st][p].float().abs()
+                    if args.ksum_bank:
+                        Pa = torch.stack([Ps[st][p].float().abs()
+                                          for st in range(K)]).mean(0)
+                        Ga = torch.stack([Gs[st][p].float().abs()
+                                          for st in range(K)]).mean(0)
                         for j in range(cc):
                             r = nz[c0 + j]
                             if r.numel() == 0:
                                 continue
-                            Mm[j] += (Ga[r] * M[c0 + j, r][:, None]).t() @ Pa[r]
+                            Mm[j] += K * (Ga[r] * M[c0 + j, r][:, None]
+                                          ).t() @ Pa[r]
+                    else:
+                        for st in range(K):
+                            Pa = Ps[st][p].float().abs()
+                            Ga = Gs[st][p].float().abs()
+                            for j in range(cc):
+                                r = nz[c0 + j]
+                                if r.numel() == 0:
+                                    continue
+                                Mm[j] += (Ga[r] * M[c0 + j, r][:, None]
+                                          ).t() @ Pa[r]
                     allv = torch.cat([vals, Mm / K])
                     alli = torch.cat([idxs, torch.arange(
                         c0, c0 + cc, device=dev, dtype=torch.int16
