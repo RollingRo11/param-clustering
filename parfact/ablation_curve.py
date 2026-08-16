@@ -41,7 +41,8 @@ ORDER_LABELS = {
 }
 SCORE_LABELS = {"logp": "z from log p", "logit": "z from logit",
                 "logodds": "z from log-odds",
-                "oracle": "true single-ablation Δ"}
+                "oracle": "true single-ablation Δ",
+                "ci": "VPD causal importance"}
 
 
 def spec_label(spec: str) -> str:

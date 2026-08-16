@@ -41,12 +41,16 @@ def plot_oracle_pair(ours: dict, prev: dict, spec: str, path: Path,
     fig, ax = plt.subplots(figsize=(7.2, 4.6), dpi=150)
     fig.patch.set_facecolor("#fcfcfb")
     ax.set_facecolor("#fcfcfb")
-    series = [("co-factorization (this method)", ours, "#2a78d6"),
-              ("attribution clustering (previous method)", prev, "#eb6834")]
+    series = [("co-factorization (this method)", ours, spec, "#2a78d6"),
+              ("attribution clustering (previous method)", prev, spec,
+               "#eb6834")]
     if vpd is not None:
-        series.append(("VPD (adversarial decomposition)", vpd, "#1baf7a"))
-    for label, blob, color in series:
-        curve = blob["curves"][spec]
+        series.append(("VPD, single-ablation order", vpd, spec, "#1baf7a"))
+        if "per_example_asc:ci" in vpd["curves"]:
+            series.append(("VPD, causal-importance order", vpd,
+                           "per_example_asc:ci", "#eda100"))
+    for label, blob, sp, color in series:
+        curve = blob["curves"][sp]
         ax.plot([r["k"] for r in curve], [r["delta"] for r in curve], lw=2,
                 color=color, label=label)
     ax.axhline(0, color="#c3c2b7", lw=1)
@@ -57,9 +61,9 @@ def plot_oracle_pair(ours: dict, prev: dict, spec: str, path: Path,
             fontsize=8, color="#898781", ha="right")
     ax.set_yscale("symlog", linthresh=1e-2)
     ax.set_ylim(bottom=-2e-3)
-    ax.set_xlabel(f"components ablated per token (of {ours['C']}, "
-                  "least important first for that token,\n"
-                  "importance = true single-component ablation Δ)",
+    ax.set_xlabel(f"components ablated per token (of {ours['C']}, least "
+                  "important first for that token;\ntrue single-ablation "
+                  "importance unless the legend says otherwise)",
                   color="#52514e")
     ax.set_ylabel("ΔCE on the token (nats, symlog)", color="#52514e")
     ax.set_title("Per-token oracle minimality: toy induction model",
