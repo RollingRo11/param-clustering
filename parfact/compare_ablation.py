@@ -35,14 +35,17 @@ def parse_prev(log_path: Path):
                                for k, ce, d in sorted(pts)]}
 
 
-def plot_oracle_pair(ours: dict, prev: dict, spec: str, path: Path):
-    """Delta-CE per-token oracle curves for both toy decompositions."""
+def plot_oracle_pair(ours: dict, prev: dict, spec: str, path: Path,
+                     vpd: dict | None = None):
+    """Delta-CE per-token oracle curves for the toy decompositions."""
     fig, ax = plt.subplots(figsize=(7.2, 4.6), dpi=150)
     fig.patch.set_facecolor("#fcfcfb")
     ax.set_facecolor("#fcfcfb")
-    for label, blob, color in (
-            ("co-factorization (this method)", ours, "#2a78d6"),
-            ("attribution clustering (previous method)", prev, "#eb6834")):
+    series = [("co-factorization (this method)", ours, "#2a78d6"),
+              ("attribution clustering (previous method)", prev, "#eb6834")]
+    if vpd is not None:
+        series.append(("VPD (adversarial decomposition)", vpd, "#1baf7a"))
+    for label, blob, color in series:
         curve = blob["curves"][spec]
         ax.plot([r["k"] for r in curve], [r["delta"] for r in curve], lw=2,
                 color=color, label=label)
@@ -85,13 +88,17 @@ def main():
                          "plots the per-token oracle ΔCE comparison instead "
                          "of the Llama-log overlay")
     ap.add_argument("--spec", default="per_example_asc:oracle")
+    ap.add_argument("--vpd_run", type=Path, default=None,
+                    help="optional third curve: VPD toy run dir")
     args = ap.parse_args()
 
     ours = json.load(open(args.run / "ablation_curve.json"))
     if args.prev_run is not None:
         prev = json.load(open(args.prev_run / "ablation_curve.json"))
+        vpd = (json.load(open(args.vpd_run / "ablation_curve.json"))
+               if args.vpd_run else None)
         plot_oracle_pair(ours, prev, args.spec,
-                         args.run / "oracle_compare.png")
+                         args.run / "oracle_compare.png", vpd=vpd)
         return
     prev = parse_prev(LOG)
 
