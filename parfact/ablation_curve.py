@@ -81,16 +81,14 @@ def main():
                              "per_example_asc:oracle", "global_asc:logp"])
     ap.add_argument("--chunk", type=int, default=1024)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--components", type=Path, default=None,
+                    help="load components from this .pt (dict name -> "
+                         "[C, out, in]) instead of a factorization run; only "
+                         "oracle/random orderings are available then")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available()
                     else "cpu")
     args = ap.parse_args()
     dev = args.device
-
-    fact = torch.load(args.run / "factorization.pt", weights_only=False,
-                      map_location=dev)
-    cfg = fact["config"]
-    V = fact["V"].to(dev)
-    n_comp = V.shape[1]
 
     model = InductionModel().to(dev)
     model.load_state_dict(torch.load(args.ckpt)["state_dict"])
@@ -98,10 +96,24 @@ def main():
     for p in model.parameters():
         p.requires_grad_(False)
 
-    matrices = sorted(set(fact["atom_matrix"]),
-                      key=fact["atom_matrix"].index)
-    basis = AtomBasis.build(model, matrices, cfg["variant"])
-    comps = basis.components(V)                       # name -> [C, out, in]
+    if args.components is not None:
+        blob = torch.load(args.components, weights_only=True, map_location=dev)
+        comps = {n: t.float() for n, t in blob["components"].items()}
+        n_comp = next(iter(comps.values())).shape[0]
+        basis = None
+        run_dir = args.components.parent
+    else:
+        fact = torch.load(args.run / "factorization.pt", weights_only=False,
+                          map_location=dev)
+        cfg = fact["config"]
+        V = fact["V"].to(dev)
+        n_comp = V.shape[1]
+        matrices = sorted(set(fact["atom_matrix"]),
+                          key=fact["atom_matrix"].index)
+        basis = AtomBasis.build(model, matrices, cfg["variant"])
+        comps = basis.components(V)                   # name -> [C, out, in]
+    run_dir = args.components.parent if args.components else args.run
+    run_dir.mkdir(parents=True, exist_ok=True)
 
     events = make_events(model, args.n_seq, "final", seed=args.seed + 1000)
     seq, pos, y = events["seq"], events["pos"], events["y"]
@@ -137,6 +149,9 @@ def main():
             if score == "oracle":
                 imps[score] = oracle_importance()
             else:
+                if basis is None:
+                    raise SystemExit(f"score '{score}' needs a factorization "
+                                     "run; --components only supports oracle")
                 z = collect_attributions(model, basis, seq, pos, y,
                                          score=score) @ V
                 imps[score] = z.abs()
@@ -149,7 +164,7 @@ def main():
         ces, hits = [], []
         for i in range(0, seq.shape[0], args.chunk):
             sl = slice(i, i + args.chunk)
-            mask = (rank[sl] < k).to(V.dtype)          # [B, C]
+            mask = (rank[sl] < k).float()          # [B, C]
             pdict = dict(params)
             for name, ct in comps.items():
                 delta = (mask @ ct.reshape(n_comp, -1)).reshape(
@@ -187,20 +202,20 @@ def main():
         return max(ok) if ok else 0
 
     out = {"format": "parfact_ablation_curve_v2", "C": n_comp,
-           "run": str(args.run), "n_events": int(seq.shape[0]),
+           "run": str(run_dir), "n_events": int(seq.shape[0]),
            "base_ce": round(base_ce, 8), "uniform_ce": round(math.log(VOCAB), 5),
            "curves": curves,
            "components_removable_keeping_acc": {
                spec: {f"{fl}": acc_budget(c, fl) for fl in (0.99, 0.95, 0.9)}
                for spec, c in curves.items()}}
-    (args.run / "ablation_curve.json").write_text(json.dumps(out, indent=1))
+    (run_dir / "ablation_curve.json").write_text(json.dumps(out, indent=1))
     for spec, b in out["components_removable_keeping_acc"].items():
         print(f"{spec:<26} removable keeping acc: " +
               "  ".join(f">={fl}: {v} ({100 * v / n_comp:.0f}%)"
                         for fl, v in b.items()))
-    plot_acc(out, args.run / "ablation_curve_acc.png")
-    plot_ce(out, args.run / "ablation_curve.png")
-    print(f"wrote {args.run}/ablation_curve.json, ablation_curve_acc.png, "
+    plot_acc(out, run_dir / "ablation_curve_acc.png")
+    plot_ce(out, run_dir / "ablation_curve.png")
+    print(f"wrote {run_dir}/ablation_curve.json, ablation_curve_acc.png, "
           "ablation_curve.png")
 
 

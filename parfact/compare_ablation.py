@@ -35,14 +35,64 @@ def parse_prev(log_path: Path):
                                for k, ce, d in sorted(pts)]}
 
 
+def plot_oracle_pair(ours: dict, prev: dict, spec: str, path: Path):
+    """Delta-CE per-token oracle curves for both toy decompositions."""
+    fig, ax = plt.subplots(figsize=(7.2, 4.6), dpi=150)
+    fig.patch.set_facecolor("#fcfcfb")
+    ax.set_facecolor("#fcfcfb")
+    for label, blob, color in (
+            ("co-factorization (this method)", ours, "#2a78d6"),
+            ("attribution clustering (previous method)", prev, "#eb6834")):
+        curve = blob["curves"][spec]
+        ax.plot([r["k"] for r in curve], [r["delta"] for r in curve], lw=2,
+                color=color, label=label)
+    ax.axhline(0, color="#c3c2b7", lw=1)
+    ax.text(1, 0, "no ablation (ΔCE = 0)", fontsize=8, color="#898781",
+            va="bottom")
+    ax.axhline(ours["uniform_ce"], color="#898781", lw=1, ls=(0, (4, 3)))
+    ax.text(ours["C"], ours["uniform_ce"] * 0.72, "uniform ln(128)",
+            fontsize=8, color="#898781", ha="right")
+    ax.set_yscale("symlog", linthresh=1e-2)
+    ax.set_ylim(bottom=-2e-3)
+    ax.set_xlabel(f"components ablated per token (of {ours['C']}, "
+                  "least important first for that token,\n"
+                  "importance = true single-component ablation Δ)",
+                  color="#52514e")
+    ax.set_ylabel("ΔCE on the token (nats, symlog)", color="#52514e")
+    ax.set_title("Per-token oracle minimality: toy induction model",
+                 color="#0b0b0b", fontsize=11)
+    ax.grid(axis="y", color="#e1e0d9", lw=0.75)
+    ax.tick_params(colors="#898781")
+    for s in ("top", "right"):
+        ax.spines[s].set_visible(False)
+    for s in ("left", "bottom"):
+        ax.spines[s].set_color("#c3c2b7")
+    ax.legend(frameon=False, fontsize=8, labelcolor="#52514e",
+              loc="upper left")
+    fig.tight_layout()
+    fig.savefig(path, bbox_inches="tight")
+    print(f"wrote {path}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", type=Path,
                     default=Path(__file__).parent / "out/B_layer_K400_C100_long")
     ap.add_argument("--order", default="global_asc")
+    ap.add_argument("--prev_run", type=Path, default=None,
+                    help="toy-model run dir of the previous clustering method "
+                         "(prev_method.py + ablation_curve.py --components); "
+                         "plots the per-token oracle ΔCE comparison instead "
+                         "of the Llama-log overlay")
+    ap.add_argument("--spec", default="per_example_asc:oracle")
     args = ap.parse_args()
 
     ours = json.load(open(args.run / "ablation_curve.json"))
+    if args.prev_run is not None:
+        prev = json.load(open(args.prev_run / "ablation_curve.json"))
+        plot_oracle_pair(ours, prev, args.spec,
+                         args.run / "oracle_compare.png")
+        return
     prev = parse_prev(LOG)
 
     fig, ax = plt.subplots(figsize=(7.2, 4.6), dpi=150)
