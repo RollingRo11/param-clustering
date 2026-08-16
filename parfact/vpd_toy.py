@@ -27,11 +27,16 @@ ablation_curve.py --components.
 """
 import argparse
 import math
+import os
+import tempfile
 from pathlib import Path
 
 import torch
+import torch.distributed as dist
+import torch.multiprocessing as mp
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn.parallel import DistributedDataParallel
 
 from induction_model import InductionModel, gen_batch
 from prev_method import kmeans
@@ -166,13 +171,14 @@ def faithfulness_loss(wrappers):
     return sum_sq / numel
 
 
-def importance_minimality_loss(ci_upper, p, eps=1e-12, beta=0.5):
+def importance_minimality_loss(ci_upper, p, eps=1e-12, beta=0.5, world=1):
     total = 0.0
     for v in ci_upper.values():
         vals = (v + eps).pow(p)
         sum_c = vals.sum(dim=(0, 1))
         mean_c = sum_c / (vals.shape[0] * vals.shape[1])
-        total = total + (mean_c + beta * mean_c * torch.log2(1 + sum_c)).sum()
+        total = total + (mean_c + beta * mean_c
+                         * torch.log2(1 + sum_c * world)).sum()
     return total
 
 
@@ -263,32 +269,41 @@ def cosine_lr(step, total, start, final_frac):
 
 # --- training + clustering ---
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--c_per_module", type=int, default=100)
-    ap.add_argument("--n_components", type=int, default=100,
-                    help="model-spanning components after CI clustering")
-    ap.add_argument("--steps", type=int, default=20_000)
-    ap.add_argument("--batch", type=int, default=256)
-    ap.add_argument("--main_lr", type=float, default=3e-4)
-    ap.add_argument("--coeff_faith", type=float, default=1e7)
-    ap.add_argument("--coeff_imp", type=float, default=2e-4)
-    ap.add_argument("--coeff_stoch", type=float, default=0.5)
-    ap.add_argument("--coeff_ppgd", type=float, default=0.5)
-    ap.add_argument("--grad_clip", type=float, default=0.01)
-    ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--ckpt", type=Path,
-                    default=Path(__file__).parent / "out/induction_model.pt")
-    ap.add_argument("--out", type=Path, default=None)
-    ap.add_argument("--device", default="cuda" if torch.cuda.is_available()
-                    else "cpu")
-    args = ap.parse_args()
-    dev = args.device
+class VPDModule(nn.Module):
+    """Container so DDP tracks component params and CI params together
+    (nano section H): forward = target-mode forward + CI transformer."""
+
+    def __init__(self, target, ci_fn, wrappers):
+        super().__init__()
+        self.target = target
+        self.ci_fn = ci_fn
+        self._wrappers = wrappers
+
+    def forward(self, seq):
+        clear_masks(self._wrappers)
+        target_logits = self.target(seq)
+        acts = {n: w.last_input for n, w in self._wrappers.items()}
+        ci_lower, ci_upper = self.ci_fn(acts)
+        return target_logits, ci_lower, ci_upper
+
+
+def worker(rank: int, world: int, args, rdv_file: str):
+    dev = f"cuda:{rank}"
+    if world > 1:
+        torch.cuda.set_device(rank)
+        dist.init_process_group("nccl", init_method=f"file://{rdv_file}",
+                                rank=rank, world_size=world)
     out_dir = args.out or (Path(__file__).parent
                            / f"out/vpd_C{args.n_components}")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    torch.manual_seed(args.seed)
+    if rank == 0:
+        out_dir.mkdir(parents=True, exist_ok=True)
 
+    def log(msg):
+        if rank == 0:
+            print(msg, flush=True)
+
+    # identical seed on every rank so V/U/CI init matches (nano section I)
+    torch.manual_seed(args.seed)
     model = InductionModel().to(dev)
     model.load_state_dict(torch.load(args.ckpt)["state_dict"])
     model.eval()
@@ -296,38 +311,44 @@ def main():
     model.to(dev)   # move freshly created V/U wrapper params to the device
     ci_fn = CITransformer({n: 16 for n in MODULES}, args.c_per_module).to(dev)
     comp_params = [p for w in wrappers.values() for p in (w.V, w.U)]
-    print(f"{len(wrappers)} matrices x C={args.c_per_module} subcomponents; "
-          f"CI fn {sum(p.numel() for p in ci_fn.parameters()):,} params")
+    log(f"{len(wrappers)} matrices x C={args.c_per_module} subcomponents; "
+        f"CI fn {sum(p.numel() for p in ci_fn.parameters()):,} params; "
+        f"world={world}, per-GPU batch {args.batch}")
 
     warm = torch.optim.AdamW(comp_params, lr=1e-3, weight_decay=0.0)
     for _ in range(400):
         warm.zero_grad()
         faithfulness_loss(wrappers).backward()
         warm.step()
-    print(f"faithfulness warmup done: {faithfulness_loss(wrappers):.3e}")
+    log(f"faithfulness warmup done: {faithfulness_loss(wrappers):.3e}")
 
-    gen = torch.Generator(device=dev).manual_seed(args.seed)
+    # diverge streams per rank for data + PPGD + mask sampling
+    torch.manual_seed(args.seed + rank)
+    gen = torch.Generator(device=dev).manual_seed(args.seed + rank)
+    vpd = VPDModule(model, ci_fn, wrappers)
+    ddp = (DistributedDataParallel(vpd, device_ids=[rank]) if world > 1
+           else vpd)
     ppgd = PersistentPGD(wrappers, args.batch, 64, dev)
     opt = torch.optim.AdamW(comp_params + list(ci_fn.parameters()),
                             lr=args.main_lr, weight_decay=0.0)
+    autocast = torch.autocast("cuda", dtype=torch.bfloat16)
+    log_every = max(1, args.steps // 20)
     for step in range(args.steps):
         for g in opt.param_groups:
             g["lr"] = cosine_lr(step, args.steps, args.main_lr, 0.1)
         seq, _, _ = gen_batch(args.batch, dev, gen)
 
-        clear_masks(wrappers)
-        target_logits = model(seq)
-        acts = {n: w.last_input for n, w in wrappers.items()}
-        ci_lower, ci_upper = ci_fn(acts)
-
-        ppgd.warmup(model, wrappers, seq, target_logits, ci_lower)
-        loss_faith = faithfulness_loss(wrappers)
-        loss_imp = importance_minimality_loss(
-            ci_upper, anneal_p(step, args.steps))
-        loss_stoch = stochastic_recon_loss(model, wrappers, seq,
-                                           target_logits, ci_lower)
-        loss_ppgd = ppgd.recon_loss(model, wrappers, seq, target_logits,
-                                    ci_lower)
+        with autocast:
+            target_logits, ci_lower, ci_upper = ddp(seq)
+            ppgd.warmup(model, wrappers, seq, target_logits, ci_lower)
+            loss_faith = faithfulness_loss(wrappers)
+            loss_imp = importance_minimality_loss(
+                ci_upper, anneal_p(step, args.steps), world=world)
+            loss_stoch = stochastic_recon_loss(model, wrappers, seq,
+                                               target_logits, ci_lower)
+            loss_ppgd = ppgd.recon_loss(model, wrappers, seq, target_logits,
+                                        ci_lower)
+        # total-loss sum outside autocast so coeff*loss stays fp32 (nano)
         total = (args.coeff_faith * loss_faith + args.coeff_imp * loss_imp
                  + args.coeff_stoch * loss_stoch + args.coeff_ppgd * loss_ppgd)
 
@@ -340,13 +361,20 @@ def main():
         opt.step()
         ppgd.step(dict(zip(ppgd.sources, ppgd_grads)))
 
-        if step % 1000 == 0 or step == args.steps - 1:
+        if step % log_every == 0 or step == args.steps - 1:
             with torch.no_grad():
                 l0 = torch.stack([(ci > 0.5).float().sum(-1).mean()
                                   for ci in ci_lower.values()]).sum()
-            print(f"step {step:6d} faith {loss_faith:.3e} imp {loss_imp:.3f} "
-                  f"stoch {loss_stoch:.4f} ppgd {loss_ppgd:.4f} "
-                  f"L0(ci>.5) {l0:.1f}", flush=True)
+            log(f"step {step:6d} faith {loss_faith:.3e} imp {loss_imp:.3f} "
+                f"stoch {loss_stoch:.4f} ppgd {loss_ppgd:.4f} "
+                f"L0(ci>.5) {l0:.1f} "
+                f"mem {torch.cuda.max_memory_allocated(dev) / 2**30:.0f}GiB")
+
+    if world > 1:
+        dist.barrier()
+    if rank != 0:
+        dist.destroy_process_group()
+        return
 
     # -- CI profiles on held-out data -> cluster subcomponents ---------------
     with torch.no_grad():
@@ -397,6 +425,39 @@ def main():
                              for n, w in wrappers.items()},
                 "ci_fn": ci_fn.state_dict()}, out_dir / "vpd_state.pt")
     print(f"saved {out_dir}/components.pt and vpd_state.pt")
+    if world > 1:
+        dist.destroy_process_group()
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--c_per_module", type=int, default=100)
+    ap.add_argument("--n_components", type=int, default=100,
+                    help="model-spanning components after CI clustering")
+    ap.add_argument("--steps", type=int, default=3000)
+    ap.add_argument("--batch", type=int, default=32768,
+                    help="per-GPU batch")
+    ap.add_argument("--main_lr", type=float, default=3e-4)
+    ap.add_argument("--coeff_faith", type=float, default=1e7)
+    ap.add_argument("--coeff_imp", type=float, default=2e-4)
+    ap.add_argument("--coeff_stoch", type=float, default=0.5)
+    ap.add_argument("--coeff_ppgd", type=float, default=0.5)
+    ap.add_argument("--grad_clip", type=float, default=0.01)
+    ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--ckpt", type=Path,
+                    default=Path(__file__).parent / "out/induction_model.pt")
+    ap.add_argument("--out", type=Path, default=None)
+    ap.add_argument("--world", type=int,
+                    default=min(2, torch.cuda.device_count()))
+    args = ap.parse_args()
+    if args.world > 1:
+        rdv = tempfile.NamedTemporaryFile(delete=False, suffix=".rdv")
+        rdv.close()
+        os.unlink(rdv.name)
+        mp.spawn(worker, args=(args.world, args, rdv.name),
+                 nprocs=args.world, join=True)
+    else:
+        worker(0, 1, args, "")
 
 
 if __name__ == "__main__":
