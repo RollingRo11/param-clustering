@@ -62,7 +62,10 @@ class InductionModel(nn.Module):
 
     def forward(self, idx: torch.Tensor) -> torch.Tensor:
         x = self.embed(idx)
-        pos = self.pos.weight[: idx.shape[-1]]
+        # batched embedding call (not a weight slice) so per-example gradients
+        # of the positional matrix are visible to module hooks
+        pos_idx = torch.arange(idx.shape[-1], device=idx.device).expand(idx.shape)
+        pos = self.pos(pos_idx)
         for layer in self.layers:
             x = x + layer(x, pos)
         return self.unembed(x)

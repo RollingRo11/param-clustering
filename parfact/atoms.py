@@ -172,6 +172,79 @@ def collect_grads(model: InductionModel, matrices: list[str], seq, pos, y,
     return {n: torch.cat(v) for n, v in outs.items()}
 
 
+def collect_svd_attributions(model: InductionModel, basis: AtomBasis,
+                             seq, pos, y, chunk: int = 2048) -> torch.Tensor:
+    """SVD-trick attributions for variants B/C without materializing any
+    per-event gradient matrix (paper sec 4.2).
+
+    For a linear layer, grad_W s_i = sum_t delta_t x_t^T (output gradient
+    outer input activation per position), so the projection onto a singular
+    pair is a_iq = u_q^T (grad_W s_i) v_q = sum_t (delta_t . u_q)(x_t . v_q):
+    one batched forward/backward per chunk, then O(T r d) contractions of
+    activations/output-grads against the singular vectors. For an embedding,
+    grad_E s_i = sum_t e_{tok_t} delta_t^T gives
+    a_iq = sum_t u_q[tok_t] (delta_t . v_q). Variant B scales by sigma_q.
+    """
+    assert basis.variant in ("B", "C")
+    params = dict(model.named_parameters())
+    modules = {n: model.get_submodule(n.removesuffix(".weight"))
+               for n in basis.matrices}
+    caps: dict[str, dict] = {n: {} for n in basis.matrices}
+    hooks = []
+
+    def make_fwd(name):
+        def fwd(mod, args, out):
+            caps[name]["in"] = args[0].detach()
+            out.register_hook(
+                lambda g: caps[name].__setitem__("gout", g.detach()))
+        return fwd
+
+    for n, mod in modules.items():
+        hooks.append(mod.register_forward_hook(make_fwd(n)))
+    wanted = [params[n] for n in basis.matrices]
+    rows = []
+    try:
+        for p in wanted:
+            p.requires_grad_(True)
+        for i in range(0, seq.shape[0], chunk):
+            sl = slice(i, i + chunk)
+            s, p_, y_ = seq[sl], pos[sl], y[sl]
+            n_idx = torch.arange(s.shape[0], device=s.device)
+            logits = model(s)
+            si = F.log_softmax(logits[n_idx, p_], dim=-1)[n_idx, y_].sum()
+            torch.autograd.grad(si, wanted)  # fires the hooks; grads unused
+            cols = []
+            for name in basis.matrices:
+                u, sv, vh = basis.svd[name]
+                cap = caps[name]
+                if isinstance(modules[name], torch.nn.Embedding):
+                    left = u[cap["in"]]              # u_q[tok_t]  [B, T, r]
+                    right = cap["gout"] @ vh.T       # delta_t . v_q
+                else:
+                    left = cap["gout"] @ u           # delta_t . u_q
+                    right = cap["in"] @ vh.T         # x_t . v_q
+                proj = (left * right).sum(1)         # [B, r]
+                cols.append(proj * sv if basis.variant == "B" else proj)
+            rows.append(torch.cat(cols, dim=1))
+    finally:
+        for h in hooks:
+            h.remove()
+        for p in wanted:
+            p.requires_grad_(False)
+    return torch.cat(rows)
+
+
+def collect_attributions(model: InductionModel, basis: AtomBasis,
+                         seq, pos, y, chunk: int = 1024) -> torch.Tensor:
+    """Signed attribution matrix A [N, J] for any variant. B/C use the SVD
+    trick; A (scalar atoms) necessarily materializes per-event gradients."""
+    if basis.variant in ("B", "C"):
+        return collect_svd_attributions(model, basis, seq, pos, y,
+                                        chunk=max(chunk, 2048))
+    grads = collect_grads(model, basis.matrices, seq, pos, y, chunk=chunk)
+    return basis.attributions(grads)
+
+
 def estimate_fisher(model: InductionModel, basis: AtomBasis, seq, pos,
                     n_samples: int = 4, seed: int = 0,
                     chunk: int = 1024) -> torch.Tensor:
@@ -188,6 +261,6 @@ def estimate_fisher(model: InductionModel, basis: AtomBasis, seq, pos,
     acc = torch.zeros(basis.n_atoms, device=device, dtype=torch.float64)
     for _ in range(n_samples):
         y = torch.multinomial(probs, 1, generator=gen).squeeze(1)
-        grads = collect_grads(model, basis.matrices, seq, pos, y, chunk=chunk)
-        acc += basis.attributions(grads).double().pow(2).mean(0)
+        a = collect_attributions(model, basis, seq, pos, y, chunk=chunk)
+        acc += a.double().pow(2).mean(0)
     return (acc / n_samples).float()

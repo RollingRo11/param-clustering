@@ -18,8 +18,8 @@ import torch
 import torch.nn.functional as F
 
 from induction_model import InductionModel, train_induction, eval_induction
-from atoms import (ATTN_MATRICES, EMBED_MATRICES, AtomBasis, collect_grads,
-                   estimate_fisher, make_events)
+from atoms import (ATTN_MATRICES, EMBED_MATRICES, AtomBasis,
+                   collect_attributions, estimate_fisher, make_events)
 from cofact import (TriFactorization, allocation_matrix, component_usage,
                     effective_number, group_mass, normalize_attributions)
 
@@ -80,9 +80,9 @@ def main():
                     default="mixed",
                     help="prediction events per sequence: induction position "
                          "only, plus random earlier positions, or every pos")
-    ap.add_argument("--k_factors", type=int, default=8,
+    ap.add_argument("--k_factors", type=int, default=100,
                     help="K behavioral factors (rows of S)")
-    ap.add_argument("--c_groups", type=int, default=6,
+    ap.add_argument("--c_groups", type=int, default=100,
                     help="C parameter groups / components (cols of S)")
     ap.add_argument("--u_simplex", action="store_true",
                     help="normalize U rows onto the simplex")
@@ -105,7 +105,8 @@ def main():
                     else "cpu")
     args = ap.parse_args()
 
-    tag = f"{args.variant}_{args.norm}" + ("_embed" if args.include_embed else "")
+    tag = (f"{args.variant}_{args.norm}_K{args.k_factors}_C{args.c_groups}"
+           + ("_embed" if args.include_embed else ""))
     out_dir = args.out or Path(__file__).parent / "out" / tag
     out_dir.mkdir(parents=True, exist_ok=True)
     torch.manual_seed(args.seed)
@@ -137,10 +138,8 @@ def main():
     n_events = events["seq"].shape[0]
     print(f"{n_events} prediction events ({args.positions})")
 
-    grads = collect_grads(model, matrices, events["seq"], events["pos"],
-                          events["y"])
-    A_signed = basis.attributions(grads)
-    del grads
+    A_signed = collect_attributions(model, basis, events["seq"],
+                                    events["pos"], events["y"])
 
     fisher = None
     if args.norm == "fisher":
@@ -206,8 +205,11 @@ def main():
                                         "ckpt": str(args.ckpt)}},
                out_dir / "factorization.pt")
     (out_dir / "metrics.json").write_text(json.dumps(metrics, indent=1))
-    print(json.dumps({k: v for k, v in metrics.items()
-                      if k not in ("group_mass_matrix",)}, indent=1))
+    scalars = {k: v for k, v in metrics.items() if isinstance(v, (int, float))}
+    if not args.no_ablation_check:
+        rs = torch.tensor([a["pearson_r"] for a in metrics["ablation_check"]])
+        scalars["ablation_pearson_mean"] = rs.nanmean().item()
+    print(json.dumps(scalars, indent=1))
     print(f"saved {out_dir}/factorization.pt and metrics.json")
 
 
