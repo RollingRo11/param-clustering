@@ -148,7 +148,7 @@ def main():
 
     out = {"format": "parfact_ablation_curve_v1", "C": n_comp,
            "run": str(args.run), "n_events": int(seq.shape[0]),
-           "base_ce": round(base_ce, 5), "uniform_ce": round(math.log(VOCAB), 5),
+           "base_ce": round(base_ce, 8), "uniform_ce": round(math.log(VOCAB), 5),
            "curves": curves,
            "components_removable_within": {
                name: {f"{t}": budget(c, t) for t in (0.01, 0.05, 0.1, 0.5)}
@@ -162,7 +162,7 @@ def main():
     print(f"wrote {args.run}/ablation_curve.json and ablation_curve.png")
 
 
-def plot(out: dict, path: Path):
+def plot(out: dict, path: Path, orders: list[str] | None = None):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -174,6 +174,8 @@ def plot(out: dict, path: Path):
     fig.patch.set_facecolor("#fcfcfb")
     ax.set_facecolor("#fcfcfb")
     for order, curve in out["curves"].items():
+        if orders is not None and order not in orders:
+            continue
         ks = [r["k"] for r in curve]
         ce = [r["ce"] for r in curve]
         ax.plot(ks, ce, lw=2, color=colors.get(order, "#898781"),
@@ -181,6 +183,11 @@ def plot(out: dict, path: Path):
     ax.axhline(out["uniform_ce"], color="#898781", lw=1, ls=(0, (4, 3)))
     ax.text(out["C"], out["uniform_ce"] * 0.78, "uniform ln(128)",
             fontsize=8, color="#898781", ha="right")
+    ax.axhline(out["base_ce"], color="#898781", lw=1, ls=(0, (4, 3)))
+    base_str = f"{out['base_ce']:.2g}" if out["base_ce"] > 0 else "~0"
+    ax.annotate(f"model CE, no ablation ({base_str} nats)",
+                (0, out["base_ce"]), xytext=(6, 5),
+                textcoords="offset points", fontsize=8, color="#898781")
     # symlog: the near-zero plateau (the whole point of the asc orderings)
     # stays visible instead of falling off a log axis
     ax.set_yscale("symlog", linthresh=1e-2)
