@@ -141,28 +141,45 @@ def make_events(model: InductionModel, n_seq: int, positions: str,
             "s_pos": s_pos[rows.flatten()]}
 
 
-def _event_logprob_fn(model: InductionModel, fixed: dict[str, torch.Tensor]):
+def _event_score(row: torch.Tensor, y_oh: torch.Tensor, score: str):
+    """Prediction-event score from logit row(s) [..., vocab] (sec 4.1 leaves
+    s_i free). 'logp' saturates when the model is confident; 'logit' and
+    'logodds' (logit_y - logsumexp of the others) do not."""
+    if score == "logp":
+        return (F.log_softmax(row, dim=-1) * y_oh).sum(-1)
+    if score == "logit":
+        return (row * y_oh).sum(-1)
+    if score == "logodds":
+        others = row.masked_fill(y_oh.bool(), float("-inf"))
+        return (row * y_oh).sum(-1) - others.logsumexp(-1)
+    raise ValueError(score)
+
+
+def _event_logprob_fn(model: InductionModel, fixed: dict[str, torch.Tensor],
+                      score: str = "logp"):
     def f(wanted: dict[str, torch.Tensor], seq, pos, y):
         logits = functional_call(model, {**fixed, **wanted}, (seq.unsqueeze(0),))
         # one-hot contractions instead of scalar indexing: vmap-compatible
         # (built via comparison, since F.one_hot's scatter_ breaks under vmap)
         pos_oh = (torch.arange(logits.shape[1], device=logits.device) == pos)
-        logp = F.log_softmax(pos_oh.to(logits.dtype) @ logits[0], dim=-1)
-        y_oh = (torch.arange(logp.shape[0], device=logp.device) == y)
-        return logp @ y_oh.to(logp.dtype)
+        row = pos_oh.to(logits.dtype) @ logits[0]
+        y_oh = (torch.arange(row.shape[0], device=row.device) == y)
+        return _event_score(row, y_oh.to(row.dtype), score)
     return f
 
 
 def collect_grads(model: InductionModel, matrices: list[str], seq, pos, y,
-                  chunk: int = 1024) -> dict[str, torch.Tensor]:
-    """Per-event gradients of s_i = log p(y_i | x, pos_i) wrt each matrix.
+                  chunk: int = 1024,
+                  score: str = "logp") -> dict[str, torch.Tensor]:
+    """Per-event gradients of the event score s_i wrt each matrix.
 
     Returns name -> [N, *w.shape]. One vmapped backward per chunk.
     """
     params = {n: p.detach() for n, p in model.named_parameters()}
     wanted = {n: params[n] for n in matrices}
     fixed = {n: p for n, p in params.items() if n not in matrices}
-    gfn = vmap(grad(_event_logprob_fn(model, fixed)), in_dims=(None, 0, 0, 0))
+    gfn = vmap(grad(_event_logprob_fn(model, fixed, score)),
+               in_dims=(None, 0, 0, 0))
     outs: dict[str, list] = {n: [] for n in matrices}
     for i in range(0, seq.shape[0], chunk):
         sl = slice(i, i + chunk)
@@ -173,7 +190,8 @@ def collect_grads(model: InductionModel, matrices: list[str], seq, pos, y,
 
 
 def collect_svd_attributions(model: InductionModel, basis: AtomBasis,
-                             seq, pos, y, chunk: int = 2048) -> torch.Tensor:
+                             seq, pos, y, chunk: int = 2048,
+                             score: str = "logp") -> torch.Tensor:
     """SVD-trick attributions for variants B/C without materializing any
     per-event gradient matrix (paper sec 4.2).
 
@@ -211,7 +229,9 @@ def collect_svd_attributions(model: InductionModel, basis: AtomBasis,
             s, p_, y_ = seq[sl], pos[sl], y[sl]
             n_idx = torch.arange(s.shape[0], device=s.device)
             logits = model(s)
-            si = F.log_softmax(logits[n_idx, p_], dim=-1)[n_idx, y_].sum()
+            row = logits[n_idx, p_]                       # [B, vocab]
+            y_oh = F.one_hot(y_, row.shape[1]).to(row.dtype)
+            si = _event_score(row, y_oh, score).sum()
             torch.autograd.grad(si, wanted)  # fires the hooks; grads unused
             cols = []
             for name in basis.matrices:
@@ -235,13 +255,15 @@ def collect_svd_attributions(model: InductionModel, basis: AtomBasis,
 
 
 def collect_attributions(model: InductionModel, basis: AtomBasis,
-                         seq, pos, y, chunk: int = 1024) -> torch.Tensor:
+                         seq, pos, y, chunk: int = 1024,
+                         score: str = "logp") -> torch.Tensor:
     """Signed attribution matrix A [N, J] for any variant. B/C use the SVD
     trick; A (scalar atoms) necessarily materializes per-event gradients."""
     if basis.variant in ("B", "C"):
         return collect_svd_attributions(model, basis, seq, pos, y,
-                                        chunk=max(chunk, 2048))
-    grads = collect_grads(model, basis.matrices, seq, pos, y, chunk=chunk)
+                                        chunk=max(chunk, 2048), score=score)
+    grads = collect_grads(model, basis.matrices, seq, pos, y, chunk=chunk,
+                          score=score)
     return basis.attributions(grads)
 
 
