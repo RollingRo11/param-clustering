@@ -37,7 +37,7 @@ def parse_prev(log_path: Path):
 
 METHODS = (("co-factorization", "#2a78d6", "attr"),
            ("attribution clustering", "#eb6834", "attr"),
-           ("VPD", "#1baf7a", "ci"))
+           ("SPD", "#1baf7a", "ci"))
 
 
 def plot_oracle_pair(ours: dict, prev: dict, spec: str, path: Path,
