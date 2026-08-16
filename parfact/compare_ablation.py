@@ -35,24 +35,33 @@ def parse_prev(log_path: Path):
                                for k, ce, d in sorted(pts)]}
 
 
+METHODS = (("co-factorization", "#2a78d6", "attr"),
+           ("attribution clustering", "#eb6834", "attr"),
+           ("VPD", "#1baf7a", "ci"))
+
+
 def plot_oracle_pair(ours: dict, prev: dict, spec: str, path: Path,
                      vpd: dict | None = None):
-    """Delta-CE per-token oracle curves for the toy decompositions."""
-    fig, ax = plt.subplots(figsize=(7.2, 4.6), dpi=150)
+    """Per-token curves: solid = each method's canonical importance
+    (attribution for co-fac/clustering, causal importance for VPD),
+    dotted = oracle (true single-component ablation)."""
+    fig, ax = plt.subplots(figsize=(7.6, 4.8), dpi=150)
     fig.patch.set_facecolor("#fcfcfb")
     ax.set_facecolor("#fcfcfb")
-    series = [("co-factorization (this method)", ours, spec, "#2a78d6"),
-              ("attribution clustering (previous method)", prev, spec,
-               "#eb6834")]
-    if vpd is not None:
-        series.append(("VPD, single-ablation order", vpd, spec, "#1baf7a"))
-        if "per_example_asc:ci" in vpd["curves"]:
-            series.append(("VPD, causal-importance order", vpd,
-                           "per_example_asc:ci", "#eda100"))
-    for label, blob, sp, color in series:
-        curve = blob["curves"][sp]
-        ax.plot([r["k"] for r in curve], [r["delta"] for r in curve], lw=2,
-                color=color, label=label)
+    blobs = dict(zip((m[0] for m in METHODS), (ours, prev, vpd)))
+    for name, color, canon in METHODS:
+        blob = blobs[name]
+        if blob is None:
+            continue
+        for score, style in ((canon, "-"), ("oracle", (0, (2, 2)))):
+            sp = f"per_example_asc:{score}"
+            if sp not in blob["curves"]:
+                continue
+            curve = blob["curves"][sp]
+            kind = "canonical" if score == canon else "oracle"
+            ax.plot([r["k"] for r in curve], [r["delta"] for r in curve],
+                    lw=2, color=color, ls=style,
+                    label=f"{name} — {kind} ({score})")
     ax.axhline(0, color="#c3c2b7", lw=1)
     ax.text(1, 0, "no ablation (ΔCE = 0)", fontsize=8, color="#898781",
             va="bottom")
@@ -62,12 +71,10 @@ def plot_oracle_pair(ours: dict, prev: dict, spec: str, path: Path,
     ax.set_yscale("symlog", linthresh=1e-2)
     ax.set_ylim(bottom=-2e-3)
     ax.set_xlabel(f"components ablated per token (of {ours['C']}, least "
-                  "important first for that token;\ntrue single-ablation "
-                  "importance unless the legend says otherwise)",
-                  color="#52514e")
+                  "important first for that token)", color="#52514e")
     ax.set_ylabel("ΔCE on the token (nats, symlog)", color="#52514e")
-    ax.set_title("Per-token oracle minimality: toy induction model",
-                 color="#0b0b0b", fontsize=11)
+    ax.set_title("Per-token minimality: canonical (solid) vs oracle "
+                 "(dotted) importance", color="#0b0b0b", fontsize=11)
     ax.grid(axis="y", color="#e1e0d9", lw=0.75)
     ax.tick_params(colors="#898781")
     for s in ("top", "right"):

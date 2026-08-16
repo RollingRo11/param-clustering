@@ -26,9 +26,10 @@ from torch.func import functional_call, grad, vmap
 
 from induction_model import InductionModel, gen_batch
 
-# weight matrices decomposed by default: all attention projections.
+# weight matrices decomposed by default: all attention projections
+# (6 matrices: Q, K, V per layer, matching Christensen & Riggs Smith).
 ATTN_MATRICES = tuple(
-    f"layers.{l}.{m}.weight" for l in range(2) for m in ("wq", "wk", "wv", "wo")
+    f"layers.{l}.{m}.weight" for l in range(2) for m in ("wq", "wk", "wv")
 )
 EMBED_MATRICES = ("embed.weight", "pos.weight", "unembed.weight")
 

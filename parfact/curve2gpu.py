@@ -28,7 +28,7 @@ import torch.nn.functional as F
 from torch.func import functional_call, vmap
 
 from induction_model import VOCAB, InductionModel
-from atoms import AtomBasis, collect_attributions, make_events
+from atoms import AtomBasis, collect_attributions, collect_grads, make_events
 from ablation_curve import build_ranks, plot_acc, plot_ce
 
 CHUNK = 32768   # flat (variant x event) sequences per vmapped forward
@@ -114,12 +114,98 @@ def worker(rank: int, world: int, args, rdv_file: str):
 
     imps = {"oracle": imp_oracle}
 
+    def ci_importance():
+        """Canonical causal-importance ordering: member subcomponents'
+        max-over-position g, summed per component via the saved labels.
+        Dispatches on the state format (spd_state.pt or vpd_state.pt)."""
+        spd_path = args.components.parent / "spd_state.pt"
+        if spd_path.exists():
+            return spd_ci_importance(spd_path)
+        from vpd_toy import (MODULES, CITransformer, install_components,
+                             clear_masks)
+        state = torch.load(args.components.parent / "vpd_state.pt",
+                           weights_only=True, map_location=dev)
+        lab = torch.load(args.components, weights_only=True,
+                         map_location=dev)["labels"].to(dev)
+        c_per = state["ci_fn"]["proj_out.weight"].shape[0] // len(MODULES)
+        wrapped = InductionModel().to(dev)
+        wrapped.load_state_dict(torch.load(args.ckpt)["state_dict"])
+        wrapped.eval()
+        wrappers = install_components(wrapped, c_per)
+        wrapped.to(dev)
+        for n, w in wrappers.items():
+            w.V.data.copy_(state["wrappers"][n]["V"].to(dev))
+            w.U.data.copy_(state["wrappers"][n]["U"].to(dev))
+        ci_fn = CITransformer({n: 16 for n in MODULES}, c_per).to(dev)
+        ci_fn.load_state_dict(state["ci_fn"])
+        ci_fn.eval()
+        with torch.no_grad():
+            scores = []
+            for i in range(0, n_ev, 1024):
+                clear_masks(wrappers)
+                wrapped(seq[i: i + 1024])
+                ci_lower, _ = ci_fn({n: w.last_input
+                                     for n, w in wrappers.items()})
+                scores.append(torch.cat([ci_lower[n].amax(dim=1)
+                                         for n in sorted(MODULES)], dim=1))
+            imp = torch.zeros(n_ev, n_comp, device=dev)
+            imp.index_add_(1, lab, torch.cat(scores))
+        return imp
+
+    def spd_ci_importance(spd_path):
+        from spd_toy import MODULES as SPD_MODULES, MatrixGate, install
+        import torch.nn as nn
+        state = torch.load(spd_path, weights_only=True, map_location=dev)
+        lab = torch.load(args.components, weights_only=True,
+                         map_location=dev)["labels"].to(dev)
+        c_per = int(state["c_per_module"])
+        wrapped = InductionModel().to(dev)
+        wrapped.load_state_dict(torch.load(args.ckpt)["state_dict"])
+        wrapped.eval()
+        wrappers = install(wrapped, c_per)
+        wrapped.to(dev)
+        for n, w in wrappers.items():
+            w.V.data.copy_(state["wrappers"][n]["V"].to(dev))
+            w.U.data.copy_(state["wrappers"][n]["U"].to(dev))
+        gates = nn.ModuleDict({n.replace(".", "_"): MatrixGate(c_per)
+                               for n in SPD_MODULES}).to(dev)
+        gates.load_state_dict(state["gates"])
+        gates.eval()
+        with torch.no_grad():
+            scores = []
+            for i in range(0, n_ev, 1024):
+                for w in wrappers.values():
+                    w.mode, w.mask = "target", None
+                wrapped(seq[i: i + 1024])
+                scores.append(torch.cat(
+                    [gates[n.replace(".", "_")](wrappers[n].last_input)[0]
+                     .amax(dim=1) for n in sorted(SPD_MODULES)], dim=1))
+            imp = torch.zeros(n_ev, n_comp, device=dev)
+            imp.index_add_(1, lab, torch.cat(scores))
+        return imp
+
+    def attr_importance():
+        """Canonical for gradient-based decompositions: |grad_W s_i . C_c|,
+        valid for any additive components."""
+        matrices = list(comps)
+        grads = collect_grads(model, matrices, seq, pos, y, chunk=2048)
+        z = torch.zeros(n_ev, n_comp, device=dev)
+        for name in matrices:
+            z += torch.einsum("noi,coi->nc", grads[name], comps[name])
+        return z.abs()
+
     def importance(score):
         if score not in imps:
-            assert basis is not None, f"score '{score}' needs a factorization"
-            z = collect_attributions(model, basis, seq, pos, y,
-                                     score=score) @ V
-            imps[score] = z.abs()
+            if score == "ci":
+                imps[score] = ci_importance()
+            elif score == "attr":
+                imps[score] = attr_importance()
+            else:
+                assert basis is not None, \
+                    f"score '{score}' needs a factorization run"
+                z = collect_attributions(model, basis, seq, pos, y,
+                                         score=score) @ V
+                imps[score] = z.abs()
         return imps[score]
 
     # -- phase B: curve, K grid sharded by rank ------------------------------

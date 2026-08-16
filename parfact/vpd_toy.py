@@ -42,7 +42,7 @@ from induction_model import InductionModel, gen_batch
 from prev_method import kmeans
 
 MODULES = tuple(f"layers.{l}.{m}" for l in range(2)
-                for m in ("wq", "wk", "wv", "wo"))
+                for m in ("wq", "wk", "wv"))
 
 
 # --- leaky-hard sigmoids (nano section B) ---
@@ -386,22 +386,26 @@ def worker(rank: int, world: int, args, rdv_file: str):
             ci_lower, _ = ci_fn({n: w.last_input for n, w in wrappers.items()})
             profiles.append(torch.cat(
                 [ci_lower[n].flatten(0, 1).T for n in sorted(MODULES)]))
-        raw = torch.cat(profiles, dim=1)              # [8*C, positions]
+        raw = torch.cat(profiles, dim=1)              # [n_sub, positions]
+        n_sub = raw.shape[0]
         norms = raw.norm(dim=1, keepdim=True)
         alive = norms.squeeze(1) > 1e-3
         print(f"subcomponents alive (CI-profile norm > 1e-3): "
-              f"{int(alive.sum())}/{raw.shape[0]}")
-        # dead rows stay zero instead of being blown up by normalization,
-        # so they cluster together at the zero centroid
-        prof = torch.where(alive[:, None], raw / norms.clamp_min(1e-12),
-                           torch.zeros_like(raw))
-        lab = kmeans(prof, args.n_components, iters=25, seed=args.seed)
+              f"{int(alive.sum())}/{n_sub}")
+        if args.n_components == n_sub:
+            # components ARE the subcomponents (VPD's native units)
+            lab = torch.arange(n_sub, device=dev)
+        else:
+            # dead rows stay zero instead of being blown up by normalization,
+            # so they cluster together at the zero centroid
+            prof = torch.where(alive[:, None], raw / norms.clamp_min(1e-12),
+                               torch.zeros_like(raw))
+            lab = kmeans(prof, args.n_components, iters=25, seed=args.seed)
 
         # -- assemble model-spanning components -----------------------------
         comps, order = {}, sorted(MODULES)
         total_ci = torch.zeros(args.n_components, device=dev)
         total_ci.index_add_(0, lab, raw.sum(1))
-        dump_cluster = int(total_ci.argmin())
         for mi, path in enumerate(order):
             w = wrappers[path]
             sub = torch.einsum("co,ic->coi", w.U, w.V)  # [C, d_out, d_in]
@@ -409,11 +413,14 @@ def worker(rank: int, world: int, args, rdv_file: str):
             dense = torch.zeros(args.n_components, *w.W_target.shape,
                                 device=dev)
             dense.index_add_(0, lab_m, sub)
-            dense[dump_cluster] += w.weight_delta()   # exact additivity
+            # faithfulness residual -> this matrix's least-used component,
+            # keeping sum_c C_c == W exact
+            dump = lab_m[total_ci[lab_m].argmin()]
+            dense[dump] += w.weight_delta()
             comps[path + ".weight"] = dense
             err = (dense.sum(0) - w.W_target).abs().max().item()
             assert err < 1e-4, (path, err)
-        print(f"residual folded into cluster {dump_cluster} "
+        print(f"residuals folded per matrix "
               f"(faith err {faithfulness_loss(wrappers):.3e})")
 
     torch.save({"components": {n: c.cpu() for n, c in comps.items()},

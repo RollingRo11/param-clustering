@@ -29,14 +29,18 @@ S_TOKEN = VOCAB - 1
 
 
 class Attention(nn.Module):
-    """Single-head causal attention; Shortformer positions go into q,k only."""
+    """Single-head causal attention; Shortformer positions go into q,k only.
+
+    Q, K, V matrices only, as in Christensen & Riggs Smith (2511.08854): with
+    a single head a separate output projection is redundant (W_O can be
+    absorbed into W_V), so V writes directly into the residual stream.
+    """
 
     def __init__(self, d: int):
         super().__init__()
         self.wq = nn.Linear(d, d, bias=False)
         self.wk = nn.Linear(d, d, bias=False)
         self.wv = nn.Linear(d, d, bias=False)
-        self.wo = nn.Linear(d, d, bias=False)
         self.d = d
 
     def forward(self, x: torch.Tensor, pos: torch.Tensor) -> torch.Tensor:
@@ -47,7 +51,7 @@ class Attention(nn.Module):
         scores = q @ k.transpose(-2, -1) / math.sqrt(self.d)
         mask = torch.triu(torch.ones(n, n, dtype=torch.bool, device=x.device), 1)
         scores = scores.masked_fill(mask, float("-inf"))
-        return self.wo(F.softmax(scores, dim=-1) @ v)
+        return F.softmax(scores, dim=-1) @ v
 
 
 class InductionModel(nn.Module):
