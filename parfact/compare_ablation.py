@@ -82,7 +82,7 @@ def plot_oracle_pair(ours: dict, prev: dict, spec: str, path: Path,
     for s in ("left", "bottom"):
         ax.spines[s].set_color("#c3c2b7")
     ax.legend(frameon=False, fontsize=8, labelcolor="#52514e",
-              loc="upper left")
+              loc="lower right")
     fig.tight_layout()
     fig.savefig(path, bbox_inches="tight")
     print(f"wrote {path}")
