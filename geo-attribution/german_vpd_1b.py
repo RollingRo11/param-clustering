@@ -216,7 +216,9 @@ def ranking_args(bank: dict) -> SimpleNamespace:
         compile_mode="default",
         ig_k=1,
         bf16=True,
-        fused_attention=True,
+        # flash has no backward kernel for the IG sensors; only GIM's custom
+        # backward can ride the fused path
+        fused_attention=bank.get("sensor", "gim") == "gim",
         scalar=bank.get("scalar", "equal_reward"),
     )
 
