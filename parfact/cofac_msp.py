@@ -28,14 +28,10 @@ from cofact_v2 import TriFactorizationV2, component_mass
 MATRICES = ("fc1.weight", "fc2.weight")
 
 
-def collect(model, Ss, probs, n_events, batch, dev, gen):
-    """Signed atom-attribution matrix A [N, J], task ids, and SVD bases."""
-    W1, W2 = model.fc1.weight.detach(), model.fc2.weight.detach()
-    svd = {}
-    for name, W in zip(MATRICES, (W1, W2)):
-        U, S, Vh = torch.linalg.svd(W, full_matrices=False)
-        svd[name] = (U, S, Vh)                        # W = U diag(S) Vh
-    A_rows, tasks_all = [], []
+def forward_signals(model, Ss, probs, n_events, batch, dev, gen):
+    """Per-event (delta, h) pairs for both matrices: grad_W s_i = delta h^T."""
+    W2 = model.fc2.weight.detach()
+    xs, hs, d1s, d2s, tasks_all = [], [], [], [], []
     for i0 in range(0, n_events, batch):
         b = min(batch, n_events - i0)
         x, _, tasks = sample_batch(b, Ss, probs, N_TASKS, N_BITS, dev, gen)
@@ -47,22 +43,89 @@ def collect(model, Ss, probs, n_events, batch, dev, gen):
             delta2 = F.one_hot(ystar, 2).float() - F.one_hot(1 - ystar,
                                                              2).float()
             delta1 = (delta2 @ W2) * (z1 > 0).float()
-            blocks = []
-            for name, (dlt, h) in zip(MATRICES,
-                                      ((delta1, x), (delta2, a))):
-                U, S, Vh = svd[name]
-                blocks.append(S[None, :] * (dlt @ U) * (h @ Vh.T))
-            A_rows.append(torch.cat(blocks, dim=1).cpu())
-            tasks_all.append(tasks.cpu())
-    A = torch.cat(A_rows)
-    atom_matrix = [n for n in MATRICES for _ in range(svd[n][1].numel())]
-    sigma = torch.cat([svd[n][1] for n in MATRICES]).cpu()
-    return A, torch.cat(tasks_all), atom_matrix, sigma
+        xs.append(x)
+        hs.append(a)
+        d1s.append(delta1)
+        d2s.append(delta2)
+        tasks_all.append(tasks.cpu())
+    sig = {"fc1.weight": (torch.cat(d1s), torch.cat(xs)),
+           "fc2.weight": (torch.cat(d2s), torch.cat(hs))}
+    return sig, torch.cat(tasks_all)
+
+
+def svd_attributions(model, sig):
+    """Variant B: A [N, J] over rank-one SVD atoms, sigma-weighted."""
+    Ws = {"fc1.weight": model.fc1.weight.detach(),
+          "fc2.weight": model.fc2.weight.detach()}
+    blocks, atom_matrix, sigmas = [], [], []
+    for name in MATRICES:
+        U, S, Vh = torch.linalg.svd(Ws[name], full_matrices=False)
+        dlt, h = sig[name]
+        blocks.append((S[None, :] * (dlt @ U) * (h @ Vh.T)).cpu())
+        atom_matrix += [name] * S.numel()
+        sigmas.append(S.cpu())
+    return torch.cat(blocks, dim=1), atom_matrix, torch.cat(sigmas)
+
+
+def gradpca_attributions(model, sig, r_per, pca_events, dev, chunk=2048):
+    """Variant C (usage-adapted atoms): per matrix, an orthonormal basis
+    {d_q} from PCA of the per-event gradient set, plus the residual
+    B_res = W - sum_q <W,d_q> d_q as a final atom so reconstruction stays
+    exact. Attribution is the bare direction projection <grad_i, d_q>_F.
+
+    The gradients are rank-1 (delta h^T), so the PCA Gram matrix is
+    K_ij = (delta_i . delta_j)(h_i . h_j) -- an elementwise product of two
+    Gram matrices; eigenvectors of K give the principal directions without
+    ever materializing a per-event gradient."""
+    Ws = {"fc1.weight": model.fc1.weight.detach(),
+          "fc2.weight": model.fc2.weight.detach()}
+    blocks, atom_matrix, sigmas = [], [], []
+    for name in MATRICES:
+        dlt, h = sig[name]
+        W = Ws[name]
+        R = min(r_per[name], W.shape[0] * W.shape[1] - 1)
+        P = min(pca_events, dlt.shape[0])
+        dp, hp = dlt[:P], h[:P]
+        K = (dp @ dp.T) * (hp @ hp.T)
+        evals, evecs = torch.linalg.eigh(K)
+        alpha = evecs[:, -R:].flip(-1)                     # top-R [P, R]
+        D = torch.einsum("pr,po,pi->roi", alpha, dp, hp)
+        Dflat = D.reshape(R, -1)
+        # eigen-directions are orthogonal in exact arithmetic; re-orthonormalize
+        Q, _ = torch.linalg.qr(Dflat.T)                    # [dim, R]
+        Dflat = Q.T
+        D = Dflat.reshape(R, *W.shape)
+        c = Dflat @ W.reshape(-1)                          # <W, d_q>  [R]
+        Bres = W - (c[:, None] * Dflat).sum(0).reshape(W.shape)
+        res_norm = Bres.norm().clamp_min(1e-12)
+        dres = Bres / res_norm
+        A_cols = []
+        for i0 in range(0, dlt.shape[0], chunk):
+            dc, hc = dlt[i0:i0 + chunk], h[i0:i0 + chunk]
+            proj = torch.einsum("bo,roi,bi->br", dc, D, hc)
+            pres = torch.einsum("bo,oi,bi->b", dc, dres, hc)
+            A_cols.append(torch.cat([proj, pres[:, None]], dim=1).cpu())
+        blocks.append(torch.cat(A_cols))
+        atom_matrix += [name] * (R + 1)
+        sigmas.append(torch.cat([c.abs().cpu(),
+                                 res_norm.reshape(1).cpu()]))
+        rec = (c[:, None] * Dflat).sum(0).reshape(W.shape) + Bres
+        print(f"{name}: R={R} atoms + residual "
+              f"(|res| = {float(res_norm):.4f}, "
+              f"{float(res_norm**2 / W.pow(2).sum()):.3f} of ||W||^2); "
+              f"recon max err {float((rec - W).abs().max()):.2e}", flush=True)
+    return torch.cat(blocks, dim=1), atom_matrix, torch.cat(sigmas)
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--n_events", type=int, default=16_384)
+    ap.add_argument("--basis", choices=("svd", "gradpca"), default="svd",
+                    help="variant B (SVD atoms) or variant C "
+                         "(gradient-PCA usage-adapted atoms + residual)")
+    ap.add_argument("--r_fc1", type=int, default=100)
+    ap.add_argument("--r_fc2", type=int, default=32)
+    ap.add_argument("--pca_events", type=int, default=8192)
     ap.add_argument("--k_factors", type=int, default=600)
     ap.add_argument("--c_groups", type=int, default=300)
     ap.add_argument("--fact_steps", type=int, default=4000)
@@ -84,9 +147,15 @@ def main():
     probs = torch.tensor(ck["probs"])
     gen = torch.Generator(device=dev).manual_seed(args.seed + 1000)
 
-    A, tasks, atom_matrix, sigma = collect(model, Ss, probs, args.n_events,
-                                           4096, dev, gen)
-    print(f"A: {tuple(A.shape)} (events x atoms), "
+    sig, tasks = forward_signals(model, Ss, probs, args.n_events, 4096, dev,
+                                 gen)
+    if args.basis == "svd":
+        A, atom_matrix, sigma = svd_attributions(model, sig)
+    else:
+        r_per = {"fc1.weight": args.r_fc1, "fc2.weight": args.r_fc2}
+        A, atom_matrix, sigma = gradpca_attributions(model, sig, r_per,
+                                                     args.pca_events, dev)
+    print(f"A: {tuple(A.shape)} (events x atoms, basis={args.basis}), "
           f"atoms per matrix: fc1={atom_matrix.count('fc1.weight')} "
           f"fc2={atom_matrix.count('fc2.weight')}", flush=True)
 
