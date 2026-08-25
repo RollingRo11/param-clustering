@@ -130,9 +130,15 @@ class _Attn(torch.autograd.Function):
     tau=1, qk_div=1, v_div=1 reproduces the exact softmax VJP, so the 'plain'
     mode is the true gradient and the only differences between modes are the
     intended ones.
+
+    custom_fwd(cast_inputs=float32) pins this Function to fp32 under autocast:
+    custom Functions otherwise see mixed dtypes in backward (saved bf16
+    tensors vs fp32 incoming grads) and crash. Numerics unchanged -- this
+    just opts the attention out of bf16.
     """
 
     @staticmethod
+    @torch.amp.custom_fwd(device_type="cuda", cast_inputs=torch.float32)
     def forward(ctx, q, k, v, scaling, tau, qk_div, v_div):
         ctx.save_for_backward(q, k, v)
         ctx.scaling, ctx.tau = scaling, tau
@@ -143,6 +149,7 @@ class _Attn(torch.autograd.Function):
         return torch.softmax(s.float(), -1).to(q.dtype) @ v
 
     @staticmethod
+    @torch.amp.custom_bwd(device_type="cuda")
     def backward(ctx, go):
         q, k, v = ctx.saved_tensors
         s = ((q @ k.transpose(-2, -1)) * ctx.scaling).float()

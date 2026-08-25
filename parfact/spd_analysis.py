@@ -163,7 +163,7 @@ def main():
     print("\nablating each group's ACTIVE subcomponents (their component ids "
           "in the global 0..599 numbering):")
     for label, mats in groups.items():
-        ids = {nm: unique[nm] - mat_offset[nm] for nm in mats}
+        ids = {nm: unique[nm] + mat_offset[nm] for nm in mats}
         glob = sorted((unique[nm]).tolist() for nm in mats)
         acc, aa0, aa1 = ablate(ids)
         print(f"  {label:<28} acc {acc:.4f}  m->s1 {aa0:.3f}  "
