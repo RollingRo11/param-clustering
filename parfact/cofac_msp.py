@@ -67,6 +67,27 @@ def svd_attributions(model, sig):
     return torch.cat(blocks, dim=1), atom_matrix, torch.cat(sigmas)
 
 
+def scalar_attributions(model, sig, dev, chunk=2048):
+    """Variant A: every scalar weight is its own atom; attribution is
+    gradient-times-parameter, a_ij = theta_j * (grad_W s_i)_j
+    = W[o,i] * delta[b,o] * h[b,i]. A is [N, 152k] fp16 on device."""
+    Ws = {"fc1.weight": model.fc1.weight.detach(),
+          "fc2.weight": model.fc2.weight.detach()}
+    blocks, atom_matrix, sigmas = [], [], []
+    for name in MATRICES:
+        dlt, h = sig[name]
+        W = Ws[name]
+        cols = []
+        for i0 in range(0, dlt.shape[0], chunk):
+            g = torch.einsum("bo,bi->boi", dlt[i0:i0 + chunk],
+                             h[i0:i0 + chunk]) * W[None]
+            cols.append(g.reshape(g.shape[0], -1).half())
+        blocks.append(torch.cat(cols))
+        atom_matrix += [name] * W.numel()
+        sigmas.append(W.abs().reshape(-1).cpu())
+    return torch.cat(blocks, dim=1).to(dev), atom_matrix, torch.cat(sigmas)
+
+
 def gradpca_attributions(model, sig, r_per, pca_events, dev, chunk=2048):
     """Variant C (usage-adapted atoms): per matrix, an orthonormal basis
     {d_q} from PCA of the per-event gradient set, plus the residual
@@ -120,9 +141,11 @@ def gradpca_attributions(model, sig, r_per, pca_events, dev, chunk=2048):
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--n_events", type=int, default=16_384)
-    ap.add_argument("--basis", choices=("svd", "gradpca"), default="svd",
-                    help="variant B (SVD atoms) or variant C "
-                         "(gradient-PCA usage-adapted atoms + residual)")
+    ap.add_argument("--basis", choices=("svd", "gradpca", "scalar"),
+                    default="svd",
+                    help="variant B (SVD atoms), variant C (gradient-PCA "
+                         "usage-adapted atoms + residual), or variant A "
+                         "(scalar atoms: every weight its own atom)")
     ap.add_argument("--r_fc1", type=int, default=100)
     ap.add_argument("--r_fc2", type=int, default=32)
     ap.add_argument("--pca_events", type=int, default=8192)
@@ -151,34 +174,47 @@ def main():
                                  gen)
     if args.basis == "svd":
         A, atom_matrix, sigma = svd_attributions(model, sig)
+    elif args.basis == "scalar":
+        A, atom_matrix, sigma = scalar_attributions(model, sig, dev)
     else:
         r_per = {"fc1.weight": args.r_fc1, "fc2.weight": args.r_fc2}
         A, atom_matrix, sigma = gradpca_attributions(model, sig, r_per,
                                                      args.pca_events, dev)
+    big = A.shape[1] > 20_000
     print(f"A: {tuple(A.shape)} (events x atoms, basis={args.basis}), "
           f"atoms per matrix: fc1={atom_matrix.count('fc1.weight')} "
           f"fc2={atom_matrix.count('fc2.weight')}", flush=True)
 
-    # per-matrix RMS normalization, then row-normalized magnitudes
-    An = A.clone()
+    # per-matrix RMS normalization (atoms are block-ordered -> slices),
+    # in place; then row-normalized magnitudes
+    A_raw = None if big else A.clone()
+    j0 = 0
     for name in MATRICES:
-        cols = [j for j, m in enumerate(atom_matrix) if m == name]
-        rms = An[:, cols].pow(2).mean().sqrt().clamp_min(1e-12)
-        An[:, cols] /= rms
-    M = An.abs()
-    M_bar = M / M.sum(dim=1, keepdim=True).clamp_min(1e-8)
+        n_m = atom_matrix.count(name)
+        sl = slice(j0, j0 + n_m)
+        j0 += n_m
+        rms = A[:, sl].float().pow(2).mean().sqrt().clamp_min(1e-12)
+        A[:, sl] = (A[:, sl].float() / rms).to(A.dtype)
+    M_bar = A.abs().float().to(dev)
+    M_bar /= M_bar.sum(dim=1, keepdim=True).clamp_min(1e-8)
 
     torch.manual_seed(args.seed)
     fact = TriFactorizationV2(args.n_events, A.shape[1], args.k_factors,
                               args.c_groups,
                               u_simplex=not args.no_u_simplex,
                               seed=args.seed).to(dev)
-    met = fact.fit(M_bar.to(dev), steps=args.fact_steps)
+    met = fact.fit(M_bar, steps=args.fact_steps,
+                   row_chunk=2048 if big else 0)
+    del M_bar
 
     with torch.no_grad():
         V = fact.V.detach().cpu()
         r = fact.residual.detach().cpu()
-        z = An @ V                                    # signed usage [N, C]
+        Vd = V.to(dev)
+        z_rows = []
+        for i0 in range(0, A.shape[0], 2048):
+            z_rows.append((A[i0:i0 + 2048].to(dev).float() @ Vd).cpu())
+        z = torch.cat(z_rows)                         # signed usage [N, C]
         # mean |usage| per (task, component) -- the task-selectivity table
         task_usage = torch.zeros(N_TASKS, args.c_groups)
         counts = torch.zeros(N_TASKS)
@@ -194,11 +230,14 @@ def main():
     met["config"] = {k: str(v) for k, v in vars(args).items()}
     met["events_per_task_head"] = counts[:10].tolist()
 
-    torch.save({"U": fact.U.detach().cpu(), "S": fact.S.detach().cpu(),
-                "V": V, "r": r, "sigma": sigma, "atom_matrix": atom_matrix,
-                "A": A.half(), "tasks": tasks, "z": z.half(),
-                "task_usage": task_usage,
-                "config": met["config"]}, args.out / "factorization.pt")
+    blob = {"U": fact.U.detach().cpu(), "S": fact.S.detach().cpu(),
+            "V": V, "r": r, "sigma": sigma, "tasks": tasks, "z": z.half(),
+            "task_usage": task_usage, "config": met["config"],
+            "atom_counts": {n: atom_matrix.count(n) for n in MATRICES}}
+    if not big:                       # raw A too large for scalar atoms
+        blob["A"] = A_raw.half()
+        blob["atom_matrix"] = atom_matrix
+    torch.save(blob, args.out / "factorization.pt")
     (args.out / "metrics.json").write_text(json.dumps(
         {k: v for k, v in met.items()}, indent=1))
     print("component mass: n50", mass["components_for_50pct_mass"],

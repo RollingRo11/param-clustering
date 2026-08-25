@@ -54,30 +54,52 @@ class TriFactorizationV2(torch.nn.Module):
         return self.Vfull[:, -1]
 
     def fit(self, M_bar: torch.Tensor, steps: int = 4000, lr: float = 2e-2,
-            log_every: int = 250) -> dict:
+            log_every: int = 250, row_chunk: int = 0) -> dict:
+        """row_chunk > 0 computes the (identical) loss in event-row chunks
+        with gradient accumulation, so huge atom counts (scalar atoms:
+        J ~ 1e5) never materialize the full N x J reconstruction."""
         opt = torch.optim.Adam(self.parameters(), lr=lr)
         mass = M_bar.sum().clamp_min(1e-8)
+        N = M_bar.shape[0]
+        chunk = row_chunk if 0 < row_chunk < N else N
         hist = []
+
+        def idiv(Mb, Mh):
+            return (Mb * ((Mb + 1e-8).log() - (Mh + 1e-8).log())
+                    - Mb + Mh).sum() / mass
+
         for step in range(steps):
-            M_hat = self.U @ self.S @ self.V.T
-            # I-divergence: sum M log(M/M_hat) - M + M_hat
-            loss = (M_bar * ((M_bar + 1e-8).log() - (M_hat + 1e-8).log())
-                    - M_bar + M_hat).sum() / mass
             opt.zero_grad(set_to_none=True)
-            loss.backward()
+            U_full = self.U
+            SV = self.S @ self.V.T
+            loss_val = 0.0
+            for i0 in range(0, N, chunk):
+                Mh = U_full[i0:i0 + chunk] @ SV
+                loss_c = idiv(M_bar[i0:i0 + chunk], Mh)
+                loss_c.backward(retain_graph=(i0 + chunk < N))
+                loss_val += loss_c.item()
             opt.step()
             if step % log_every == 0 or step == steps - 1:
                 with torch.no_grad():
-                    rel = ((M_bar - M_hat).norm() / M_bar.norm()).item()
-                hist.append(f"step {step} idiv {loss.item():.4e} rel {rel:.4f}")
+                    SVn = self.S @ self.V.T
+                    Un = self.U
+                    resid = sum(float((M_bar[i0:i0 + chunk]
+                                       - Un[i0:i0 + chunk] @ SVn)
+                                      .pow(2).sum())
+                                for i0 in range(0, N, chunk))
+                    rel = (resid ** 0.5) / float(M_bar.norm())
+                hist.append(f"step {step} idiv {loss_val:.4e} rel {rel:.4f}")
                 print("  " + hist[-1], flush=True)
         with torch.no_grad():
-            M_hat = self.U @ self.S @ self.V.T
-            resid = (M_bar - M_hat).pow(2).sum()
-            total = (M_bar - M_bar.mean()).pow(2).sum()
-            out = {"idiv": loss.item(),
-                   "rel_err": (resid.sqrt() / M_bar.norm()).item(),
-                   "r2_attr_euclid": (1 - resid / total).item(),
+            SVn = self.S @ self.V.T
+            Un = self.U
+            resid = sum(float((M_bar[i0:i0 + chunk]
+                               - Un[i0:i0 + chunk] @ SVn).pow(2).sum())
+                        for i0 in range(0, N, chunk))
+            total = float((M_bar - M_bar.mean()).pow(2).sum())
+            out = {"idiv": loss_val,
+                   "rel_err": (resid ** 0.5) / float(M_bar.norm()),
+                   "r2_attr_euclid": 1 - resid / total,
                    "mean_residual_membership": self.residual.mean().item(),
                    "log": hist[-3:]}
         return out
