@@ -185,6 +185,22 @@ def anneal_p(step, total, p_start=0.9, p_end=0.1):
     return p_start + (p_end - p_start) * min(step / total, 1.0)
 
 
+def wandb_run(args, out_dir, rank):
+    """Optional W&B logging: no-ops unless WANDB_API_KEY is set (env.sh).
+    One run per out dir, resumed across chunks via a stable id."""
+    if rank != 0 or not os.environ.get("WANDB_API_KEY"):
+        return None
+    try:
+        import wandb
+    except ImportError:
+        return None
+    return wandb.init(
+        project=os.environ.get("WANDB_PROJECT", "param-clustering"),
+        id=out_dir.name, name=out_dir.name, resume="allow",
+        dir=str(out_dir),
+        config={k: str(v) for k, v in vars(args).items()})
+
+
 def worker(rank, world, args, rdv_file):
     dev = f"cuda:{rank}"
     if world > 1:
@@ -238,6 +254,7 @@ def worker(rank, world, args, rdv_file):
     gen = torch.Generator(device=dev).manual_seed(args.seed + rank)
     opt = torch.optim.Adam(params, lr=args.lr)
     log_every = max(1, args.steps // 25)
+    run = wandb_run(args, out_dir, rank)
 
     # -- resume ---------------------------------------------------------
     rpath = out_dir / "resume.pt"
@@ -288,6 +305,15 @@ def worker(rank, world, args, rdv_file):
         total.backward()
         opt.step()
 
+        if run is not None and (step % 1000 == 0 or step == args.steps - 1):
+            with torch.no_grad():
+                l0w = torch.stack([(g > 0.5).float().sum(-1).mean()
+                                   for g in g_lo.values()]).sum()
+            run.log({"faith": loss_faith.item(), "recon": loss_recon.item(),
+                     "stoch": loss_stoch.item(), "layer": loss_layer.item(),
+                     "imp": loss_imp.item(), "total": total.item(),
+                     "lr": lr, "L0_gt0.5": l0w.item()}, step=step)
+
         if step % log_every == 0 or step == args.steps - 1:
             with torch.no_grad():
                 l0 = torch.stack([(g > 0.5).float().sum(-1).mean()
@@ -311,6 +337,8 @@ def worker(rank, world, args, rdv_file):
                              for n, w in wrappers.items()}}, rpath)
     log(f"checkpointed at step {end}/{args.steps}")
     if end < args.steps:                 # more chunks to go; skip extraction
+        if run is not None:
+            run.finish()
         if world > 1:
             dist.destroy_process_group()
         return
@@ -355,6 +383,13 @@ def worker(rank, world, args, rdv_file):
                              for n, w in wrappers.items()},
                 "gates": gates.state_dict()}, out_dir / "spd_state.pt")
     print(f"saved {out_dir}/components.pt and spd_state.pt")
+    if run is not None:
+        import wandb
+        art = wandb.Artifact(out_dir.name, type="spd-decomposition")
+        art.add_file(str(out_dir / "spd_state.pt"))
+        art.add_file(str(out_dir / "components.pt"))
+        run.log_artifact(art)
+        run.finish()
     if world > 1:
         dist.destroy_process_group()
 
