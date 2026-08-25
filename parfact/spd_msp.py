@@ -167,6 +167,7 @@ def main():
     probs = torch.tensor(ck["probs"])
 
     wrappers = install(model, args.c_per_module)
+    model.to(dev)                      # move the fresh V/U wrapper params too
     d_ins = {"fc1": N_TASKS + N_BITS, "fc2": int(ck["config"]["width"])}
     gates = nn.ModuleDict({n: MatrixGate(args.c_per_module, d_ins[n])
                            for n in MODULES}).to(dev)
