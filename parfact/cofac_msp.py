@@ -152,6 +152,9 @@ def main():
     ap.add_argument("--k_factors", type=int, default=600)
     ap.add_argument("--c_groups", type=int, default=300)
     ap.add_argument("--fact_steps", type=int, default=4000)
+    ap.add_argument("--row_chunk", type=int, default=-1,
+                    help="event rows per idiv chunk in the fit; -1 = auto "
+                         "(2048 for scalar atoms, full batch otherwise)")
     ap.add_argument("--no_u_simplex", action="store_true")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--ckpt", type=Path,
@@ -181,6 +184,8 @@ def main():
         A, atom_matrix, sigma = gradpca_attributions(model, sig, r_per,
                                                      args.pca_events, dev)
     big = A.shape[1] > 20_000
+    if big and dev.startswith("cuda"):
+        torch.backends.cuda.matmul.allow_tf32 = True
     print(f"A: {tuple(A.shape)} (events x atoms, basis={args.basis}), "
           f"atoms per matrix: fc1={atom_matrix.count('fc1.weight')} "
           f"fc2={atom_matrix.count('fc2.weight')}", flush=True)
@@ -203,8 +208,8 @@ def main():
                               args.c_groups,
                               u_simplex=not args.no_u_simplex,
                               seed=args.seed).to(dev)
-    met = fact.fit(M_bar, steps=args.fact_steps,
-                   row_chunk=2048 if big else 0)
+    rc = args.row_chunk if args.row_chunk >= 0 else (2048 if big else 0)
+    met = fact.fit(M_bar, steps=args.fact_steps, row_chunk=rc)
     del M_bar
 
     with torch.no_grad():
