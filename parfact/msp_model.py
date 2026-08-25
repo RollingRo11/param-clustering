@@ -134,9 +134,9 @@ def main():
                 "Ss": [s.tolist() for s in Ss],
                 "probs": probs.tolist(),
                 "per_task_acc": accs,
-                "config": {"n_tasks": N_TASKS, "n": N_BITS, "k": K,
-                           "alpha": ALPHA, "width": args.width,
-                           **{k: str(v) for k, v in vars(args).items()}}},
+                "config": {**{k: str(v) for k, v in vars(args).items()},
+                           "n_tasks": N_TASKS, "n": N_BITS, "k": K,
+                           "alpha": ALPHA, "width": args.width}},
                args.out)
     print("saved", args.out)
     if run is not None:

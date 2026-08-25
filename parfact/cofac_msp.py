@@ -142,14 +142,15 @@ def main():
             import wandb
             run = wandb.init(project=os.environ.get("WANDB_PROJECT",
                                                     "param-clustering"),
-                             id=args.out.name + "-msp",
-                             name=args.out.name + "-msp", resume="allow",
+                             id=f"{args.out.parent.name}-{args.out.name}",
+                             name=f"{args.out.parent.name}-{args.out.name}",
+                             resume="allow",
                              dir=str(args.out), config=met["config"])
             run.log({"idiv": met["idiv"], "rel_err": met["rel_err"],
                      "r2_attr_euclid": met["r2_attr_euclid"],
                      "n50": mass["components_for_50pct_mass"],
                      "n90": mass["components_for_90pct_mass"]})
-            art = wandb.Artifact(args.out.name + "-msp",
+            art = wandb.Artifact(f"{args.out.parent.name}-{args.out.name}",
                                  type="cofac-decomposition")
             art.add_file(str(args.out / "factorization.pt"))
             art.add_file(str(args.out / "metrics.json"))

@@ -134,7 +134,8 @@ def wandb_run(args, out_dir):
         return None
     return wandb.init(
         project=os.environ.get("WANDB_PROJECT", "param-clustering"),
-        id=out_dir.name, name=out_dir.name, resume="allow",
+        id=f"{out_dir.parent.name}-{out_dir.name}",
+        name=f"{out_dir.parent.name}-{out_dir.name}", resume="allow",
         dir=str(out_dir),
         config={k: str(v) for k, v in vars(args).items()})
 
@@ -166,7 +167,7 @@ def main():
     probs = torch.tensor(ck["probs"])
 
     wrappers = install(model, args.c_per_module)
-    d_ins = {"fc1": N_TASKS + N_BITS, "fc2": ck["config"]["width"]}
+    d_ins = {"fc1": N_TASKS + N_BITS, "fc2": int(ck["config"]["width"])}
     gates = nn.ModuleDict({n: MatrixGate(args.c_per_module, d_ins[n])
                            for n in MODULES}).to(dev)
     params = ([p for w in wrappers.values() for p in (w.V, w.U)]
