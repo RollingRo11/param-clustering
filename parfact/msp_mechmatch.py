@@ -168,26 +168,42 @@ def cofac_usage(cofac_dir: Path):
 # ---------------- the shared score ----------------
 
 def score(usage: torch.Tensor, learned: torch.Tensor):
-    """usage [N_TASKS, U]; learned: bool mask of tasks to score."""
+    """usage [N_TASKS, U]; learned: bool mask of tasks to score.
+
+    Two matchings per task: best-by-usage (the unit the task uses most --
+    global heavy units can win everywhere) and best-by-F1 (the unit that best
+    serves as this task's dedicated mechanism, however small)."""
     eps = 1e-12
+    cov_all = usage / (usage.sum(dim=1, keepdim=True) + eps)   # [T, U]
+    pur_all = usage / (usage.sum(dim=0, keepdim=True) + eps)   # [T, U]
+    f1_all = 2 * cov_all * pur_all / (cov_all + pur_all + eps)
     per_task = []
-    best_units = []
+    best_units, best_f1_units = [], []
     for t in torch.nonzero(learned).squeeze(-1).tolist():
         u = int(usage[t].argmax())
-        cov = float(usage[t, u] / (usage[t].sum() + eps))
-        pur = float(usage[t, u] / (usage[:, u].sum() + eps))
-        f1 = 2 * cov * pur / (cov + pur + eps)
-        per_task.append({"task": t, "best_unit": u, "coverage": round(cov, 4),
-                         "purity": round(pur, 4), "f1": round(f1, 4)})
+        uf = int(f1_all[t].argmax())
+        per_task.append({
+            "task": t,
+            "best_unit": u, "coverage": round(float(cov_all[t, u]), 4),
+            "purity": round(float(pur_all[t, u]), 4),
+            "f1": round(float(f1_all[t, u]), 4),
+            "best_f1_unit": uf,
+            "f1_best": round(float(f1_all[t, uf]), 4),
+            "coverage_best": round(float(cov_all[t, uf]), 4),
+            "purity_best": round(float(pur_all[t, uf]), 4)})
         best_units.append(u)
-    n_shared = len(best_units) - len(set(best_units))
+        best_f1_units.append(uf)
     f1s = [p["f1"] for p in per_task]
+    f1bs = [p["f1_best"] for p in per_task]
     return {"n_tasks_scored": len(per_task),
             "mean_f1": round(sum(f1s) / max(len(f1s), 1), 4),
             "median_f1": round(sorted(f1s)[len(f1s) // 2], 4),
             "n_units": usage.shape[1],
             "n_distinct_best_units": len(set(best_units)),
-            "n_tasks_sharing_a_unit": n_shared,
+            "n_tasks_sharing_a_unit": len(best_units) - len(set(best_units)),
+            "mean_f1_best": round(sum(f1bs) / max(len(f1bs), 1), 4),
+            "median_f1_best": round(sorted(f1bs)[len(f1bs) // 2], 4),
+            "n_distinct_best_f1_units": len(set(best_f1_units)),
             "per_task": per_task}
 
 
