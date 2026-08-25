@@ -1,43 +1,0 @@
-=== emote1b: emoticon component find + amplify + redirect (GPU0) ===
-Loading weights:   0%|          | 0/146 [00:00<?, ?it/s]Loading weights:   1%|          | 1/146 [00:00<00:17,  8.46it/s]Loading weights:  42%|████▏     | 62/146 [00:00<00:00, 333.78it/s]Loading weights:  67%|██████▋   | 98/146 [00:00<00:00, 327.39it/s]Loading weights:  95%|█████████▍| 138/146 [00:00<00:00, 351.56it/s]Loading weights: 100%|██████████| 146/146 [00:00<00:00, 332.34it/s]
-[r0] emoticon token ids: [3349, 27046, 29589, 40624, 64943, 93511, 94657]; target ' :)' = 27046
-[r0] rank emo chunks torch.Size([1, 96]), predicting positions 6
-[r0] top-8 emoticon-contrast comps: [48, 434, 447, 505, 317, 75, 17, 241]
-[r0] BASE {"emo": {"p_target": 0.023547114804387093, "p_emoset": 0.06333359330892563, "argmax_target_rate": 0.0}, "ctrl": {"ce": 4.909127712249756, "p_emoset_all": 4.586427166941576e-06}}
-[r0] base gen: 'Thanks again for dinner last night! I really enjoyed it. I think I will make it again. I will let you know how it turns out'
-[r0] base gen: 'I just got back from the best vacation ever. I went to the beach with my family. I went to the beach with my family. I went to the'
-[r0] base gen: 'The meeting went really well today. We had a great turnout of 20 people. We had a great discussion about the future of the group.'
-[r0] AMP k4 a2.0: emo {'p_target': 0.008587637916207314, 'p_emoset': 0.0180667731910944, 'argmax_target_rate': 0.0} | ctrl {'ce': 5.593423843383789, 'p_emoset_all': 3.1783572467247723e-06}
-[r0] amp k4 a2.0 gen: 'Thanks again for dinner last night! It was delicious! I will definitely be back!\nThank you so much for dinner last night! It was delicious'
-[r0] amp k4 a2.0 gen: 'I just got back from the best vacation ever. I went to the beach with my family. I have never been to the beach before. I have never been'
-[r0] amp k4 a2.0 gen: 'The meeting went really well today. We had a lot of fun and we are all ready to go again. We are going to have a meeting'
-[r0] AMP k4 a4.0: emo {'p_target': 1.7696305803838186e-05, 'p_emoset': 3.5703182220458984e-05, 'argmax_target_rate': 0.0} | ctrl {'ce': 10.408997535705566, 'p_emoset_all': 4.951404844177887e-05}
-[r0] amp k4 a4.0 gen: 'Thanks again for dinner last night!enger,"Check!" Check moms.getTable moms,","俊 moms":":,,,,apterPublished with,'
-[r0] amp k4 a4.0 gen: 'I just got back from the best vacation ever. “ traveledavo traveler-more-more-more-more:.mixedmixedmixedmixed:\n-half-and-half:\n,h UR,self'
-[r0] amp k4 a4.0 gen: 'The meeting went really well today. front who who gang didn Cheap file Saved\xa0S S%DLocator an dish on in one Hale alenameродOTHER'
-[r0] REDIR k1 gain1.0: emo {'p_target': 2.4810034027211714e-09, 'p_emoset': 7.898842159193009e-05, 'argmax_target_rate': 0.0} | ctrl {'ce': 5.428860664367676, 'p_emoset_all': 1.0439461561873031e-07}
-[r0] redir k1 g1.0 gen: 'Thanks again for dinner last night! I was so hungry after a long day of work, and I was so hungry for a good meal, and'
-[r0] redir k1 g1.0 gen: 'I just got back from the best vacation ever. I went to the Bahamas with my husband and my sister, and we stayed at the Atlantis Resort, which is'
-[r0] redir k1 g1.0 gen: 'The meeting went really well today. The 1st session was a 2-hour workshop with a focus on the 3Rs, 3'
-[r0] REDIR k1 gain2.0: emo {'p_target': 0.02647610753774643, 'p_emoset': 0.026615995913743973, 'argmax_target_rate': 0.1428571492433548} | ctrl {'ce': 11.07601547241211, 'p_emoset_all': 0.1489683985710144}
-[r0] redir k1 g2.0 gen: 'Thanks again for dinner last night! I was so impressed with the food and the presentation :) I was so impressed with the food and the presentation,'
-[r0] redir k1 g2.0 gen: 'I just got back from the best vacation ever. I went to the beach :) I went to the beach with my husband :) I went to the beach with my'
-[r0] redir k1 g2.0 gen: 'The meeting went really well today. The team is in a good position :) We are 2-0-0, 2-0-'
-[r0] REDIR k1 gain4.0: emo {'p_target': 9.720291238579648e-10, 'p_emoset': 9.7476970495336e-07, 'argmax_target_rate': 0.0} | ctrl {'ce': 9.836128234863281, 'p_emoset_all': 0.00023884822439868003}
-[r0] redir k1 g4.0 gen: 'Thanks again for dinner last night!.. of, of, of,,,,,,,,,,,,,,,'
-[r0] redir k1 g4.0 gen: 'I just got back from the best vacation ever.,,,,,,,,,,,,,,,,,,,,,,'
-[r0] redir k1 g4.0 gen: 'The meeting went really well today... of, of, of,,,,,,,,,,,,,,,'
-[r0] REDIR k4 gain1.0: emo {'p_target': 1.569271611185169e-19, 'p_emoset': 1.3698669931727636e-07, 'argmax_target_rate': 0.0} | ctrl {'ce': 7.998211860656738, 'p_emoset_all': 2.986972731378046e-07}
-[r0] redir k4 g1.0 gen: 'Thanks again for dinner last night!, the 1., , , , , , , , ,'
-[r0] redir k4 g1.0 gen: 'I just got back from the best vacation ever., of the, of the, of the, of, of, of, of, of, of,'
-[r0] redir k4 g1.0 gen: 'The meeting went really well today. The 1.,  2,  3,  ,  ,  ,'
-[r0] REDIR k4 gain2.0: emo {'p_target': 0.7086788415908813, 'p_emoset': 0.7087768912315369, 'argmax_target_rate': 0.7142857313156128} | ctrl {'ce': 20.92881965637207, 'p_emoset_all': 0.6970938444137573}
-[r0] redir k4 g2.0 gen: 'Thanks again for dinner last night! :) and it, you and, and,,,,,,,,,,,,,,'
-[r0] redir k4 g2.0 gen: 'I just got back from the best vacation ever.,,,,,,, 3 :) :) :) 3 3,  and 3 '
-[r0] redir k4 g2.0 gen: 'The meeting went really well today.,,, ,    :) :)  3      ,  '
-[r0] REDIR k4 gain4.0: emo {'p_target': 0.9954259991645813, 'p_emoset': 0.9954265356063843, 'argmax_target_rate': 1.0} | ctrl {'ce': 35.05261993408203, 'p_emoset_all': 0.8909469842910767}
-[r0] redir k4 g4.0 gen: 'Thanks again for dinner last night! :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :)'
-[r0] redir k4 g4.0 gen: 'I just got back from the best vacation ever. :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :)'
-[r0] redir k4 g4.0 gen: 'The meeting went really well today. :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :) :)'
-[r0] emote1b done
-=== emote1b complete ===

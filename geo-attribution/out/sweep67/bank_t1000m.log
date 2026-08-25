@@ -1,9 +1,0 @@
-[stream67] merged 2 reservoir shard(s): quota 4 x 2 = 8/cluster
-[stream67] reservoir: 64871/65536 slots filled, 14 empty clusters, 1000M tokens streamed
-[stream67] bank built (42s)
-[pile] cache hit strat_246bd3dda1b098a4.pt: (168, 512), 14 subsets
-[stream67] set-cover refined (20s)
-[stream67] unablated CE on 48 target tokens: 2.7553
-[stream67] original  k needed   384/8192  CE@256 7.01  roundtrip +3.3e-04
-[stream67] refined   k needed   256/8192  CE@256 2.44  roundtrip -2.5e-04
-[stream67] wrote out/sweep67/bank_t1000m.json

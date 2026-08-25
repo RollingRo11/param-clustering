@@ -1,8 +1,0 @@
-[stream67] merged 2 reservoir shard(s): quota 4 x 2 = 8/cluster
-[stream67] reservoir: 64871/65536 slots filled, 14 empty clusters, 1000M tokens streamed
-[stream67] bank built (44s)
-[stream67] saved bank to /dev/shm/geo67_stream/bank_C8192_ig5.pt
-[pile] cache hit strat_246bd3dda1b098a4.pt: (168, 512), 14 subsets
-[stream67] unablated CE on 2 target tokens: 2.1829
-[stream67] k within 0.25 nats = 384/8192 (4.7%)   roundtrip -4.0e-04
-[stream67] wrote /tmp/claude-0/-workspace-param-clustering/b361753e-fdd0-4788-b703-c88bfc8aa774/scratchpad/bank_resave.json

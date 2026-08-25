@@ -1,5 +1,0 @@
-`torch_dtype` is deprecated! Use `dtype` instead!
-base CE 2.6849
-refined (99s)
-original: k=16384/32000 (51.2%) CE@256 20.96 rt -2.0e-05
-refined: k=6144/32000 (19.2%) CE@256 12.70 rt +0.0e+00

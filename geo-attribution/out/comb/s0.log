@@ -1,8 +1,0 @@
-[comb67] unablated CE on 48 target tokens: 2.5390
-[comb67] bank built from 'gim'  (11s)
-[comb67] gim          CE@k=16  10.928   CE@k=32   8.489   roundtrip +1.5e-05
-[comb67] eap          CE@k=16  16.612   CE@k=32  10.069   roundtrip +1.5e-05
-[comb67] zsum         CE@k=16  11.283   CE@k=32   8.772   roundtrip +1.5e-05
-[comb67] rankmean     CE@k=16  13.545   CE@k=32   9.092   roundtrip +1.5e-05
-[comb67] random       CE@k=16  41.842   CE@k=32  22.087   roundtrip +1.5e-05
-[comb67] wrote out/comb/s0.json  (total 38s)

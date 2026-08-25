@@ -1,5 +1,0 @@
-[pile] cache hit strat_246bd3dda1b098a4.pt: (168, 512), 14 subsets
-[suff67] tokens (168, 512)
-[suff67] unablated CE on the 48 target tokens: 2.7554
-[suff67] ig5                K=5  sufficient k= 384/4096  CE@k=16 58.941  (rand 70.470)  roundtrip -2.00e-06  (39s)
-[suff67] wrote out/ksum_bank.json  (total 41s)

@@ -1,9 +1,0 @@
-[german-vpd] evidence batch 0/61 (1s, 4,096 positions)
-[german-vpd] evidence batch 8/61 (3s, 36,864 positions)
-[german-vpd] evidence batch 16/61 (5s, 69,632 positions)
-[german-vpd] evidence batch 24/61 (8s, 102,400 positions)
-[german-vpd] evidence batch 32/61 (10s, 135,168 positions)
-[german-vpd] evidence batch 40/61 (12s, 167,936 positions)
-[german-vpd] evidence batch 48/61 (14s, 200,704 positions)
-[german-vpd] evidence batch 56/61 (17s, 233,472 positions)
-[german-vpd] evidence done: 4093/4096 components with examples, 249,856 positions -> /dev/shm/geo1b/run1b_streamC4096/evidence_scale_61.json

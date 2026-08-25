@@ -1,0 +1,4 @@
+# Results, figures, and checkpoints are artifacts (R2 is the durable store)
+out/
+figures/
+__pycache__/

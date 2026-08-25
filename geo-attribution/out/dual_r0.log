@@ -1,8 +1,0 @@
-[german-vpd] rank0 sweep 0/400 (1s, 8,096 positions, 7.4k pos/s)
-[german-vpd] rank0 sweep 64/400 (13s, 526,240 positions, 41.7k pos/s)
-[german-vpd] rank0 sweep 128/400 (24s, 1,044,384 positions, 43.3k pos/s)
-[german-vpd] rank0 sweep 192/400 (36s, 1,562,528 positions, 43.8k pos/s)
-[german-vpd] rank0 sweep 256/400 (47s, 2,080,672 positions, 44.2k pos/s)
-[german-vpd] rank0 sweep 320/400 (59s, 2,598,816 positions, 44.3k pos/s)
-[german-vpd] rank0 sweep 384/400 (70s, 3,116,960 positions, 44.4k pos/s)
-[german-vpd] rank0 done: 3,238,400 positions in 73s (44.2k pos/s) -> /dev/shm/geo1b/run1b_streamC4096/sweep_prop1b_r0.pt

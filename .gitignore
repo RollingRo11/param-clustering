@@ -24,3 +24,6 @@ geo-attribution/out/target_local/
 
 # Third-party clone for reference (goodfire-ai/spd)
 spd_lib/
+
+# Local reference documents (proposal PDFs etc.)
+/*.pdf

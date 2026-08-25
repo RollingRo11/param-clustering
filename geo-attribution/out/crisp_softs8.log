@@ -1,5 +1,0 @@
-[pile] cache hit strat_246bd3dda1b098a4.pt: (168, 512), 14 subsets
-[suff67] tokens (168, 512)
-[suff67] unablated CE on the 48 target tokens: 2.7554
-[suff67] ig5                K=5  sufficient k= 256/4096  CE@k=16 57.481  (rand 70.468)  roundtrip -3.10e-05  (57s)
-[suff67] wrote out/crisp_softs8.json  (total 59s)
