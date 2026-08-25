@@ -159,7 +159,7 @@ def main():
 
     ck = torch.load(args.ckpt, map_location=dev, weights_only=False)
     torch.manual_seed(args.seed)
-    model = MSPModel().to(dev)
+    model = MSPModel(width=int(ck["config"]["width"])).to(dev)
     model.load_state_dict(ck["state_dict"])
     model.eval()
     Ss = [torch.tensor(s) for s in ck["Ss"]]

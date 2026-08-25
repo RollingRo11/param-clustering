@@ -77,7 +77,7 @@ def main():
     args.out.mkdir(parents=True, exist_ok=True)
 
     ck = torch.load(args.ckpt, map_location=dev, weights_only=False)
-    model = MSPModel().to(dev)
+    model = MSPModel(width=int(ck["config"]["width"])).to(dev)
     model.load_state_dict(ck["state_dict"])
     model.eval()
     Ss = [torch.tensor(s) for s in ck["Ss"]]

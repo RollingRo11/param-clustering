@@ -78,6 +78,7 @@ def per_task_accuracy(model, Ss, probs, n_tasks, n_bits, dev, gen,
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--steps", type=int, default=25_000)
+    ap.add_argument("--width", type=int, default=WIDTH)
     ap.add_argument("--batch", type=int, default=10_000)
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--seed", type=int, default=0)
@@ -89,7 +90,7 @@ def main():
 
     torch.manual_seed(args.seed)
     Ss, probs = make_tasks(N_TASKS, N_BITS, K, args.seed)
-    model = MSPModel().to(dev)
+    model = MSPModel(width=args.width).to(dev)
     gen = torch.Generator(device=dev).manual_seed(args.seed)
     opt = torch.optim.Adam(model.parameters(), lr=args.lr)
 
@@ -99,12 +100,13 @@ def main():
             import wandb
             run = wandb.init(project=os.environ.get("WANDB_PROJECT",
                                                     "param-clustering"),
-                             id="msp-train", name="msp-train", resume="allow",
+                             id=args.out.parent.name + "-train",
+                             name=args.out.parent.name + "-train",
+                             resume="allow",
                              dir=str(args.out.parent),
                              config=vars(args) | {"n_tasks": N_TASKS,
                                                   "n": N_BITS, "k": K,
-                                                  "alpha": ALPHA,
-                                                  "width": WIDTH})
+                                                  "alpha": ALPHA})
         except ImportError:
             pass
 
@@ -133,7 +135,7 @@ def main():
                 "probs": probs.tolist(),
                 "per_task_acc": accs,
                 "config": {"n_tasks": N_TASKS, "n": N_BITS, "k": K,
-                           "alpha": ALPHA, "width": WIDTH,
+                           "alpha": ALPHA, "width": args.width,
                            **{k: str(v) for k, v in vars(args).items()}}},
                args.out)
     print("saved", args.out)
