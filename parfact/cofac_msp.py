@@ -138,6 +138,79 @@ def gradpca_attributions(model, sig, r_per, pca_events, dev, chunk=2048):
     return torch.cat(blocks, dim=1), atom_matrix, torch.cat(sigmas)
 
 
+def fit_pinned(M_bar, k_factors, c_groups, steps=4000, lr=2e-2, seed=0,
+               f_cap=0.9, row_chunk=0, log_every=250):
+    """Port of cofac67's fit_pinned (v3b): the shared backbone is a rank-1
+    LS fit (per-event coefficient a on the mean direction, per-atom loading
+    beta), each atom's backbone fraction f is PINNED (capped at f_cap), and
+    V distributes only the remaining (1-f) of each atom over components.
+    Drain is impossible; no component can become the backbone."""
+    dev = M_bar.device
+    n, j = M_bar.shape
+    with torch.no_grad():
+        mu = M_bar.mean(0)
+        u = mu / mu.norm().clamp_min(1e-12)
+        a0 = M_bar @ u                                          # [n]
+        beta = (M_bar.T @ a0) / a0.pow(2).sum()                 # [j]
+        beta = beta.clamp_min(0)
+        colsum = M_bar.sum(0)
+        f = (beta * a0.sum() / colsum.clamp_min(1e-12)).clamp(0, f_cap)
+        back_share = float(a0.sum() * beta.sum() / M_bar.sum())
+    print(f"pinned backbone: mean f {f.mean():.3f}  "
+          f"mass share {back_share:.3f}", flush=True)
+
+    gen = torch.Generator().manual_seed(seed)
+    Wu = (torch.rand(n, k_factors, generator=gen) * 0.5 + 0.2
+          ).to(dev).requires_grad_()
+    Ws = (torch.rand(k_factors, c_groups, generator=gen) * 0.5 + 0.2
+          ).to(dev).requires_grad_()
+    Wv = (torch.randn(j, c_groups, generator=gen) * 0.05
+          ).to(dev).requires_grad_()
+    Wa = torch.log(torch.expm1(a0.clamp_min(1e-6))).clone().requires_grad_()
+    opt = torch.optim.Adam([Wu, Ws, Wv, Wa], lr=lr)
+    mass = M_bar.sum().clamp_min(1e-8)
+    keep1f = (1.0 - f)[:, None]
+    chunk = row_chunk if 0 < row_chunk < n else n
+    hist = []
+
+    def pieces():
+        U = torch.softmax(Wu, dim=1)
+        V = keep1f * torch.softmax(Wv, dim=1)
+        return U, F.softplus(Ws), V, F.softplus(Wa)
+
+    for step in range(steps):
+        opt.zero_grad(set_to_none=True)
+        U, S, V, a = pieces()
+        SV = S @ V.T
+        loss_val = 0.0
+        for i0 in range(0, n, chunk):
+            Mh = (U[i0:i0 + chunk] @ SV
+                  + a[i0:i0 + chunk, None] * beta[None, :])
+            Mb = M_bar[i0:i0 + chunk]
+            loss_c = (Mb * ((Mb + 1e-8).log() - (Mh + 1e-8).log())
+                      - Mb + Mh).sum() / mass
+            loss_c.backward(retain_graph=(i0 + chunk < n))
+            loss_val += loss_c.item()
+        opt.step()
+        if step % log_every == 0 or step == steps - 1:
+            with torch.no_grad():
+                U, S, V, a = pieces()
+                SV = S @ V.T
+                resid = sum(float((M_bar[i0:i0 + chunk]
+                                   - U[i0:i0 + chunk] @ SV
+                                   - a[i0:i0 + chunk, None] * beta[None, :])
+                                  .pow(2).sum()) for i0 in range(0, n, chunk))
+                rel = (resid ** 0.5) / float(M_bar.norm())
+            hist.append(f"step {step} idiv {loss_val:.4e} rel {rel:.4f}")
+            print("  " + hist[-1], flush=True)
+    with torch.no_grad():
+        U, S, V, a = pieces()
+    met = {"idiv": loss_val, "rel_err": rel, "back_share": back_share,
+           "mean_f": float(f.mean()), "f_cap": f_cap,
+           "mean_residual_membership": float(f.mean()), "log": hist[-3:]}
+    return U.detach(), S.detach(), V.detach(), f, a.detach(), beta, met
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--n_events", type=int, default=16_384)
@@ -155,6 +228,15 @@ def main():
     ap.add_argument("--row_chunk", type=int, default=-1,
                     help="event rows per idiv chunk in the fit; -1 = auto "
                          "(2048 for scalar atoms, full batch otherwise)")
+    ap.add_argument("--centering", choices=("none", "lift"), default="none",
+                    help="'lift' divides M_bar by its per-atom mean profile "
+                         "(ratio to the independence model, the multiplicative "
+                         "analog of geo's double-centering) and renormalizes "
+                         "rows before fitting")
+    ap.add_argument("--pinned", action="store_true",
+                    help="pin a rank-1 LS backbone (cofac67 fit_pinned) and "
+                         "factorize only each atom's remaining (1-f)")
+    ap.add_argument("--f_cap", type=float, default=0.9)
     ap.add_argument("--no_u_simplex", action="store_true")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--ckpt", type=Path,
@@ -202,19 +284,34 @@ def main():
         A[:, sl] = (A[:, sl].float() / rms).to(A.dtype)
     M_bar = A.abs().float().to(dev)
     M_bar /= M_bar.sum(dim=1, keepdim=True).clamp_min(1e-8)
+    if args.centering == "lift":
+        col = M_bar.mean(0).clamp_min(1e-10)
+        M_bar /= col[None, :]
+        M_bar /= M_bar.sum(dim=1, keepdim=True).clamp_min(1e-8)
+        print("lift centering: divided by per-atom mean profile, "
+              "rows renormalized", flush=True)
 
     torch.manual_seed(args.seed)
-    fact = TriFactorizationV2(args.n_events, A.shape[1], args.k_factors,
-                              args.c_groups,
-                              u_simplex=not args.no_u_simplex,
-                              seed=args.seed).to(dev)
     rc = args.row_chunk if args.row_chunk >= 0 else (2048 if big else 0)
-    met = fact.fit(M_bar, steps=args.fact_steps, row_chunk=rc)
-    del M_bar
+    if args.pinned:
+        Uf, Sf, Vf, f, a_bb, beta, met = fit_pinned(
+            M_bar, args.k_factors, args.c_groups, steps=args.fact_steps,
+            seed=args.seed, f_cap=args.f_cap, row_chunk=rc)
+        fact = None
+        del M_bar
+        V, r = Vf.cpu(), f.cpu()
+    else:
+        fact = TriFactorizationV2(args.n_events, A.shape[1], args.k_factors,
+                                  args.c_groups,
+                                  u_simplex=not args.no_u_simplex,
+                                  seed=args.seed).to(dev)
+        met = fact.fit(M_bar, steps=args.fact_steps, row_chunk=rc)
+        del M_bar
 
     with torch.no_grad():
-        V = fact.V.detach().cpu()
-        r = fact.residual.detach().cpu()
+        if fact is not None:
+            V = fact.V.detach().cpu()
+            r = fact.residual.detach().cpu()
         Vd = V.to(dev)
         z_rows = []
         for i0 in range(0, A.shape[0], 2048):
@@ -235,10 +332,17 @@ def main():
     met["config"] = {k: str(v) for k, v in vars(args).items()}
     met["events_per_task_head"] = counts[:10].tolist()
 
-    blob = {"U": fact.U.detach().cpu(), "S": fact.S.detach().cpu(),
+    if fact is not None:
+        Usave, Ssave = fact.U.detach().cpu(), fact.S.detach().cpu()
+    else:
+        Usave, Ssave = Uf.cpu(), Sf.cpu()
+    blob = {"U": Usave, "S": Ssave,
             "V": V, "r": r, "sigma": sigma, "tasks": tasks, "z": z.half(),
             "task_usage": task_usage, "config": met["config"],
             "atom_counts": {n: atom_matrix.count(n) for n in MATRICES}}
+    if args.pinned:
+        blob["backbone_a"] = a_bb.cpu()
+        blob["backbone_beta"] = beta.cpu()
     if not big:                       # raw A too large for scalar atoms
         blob["A"] = A_raw.half()
         blob["atom_matrix"] = atom_matrix
