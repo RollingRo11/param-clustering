@@ -160,9 +160,14 @@ def spd_usage(spd_dir: Path, model_ck, dev, n_events, seed):
 
 
 def cofac_usage(cofac_dir: Path):
+    """[(suffix, usage table)] -- includes the two-stage projection if
+    the run saved one."""
     d = torch.load(cofac_dir / "factorization.pt", map_location="cpu",
                    weights_only=False)
-    return d["task_usage"].float()                       # [N_TASKS, C]
+    out = [("", d["task_usage"].float())]                # [N_TASKS, C]
+    if d.get("task_usage_proj") is not None:
+        out.append(("_proj", d["task_usage_proj"].float()))
+    return out
 
 
 # ---------------- the shared score ----------------
@@ -193,15 +198,15 @@ def score(usage: torch.Tensor, learned: torch.Tensor):
             "purity_best": round(float(pur_all[t, uf]), 4)})
         best_units.append(u)
         best_f1_units.append(uf)
-    f1s = [p["f1"] for p in per_task]
-    f1bs = [p["f1_best"] for p in per_task]
+    f1s = [p["f1"] for p in per_task] or [0.0]
+    f1bs = [p["f1_best"] for p in per_task] or [0.0]
     return {"n_tasks_scored": len(per_task),
-            "mean_f1": round(sum(f1s) / max(len(f1s), 1), 4),
+            "mean_f1": round(sum(f1s) / len(f1s), 4),
             "median_f1": round(sorted(f1s)[len(f1s) // 2], 4),
             "n_units": usage.shape[1],
             "n_distinct_best_units": len(set(best_units)),
             "n_tasks_sharing_a_unit": len(best_units) - len(set(best_units)),
-            "mean_f1_best": round(sum(f1bs) / max(len(f1bs), 1), 4),
+            "mean_f1_best": round(sum(f1bs) / len(f1bs), 4),
             "median_f1_best": round(sorted(f1bs)[len(f1bs) // 2], 4),
             "n_distinct_best_f1_units": len(set(best_f1_units)),
             "per_task": per_task}
@@ -230,10 +235,11 @@ def main():
               "config": {k: str(v) for k, v in vars(args).items()}}
 
     for cdir in args.cofac:
-        u = cofac_usage(cdir)
-        report[f"cofac_{cdir.name}"] = score(u, learned)
-        print(cdir.name, {k: v for k, v in report[f"cofac_{cdir.name}"].items()
-                          if k != "per_task"}, flush=True)
+        for suf, u in cofac_usage(cdir):
+            key = f"cofac_{cdir.name}{suf}"
+            report[key] = score(u, learned)
+            print(cdir.name + suf, {k: v for k, v in report[key].items()
+                                    if k != "per_task"}, flush=True)
 
     if args.spd is not None:
         usage, g, tasks = spd_usage(args.spd, ck, dev, args.n_events,

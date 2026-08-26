@@ -139,7 +139,7 @@ def gradpca_attributions(model, sig, r_per, pca_events, dev, chunk=2048):
 
 
 def fit_pinned(M_bar, k_factors, c_groups, steps=4000, lr=2e-2, seed=0,
-               f_cap=0.9, row_chunk=0, log_every=250):
+               f_cap=0.9, row_chunk=0, log_every=250, free_v=False):
     """Port of cofac67's fit_pinned (v3b): the shared backbone is a rank-1
     LS fit (per-event coefficient a on the mean direction, per-atom loading
     beta), each atom's backbone fraction f is PINNED (capped at f_cap), and
@@ -164,8 +164,9 @@ def fit_pinned(M_bar, k_factors, c_groups, steps=4000, lr=2e-2, seed=0,
           ).to(dev).requires_grad_()
     Ws = (torch.rand(k_factors, c_groups, generator=gen) * 0.5 + 0.2
           ).to(dev).requires_grad_()
-    Wv = (torch.randn(j, c_groups, generator=gen) * 0.05
-          ).to(dev).requires_grad_()
+    Wv_init = (torch.randn(j, c_groups, generator=gen) * 0.05
+               + (-3.0 if free_v else 0.0))
+    Wv = Wv_init.to(dev).requires_grad_()
     Wa = torch.log(torch.expm1(a0.clamp_min(1e-6))).clone().requires_grad_()
     opt = torch.optim.Adam([Wu, Ws, Wv, Wa], lr=lr)
     mass = M_bar.sum().clamp_min(1e-8)
@@ -180,7 +181,8 @@ def fit_pinned(M_bar, k_factors, c_groups, steps=4000, lr=2e-2, seed=0,
 
     def pieces():
         U = torch.softmax(Wu, dim=1)
-        V = keep1f * torch.softmax(Wv, dim=1)
+        V = (F.softplus(Wv) if free_v
+             else keep1f * torch.softmax(Wv, dim=1))
         return U, F.softplus(Ws), V, F.softplus(Wa)
 
     for step in range(steps):
@@ -210,8 +212,16 @@ def fit_pinned(M_bar, k_factors, c_groups, steps=4000, lr=2e-2, seed=0,
     with torch.no_grad():
         U, S, V, a = pieces()
     met = {"idiv": loss_val, "rel_err": rel, "back_share": back_share,
-           "mean_f": float(f.mean()), "f_cap": f_cap,
+           "mean_f": float(f.mean()), "f_cap": f_cap, "free_v": free_v,
            "mean_residual_membership": float(f.mean()), "log": hist[-3:]}
+    if free_v:
+        with torch.no_grad():
+            rs = V.sum(1)
+            met["v_row_sum"] = {
+                "mean": float(rs.mean()), "median": float(rs.median()),
+                "p90": float(rs.quantile(0.9)), "max": float(rs.max()),
+                "frac_over_1": float((rs > 1).float().mean())}
+        print("free-V row sums:", met["v_row_sum"], flush=True)
     return U.detach(), S.detach(), V.detach(), f, a.detach(), beta, met
 
 
@@ -237,6 +247,11 @@ def main():
                          "(ratio to the independence model, the multiplicative "
                          "analog of geo's double-centering) and renormalizes "
                          "rows before fitting")
+    ap.add_argument("--free_v", action="store_true",
+                    help="drop the simplex on V (softplus, overlapping "
+                         "components); also saves the two-stage projection "
+                         "of V onto memberships+background. Requires "
+                         "--pinned.")
     ap.add_argument("--pinned", action="store_true",
                     help="pin a rank-1 LS backbone (cofac67 fit_pinned) and "
                          "factorize only each atom's remaining (1-f)")
@@ -297,10 +312,13 @@ def main():
 
     torch.manual_seed(args.seed)
     rc = args.row_chunk if args.row_chunk >= 0 else (2048 if big else 0)
+    if args.free_v and not args.pinned:
+        raise SystemExit("--free_v requires --pinned")
     if args.pinned:
         Uf, Sf, Vf, f, a_bb, beta, met = fit_pinned(
             M_bar, args.k_factors, args.c_groups, steps=args.fact_steps,
-            seed=args.seed, f_cap=args.f_cap, row_chunk=rc)
+            seed=args.seed, f_cap=args.f_cap, row_chunk=rc,
+            free_v=args.free_v)
         fact = None
         del M_bar
         V, r = Vf.cpu(), f.cpu()
@@ -316,19 +334,36 @@ def main():
         if fact is not None:
             V = fact.V.detach().cpu()
             r = fact.residual.detach().cpu()
-        Vd = V.to(dev)
+        V_proj = None
+        if args.free_v:
+            # two-stage projection: rows with total membership > 1 are
+            # rescaled onto the simplex; slack becomes background
+            rs = V.sum(1)
+            V_proj = V / rs.clamp_min(1.0)[:, None]
+            print(f"projection: {float((rs > 1).float().mean()):.3f} of "
+                  f"atoms rescaled; background mean "
+                  f"{float((1 - V_proj.sum(1)).clamp_min(0).mean()):.3f}",
+                  flush=True)
+        Vboth = V if V_proj is None else torch.cat([V, V_proj], dim=1)
+        Vd = Vboth.to(dev)
         z_rows = []
         for i0 in range(0, A.shape[0], 2048):
             z_rows.append((A[i0:i0 + 2048].to(dev).float() @ Vd).cpu())
-        z = torch.cat(z_rows)                         # signed usage [N, C]
+        z_all = torch.cat(z_rows)
+        z = z_all[:, :args.c_groups]                  # signed usage [N, C]
+        z_proj = (z_all[:, args.c_groups:] if V_proj is not None else None)
         # mean |usage| per (task, component) -- the task-selectivity table
         task_usage = torch.zeros(N_TASKS, args.c_groups)
+        task_usage_proj = (torch.zeros(N_TASKS, args.c_groups)
+                           if z_proj is not None else None)
         counts = torch.zeros(N_TASKS)
         for t in range(N_TASKS):
             sel = tasks == t
             counts[t] = sel.sum()
             if sel.any():
                 task_usage[t] = z[sel].abs().mean(0)
+                if task_usage_proj is not None:
+                    task_usage_proj[t] = z_proj[sel].abs().mean(0)
 
     mass = component_mass(V, r, sigma)
     met["mass"] = mass
@@ -347,6 +382,10 @@ def main():
     if args.pinned:
         blob["backbone_a"] = a_bb.cpu()
         blob["backbone_beta"] = beta.cpu()
+    if args.free_v:
+        blob["V_proj"] = V_proj
+        blob["task_usage_proj"] = task_usage_proj
+        blob["z_proj"] = z_proj.half()
     if not big:                       # raw A too large for scalar atoms
         blob["A"] = A_raw.half()
         blob["atom_matrix"] = atom_matrix
