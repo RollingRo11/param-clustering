@@ -1634,3 +1634,123 @@ def fit_big(k_factors=8192, c_groups=4096, epochs=12, lr=2e-2,
                            "N_fit": N}},
                BIG / "factorization_big.pt")
     return {"N_fit": N, "J": J, "C": c_groups, "hist": hist[-4:]}
+
+
+def fit_big_pinned(k_factors=8192, c_groups=4096, epochs=12, lr=2e-2,
+                   row_batch=16384, seed=0, holdout_frac=0.0625,
+                   device="cuda", f_cap=0.9, out_name=None):
+    """fit_big with the v3b PINNED backbone: the rank-1 LS backbone (per-
+    event coefficient a on the mean direction, per-atom loading beta) is
+    estimated streaming over the fit split, each atom's backbone fraction f
+    is pinned at <= f_cap, V = (1-f) * softmax distributes only the
+    remainder, and the per-event backbone scale a is trained with the same
+    per-row CPU Adam as the U rows. Drain is impossible."""
+    A16, y, pos, n_chunks = _load_A_big()
+    N_all = A16.shape[0]
+    n_hold = int(N_all * holdout_frac)
+    N = N_all - n_hold
+    svdblob = torch.load(RUN / "atoms.pt", map_location="cpu",
+                         weights_only=False)
+    sizes = [svdblob["svd"][p]["S"].numel() for p in MODULES]
+    J = sum(sizes)
+    g_rms, j0 = torch.zeros(J), 0
+    for sz in sizes:
+        acc = 0.0
+        for i in range(0, N, 65536):
+            blk = A16[i:min(i + 65536, N), j0:j0 + sz].to(device).float()
+            acc += blk.pow(2).sum().item()
+        g_rms[j0:j0 + sz] = math.sqrt(acc / (N * sz)) + 1e-12
+        j0 += sz
+    rms_dev = g_rms.to(device)
+
+    def mbar_block(i, n=65536):
+        M = A16[i:min(i + n, N)].to(device).float().abs() / rms_dev
+        return M / M.sum(1, keepdim=True).clamp_min(1e-12)
+
+    # streaming rank-1 LS backbone over the fit split
+    colsum = torch.zeros(J, device=device)
+    for i in range(0, N, 65536):
+        colsum += mbar_block(i).sum(0)
+    mu = colsum / N
+    u = mu / mu.norm().clamp_min(1e-12)
+    a0_all = torch.zeros(N)
+    beta_acc = torch.zeros(J, device=device)
+    a0_sq = a0_sum = 0.0
+    for i in range(0, N, 65536):
+        Mb = mbar_block(i)
+        a0 = Mb @ u
+        beta_acc += Mb.T @ a0
+        a0_all[i:i + a0.numel()] = a0.cpu()
+        a0_sq += float(a0.pow(2).sum())
+        a0_sum += float(a0.sum())
+    beta = (beta_acc / max(a0_sq, 1e-12)).clamp_min(0)
+    f = (beta * a0_sum / colsum.clamp_min(1e-12)).clamp(0, f_cap)
+    back_share = float(a0_sum * beta.sum() / colsum.sum())
+    print(f"pinned backbone: mean f {f.mean():.3f}  "
+          f"mass share {back_share:.3f}", flush=True)
+
+    gen = torch.Generator().manual_seed(seed)
+    Wu_all = (torch.rand(N, k_factors, generator=gen) * 0.5 + 0.2)  # cpu
+    Wa_all = torch.log(torch.expm1(a0_all.clamp_min(1e-6)))
+    Ws = (torch.rand(k_factors, c_groups, generator=gen) * 0.5 + 0.2
+          ).to(device).requires_grad_()
+    Wv = (torch.randn(J, c_groups, generator=gen) * 0.05
+          ).to(device).requires_grad_()
+    opt_sv = torch.optim.Adam([Ws, Wv], lr=lr)
+    u_m = torch.zeros_like(Wu_all)
+    u_v = torch.zeros_like(Wu_all)
+    a_m = torch.zeros(N)
+    a_v = torch.zeros(N)
+    beta1, beta2, eps = 0.9, 0.999, 1e-8
+    keep1f = (1.0 - f)[:, None]
+    step_count = 0
+    hist = []
+    for ep in range(epochs):
+        perm = torch.randperm(N, generator=gen)
+        ep_loss, ep_n = 0.0, 0
+        for bi in range(0, N, row_batch):
+            rows = perm[bi:bi + row_batch]
+            M = A16[rows].to(device).float().abs() / rms_dev
+            M_bar = M / M.sum(1, keepdim=True).clamp_min(1e-12)
+            Wu = Wu_all[rows].to(device).requires_grad_()
+            Wa = Wa_all[rows].to(device).requires_grad_()
+            U = torch.softmax(Wu, dim=1)
+            a = F.softplus(Wa)
+            S = F.softplus(Ws)
+            V = keep1f * torch.softmax(Wv, dim=1)
+            M_hat = U @ S @ V.T + a[:, None] * beta[None, :]
+            mass = M_bar.sum().clamp_min(1e-8)
+            loss = (M_bar * ((M_bar + 1e-8).log() - (M_hat + 1e-8).log())
+                    - M_bar + M_hat).sum() / mass
+            opt_sv.zero_grad(set_to_none=True)
+            loss.backward()
+            opt_sv.step()
+            with torch.no_grad():              # manual Adam for U and a rows
+                step_count += 1
+                for W, all_t, m_all, v_all in (
+                        (Wu, Wu_all, u_m, u_v), (Wa, Wa_all, a_m, a_v)):
+                    g = W.grad
+                    m = m_all[rows].to(device)
+                    v = v_all[rows].to(device)
+                    m.mul_(beta1).add_(g, alpha=1 - beta1)
+                    v.mul_(beta2).addcmul_(g, g, value=1 - beta2)
+                    mh = m / (1 - beta1 ** step_count)
+                    vh = v / (1 - beta2 ** step_count)
+                    all_t[rows] = (W.detach()
+                                   - lr * mh / (vh.sqrt() + eps)).cpu()
+                    m_all[rows] = m.cpu()
+                    v_all[rows] = v.cpu()
+            ep_loss += loss.item() * rows.numel()
+            ep_n += rows.numel()
+        hist.append(f"epoch {ep} idiv/row {ep_loss / ep_n:.5f}")
+        print(hist[-1], flush=True)
+    with torch.no_grad():
+        V = (keep1f * torch.softmax(Wv, dim=1)).cpu()
+    out = BIG / (out_name or "factorization_big_pinned.pt")
+    torch.save({"V": V, "r": f.cpu(), "S": F.softplus(Ws).detach().cpu(),
+                "beta": beta.cpu(), "a": F.softplus(Wa_all).cpu(),
+                "g_rms": g_rms, "sizes": sizes, "n_hold": n_hold,
+                "config": {"K": k_factors, "C": c_groups, "epochs": epochs,
+                           "N_fit": N, "pinned": True, "f_cap": f_cap}}, out)
+    return {"N_fit": N, "J": J, "C": c_groups, "back_share": back_share,
+            "mean_f": float(f.mean()), "out": str(out), "hist": hist[-4:]}
