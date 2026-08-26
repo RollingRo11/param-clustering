@@ -495,9 +495,16 @@ def eval_klkeep_big(ks=(8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096),
 
     model = load67(device, "plain")
     svd = torch.load(RUN / "atoms.pt", weights_only=False)["svd"]
-    if fact.get("col_scale") is not None:     # atom-normalized fits: rank z
-        A_ev = A_ev / fact["col_scale"][None, :]   # in the fit's convention
-    z = A_ev.to(device) @ V                                    # [E, C]
+    if fact.get("V2ch") is not None:          # centered two-channel fit:
+        An = A_ev / fact["g_rms"][None, :]    # rank z in its convention
+        An = An / An.abs().sum(1, keepdim=True).clamp_min(1e-12)
+        Ac = An - fact["mu"][None, :]
+        A2 = torch.cat([Ac.clamp_min(0), (-Ac).clamp_min(0)], dim=1)
+        z = A2.to(device) @ fact["V2ch"].to(device)            # [E, C]
+    else:
+        if fact.get("col_scale") is not None:  # atom-normalized fits
+            A_ev = A_ev / fact["col_scale"][None, :]
+        z = A_ev.to(device) @ V                                # [E, C]
     gen = torch.Generator(device=device).manual_seed(seed)
     results = {k: {"kl": [], "kl_rand": []} for k in ks}
     params = {p: model.get_submodule(p).weight for p in MODULES}
@@ -1783,3 +1790,114 @@ def fit_big_pinned(k_factors=8192, c_groups=4096, epochs=12, lr=2e-2,
                            "N_fit": N, "pinned": True, "f_cap": f_cap}}, out)
     return {"N_fit": N, "J": J, "C": c_groups, "back_share": back_share,
             "mean_f": float(f.mean()), "out": str(out), "hist": hist[-4:]}
+
+
+def fit_big_2ch(k_factors=8192, c_groups=4096, epochs=12, lr=2e-2,
+                row_batch=16384, seed=0, holdout_frac=0.0625,
+                device="cuda", out_name=None):
+    """Centered two-channel v2 fit (proposal sec 4.3): rows are layer-RMS +
+    L1-normalized SIGNED attributions with the mean event profile
+    SUBTRACTED, split into positive/negative channels
+    [max(Ac,0), max(-Ac,0)] and row-renormalized. The fit never sees the
+    shared profile, and there is no backbone: every atom's membership is
+    the average of its two channel rows (each a softmax over C+residual),
+    so the decomposition is full. The mean is a known constant added back
+    conceptually at reconstruction; kept-weight evals use the aggregated
+    per-atom V exactly as before."""
+    A16, y, pos, n_chunks = _load_A_big()
+    N_all = A16.shape[0]
+    n_hold = int(N_all * holdout_frac)
+    N = N_all - n_hold
+    svdblob = torch.load(RUN / "atoms.pt", map_location="cpu",
+                         weights_only=False)
+    sizes = [svdblob["svd"][p]["S"].numel() for p in MODULES]
+    J = sum(sizes)
+    g_rms, j0 = torch.zeros(J), 0
+    for sz in sizes:
+        acc = 0.0
+        for i in range(0, N, 65536):
+            blk = A16[i:min(i + 65536, N), j0:j0 + sz].to(device).float()
+            acc += blk.pow(2).sum().item()
+        g_rms[j0:j0 + sz] = math.sqrt(acc / (N * sz)) + 1e-12
+        j0 += sz
+    rms_dev = g_rms.to(device)
+
+    def rows_norm(i0, i1):
+        """Signed, layer-RMS'd, row-L1-normalized rows [i0:i1)."""
+        An = A16[i0:i1].to(device).float() / rms_dev
+        return An / An.abs().sum(1, keepdim=True).clamp_min(1e-12)
+
+    # streaming mean event profile over the fit split
+    mu = torch.zeros(J, device=device)
+    for i in range(0, N, 65536):
+        mu += rows_norm(i, min(i + 65536, N)).sum(0)
+    mu /= N
+
+    def m2_batch(rows_idx):
+        An = A16[rows_idx].to(device).float() / rms_dev
+        An = An / An.abs().sum(1, keepdim=True).clamp_min(1e-12)
+        Ac = An - mu[None, :]
+        M2 = torch.cat([Ac.clamp_min(0), (-Ac).clamp_min(0)], dim=1)
+        return M2 / M2.sum(1, keepdim=True).clamp_min(1e-12)
+
+    gen = torch.Generator().manual_seed(seed)
+    Wu_all = (torch.rand(N, k_factors, generator=gen) * 0.5 + 0.2)  # cpu
+    Ws = (torch.rand(k_factors, c_groups, generator=gen) * 0.5 + 0.2
+          ).to(device).requires_grad_()
+    Wv = (torch.randn(2 * J, c_groups + 1, generator=gen) * 0.05
+          ).to(device).requires_grad_()
+    opt_sv = torch.optim.Adam([Ws, Wv], lr=lr)
+    u_m = torch.zeros_like(Wu_all)
+    u_v = torch.zeros_like(Wu_all)
+    beta1, beta2, eps = 0.9, 0.999, 1e-8
+    step_count = 0
+    hist = []
+    for ep in range(epochs):
+        perm = torch.randperm(N, generator=gen)
+        ep_loss, ep_n = 0.0, 0
+        for bi in range(0, N, row_batch):
+            rows = perm[bi:bi + row_batch]
+            M_bar = m2_batch(rows)
+            Wu = Wu_all[rows].to(device).requires_grad_()
+            U = torch.softmax(Wu, dim=1)
+            S = F.softplus(Ws)
+            Vfull = torch.softmax(Wv, dim=1)
+            V = Vfull[:, :c_groups]
+            M_hat = U @ S @ V.T
+            mass = M_bar.sum().clamp_min(1e-8)
+            loss = (M_bar * ((M_bar + 1e-8).log() - (M_hat + 1e-8).log())
+                    - M_bar + M_hat).sum() / mass
+            opt_sv.zero_grad(set_to_none=True)
+            loss.backward()
+            opt_sv.step()
+            with torch.no_grad():
+                g = Wu.grad
+                m = u_m[rows].to(device)
+                v = u_v[rows].to(device)
+                m.mul_(beta1).add_(g, alpha=1 - beta1)
+                v.mul_(beta2).addcmul_(g, g, value=1 - beta2)
+                step_count += 1
+                mh = m / (1 - beta1 ** step_count)
+                vh = v / (1 - beta2 ** step_count)
+                Wu_all[rows] = (Wu.detach()
+                                - lr * mh / (vh.sqrt() + eps)).cpu()
+                u_m[rows] = m.cpu()
+                u_v[rows] = v.cpu()
+            ep_loss += loss.item() * rows.numel()
+            ep_n += rows.numel()
+        hist.append(f"epoch {ep} idiv/row {ep_loss / ep_n:.5f}")
+        print(hist[-1], flush=True)
+    with torch.no_grad():
+        Vfull = torch.softmax(Wv, dim=1)
+        V2 = Vfull[:, :c_groups]
+        V_agg = 0.5 * (V2[:J] + V2[J:])                # [J, C]
+        r_agg = 0.5 * (Vfull[:J, -1] + Vfull[J:, -1])
+    out = BIG / (out_name or "factorization_big_2ch.pt")
+    torch.save({"V": V_agg.cpu(), "r": r_agg.cpu(),
+                "V2ch": V2.cpu(), "mu": mu.cpu(),
+                "S": F.softplus(Ws).detach().cpu(),
+                "g_rms": g_rms, "sizes": sizes, "n_hold": n_hold,
+                "config": {"K": k_factors, "C": c_groups, "epochs": epochs,
+                           "N_fit": N, "two_channel": True}}, out)
+    return {"N_fit": N, "J": J, "C": c_groups, "out": str(out),
+            "hist": hist[-4:]}
