@@ -495,6 +495,8 @@ def eval_klkeep_big(ks=(8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096),
 
     model = load67(device, "plain")
     svd = torch.load(RUN / "atoms.pt", weights_only=False)["svd"]
+    if fact.get("col_scale") is not None:     # atom-normalized fits: rank z
+        A_ev = A_ev / fact["col_scale"][None, :]   # in the fit's convention
     z = A_ev.to(device) @ V                                    # [E, C]
     gen = torch.Generator(device=device).manual_seed(seed)
     results = {k: {"kl": [], "kl_rand": []} for k in ks}
@@ -1550,14 +1552,26 @@ def _load_A_big():
 
 
 def fit_big(k_factors=8192, c_groups=4096, epochs=12, lr=2e-2,
-            row_batch=16384, seed=0, holdout_frac=0.0625, device="cuda"):
+            row_batch=16384, seed=0, holdout_frac=0.0625, device="cuda",
+            atom_norm="none", out_name=None):
     """Alternating minibatched v2 fit for N up to ~1M.
 
     U rows are independent given (S, V) under the I-div objective, so each
     epoch sweeps row-minibatches: the batch's U rows and the global (S, V)
     take an Adam step together, but U's optimizer state lives per-row on
     CPU and is swapped in with the batch. Layer-RMS + row normalization as
-    in fit()."""
+    in fit().
+
+    atom_norm: per-ATOM column rescaling applied before everything else
+    (proposal sec 4.3), targeting the shared static magnitude profile that
+    feeds the mega-component:
+      'dir'    -- divide out sigma_q (direction-normalized attribution
+                  u^T grad v: sensitivity to the direction, not the mass
+                  stored in it);
+      'fisher' -- divide each atom by its RMS attribution over the fit
+                  split (diagonal-Fisher-style: attribution relative to how
+                  sensitive that atom typically is);
+      'none'   -- original behavior."""
     A16, y, pos, n_chunks = _load_A_big()
     N_all = A16.shape[0]
     n_hold = int(N_all * holdout_frac)
@@ -1566,12 +1580,25 @@ def fit_big(k_factors=8192, c_groups=4096, epochs=12, lr=2e-2,
                          weights_only=False)
     sizes = [svdblob["svd"][p]["S"].numel() for p in MODULES]
     J = sum(sizes)
+    if atom_norm == "dir":
+        col_scale = torch.cat([svdblob["svd"][p]["S"]
+                               for p in MODULES]).float().clamp_min(1e-12)
+    elif atom_norm == "fisher":
+        cs = torch.zeros(J, device=device)
+        for i in range(0, N, 65536):
+            blk = A16[i:min(i + 65536, N)].to(device).float()
+            cs += blk.pow(2).sum(0)
+        col_scale = (cs / N).sqrt().clamp_min(1e-8).cpu()
+    else:
+        col_scale = torch.ones(J)
+    cs_dev = col_scale.to(device)
     # per-group RMS over the FIT split, computed streaming on gpu
     g_rms, j0 = torch.zeros(J), 0
     for sz in sizes:
         acc = 0.0
         for i in range(0, N, 65536):
-            blk = A16[i:i + 65536, j0:j0 + sz].to(device).float()
+            blk = (A16[i:i + 65536, j0:j0 + sz].to(device).float()
+                   / cs_dev[j0:j0 + sz])
             acc += blk.pow(2).sum().item()
         g_rms[j0:j0 + sz] = math.sqrt(acc / (N * sz)) + 1e-12
         j0 += sz
@@ -1594,7 +1621,7 @@ def fit_big(k_factors=8192, c_groups=4096, epochs=12, lr=2e-2,
         ep_loss, ep_n = 0.0, 0
         for bi in range(0, N, row_batch):
             rows = perm[bi:bi + row_batch]
-            M = A16[rows].to(device).float().abs() / rms_dev
+            M = (A16[rows].to(device).float() / cs_dev).abs() / rms_dev
             M_bar = M / M.sum(1, keepdim=True).clamp_min(1e-12)
             Wu = Wu_all[rows].to(device).requires_grad_()
             U = torch.softmax(Wu, dim=1)
@@ -1627,13 +1654,15 @@ def fit_big(k_factors=8192, c_groups=4096, epochs=12, lr=2e-2,
         print(hist[-1], flush=True)
     with torch.no_grad():
         Vfull = torch.softmax(Wv, dim=1)
+    out = BIG / (out_name or "factorization_big.pt")
     torch.save({"V": Vfull[:, :c_groups].cpu(), "r": Vfull[:, -1].cpu(),
                 "S": F.softplus(Ws).detach().cpu(),
                 "g_rms": g_rms, "sizes": sizes, "n_hold": n_hold,
+                "col_scale": (col_scale if atom_norm != "none" else None),
                 "config": {"K": k_factors, "C": c_groups, "epochs": epochs,
-                           "N_fit": N}},
-               BIG / "factorization_big.pt")
-    return {"N_fit": N, "J": J, "C": c_groups, "hist": hist[-4:]}
+                           "N_fit": N, "atom_norm": atom_norm}}, out)
+    return {"N_fit": N, "J": J, "C": c_groups, "out": str(out),
+            "hist": hist[-4:]}
 
 
 def fit_big_pinned(k_factors=8192, c_groups=4096, epochs=12, lr=2e-2,
