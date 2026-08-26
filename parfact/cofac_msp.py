@@ -172,6 +172,11 @@ def fit_pinned(M_bar, k_factors, c_groups, steps=4000, lr=2e-2, seed=0,
     keep1f = (1.0 - f)[:, None]
     chunk = row_chunk if 0 < row_chunk < n else n
     hist = []
+    with torch.no_grad():
+        const = float(sum(
+            (M_bar[i0:i0 + chunk] * (M_bar[i0:i0 + chunk] + 1e-8).log()
+             - M_bar[i0:i0 + chunk]).sum().item()
+            for i0 in range(0, n, chunk))) / float(mass)
 
     def pieces():
         U = torch.softmax(Wu, dim=1)
@@ -182,13 +187,12 @@ def fit_pinned(M_bar, k_factors, c_groups, steps=4000, lr=2e-2, seed=0,
         opt.zero_grad(set_to_none=True)
         U, S, V, a = pieces()
         SV = S @ V.T
-        loss_val = 0.0
+        loss_val = const
         for i0 in range(0, n, chunk):
             Mh = (U[i0:i0 + chunk] @ SV
                   + a[i0:i0 + chunk, None] * beta[None, :])
             Mb = M_bar[i0:i0 + chunk]
-            loss_c = (Mb * ((Mb + 1e-8).log() - (Mh + 1e-8).log())
-                      - Mb + Mh).sum() / mass
+            loss_c = (Mh - Mb * (Mh + 1e-8).log()).sum() / mass
             loss_c.backward(retain_graph=(i0 + chunk < n))
             loss_val += loss_c.item()
         opt.step()

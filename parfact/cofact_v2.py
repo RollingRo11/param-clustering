@@ -63,16 +63,24 @@ class TriFactorizationV2(torch.nn.Module):
         N = M_bar.shape[0]
         chunk = row_chunk if 0 < row_chunk < N else N
         hist = []
+        # idiv = sum[ M log M - M log M_hat - M + M_hat ]; the M log M - M
+        # part is constant in the parameters -- precompute once instead of
+        # rebuilding two 10GB temporaries per step.
+        with torch.no_grad():
+            const = float(sum(
+                (M_bar[i0:i0 + chunk]
+                 * (M_bar[i0:i0 + chunk] + 1e-8).log()
+                 - M_bar[i0:i0 + chunk]).sum().item()
+                for i0 in range(0, N, chunk))) / float(mass)
 
         def idiv(Mb, Mh):
-            return (Mb * ((Mb + 1e-8).log() - (Mh + 1e-8).log())
-                    - Mb + Mh).sum() / mass
+            return (Mh - Mb * (Mh + 1e-8).log()).sum() / mass
 
         for step in range(steps):
             opt.zero_grad(set_to_none=True)
             U_full = self.U
             SV = self.S @ self.V.T
-            loss_val = 0.0
+            loss_val = const
             for i0 in range(0, N, chunk):
                 Mh = U_full[i0:i0 + chunk] @ SV
                 loss_c = idiv(M_bar[i0:i0 + chunk], Mh)
