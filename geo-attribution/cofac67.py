@@ -221,7 +221,8 @@ def spectrum_stats(a_prefix="A_chunk", holdout_frac=0.125, device="cuda"):
 
 def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
         holdout_frac=0.125, device="cuda", a_prefix="A_chunk",
-        out_name="factorization.pt", variant="v2", catch_all=True):
+        out_name="factorization.pt", variant="v2", catch_all=True,
+        lr_min=None, wv_init=0.05):
     """v2 co-factorization (U-simplex, residual V, I-div) on collected A.
     variant: "v2" (default); "snorm" = S columns L1-normalized in-graph,
     everything else unchanged (equal per-component throughput in S);
@@ -267,7 +268,7 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
               ).to(device).requires_grad_()
     else:
         Wv = (torch.randn(j, c_groups + (1 if catch_all else 0),
-                          generator=g) * 0.05
+                          generator=g) * wv_init
               ).to(device).requires_grad_()
     opt = torch.optim.Adam([Wu, Ws, Wv], lr=lr)
     mass = M_bar.sum().clamp_min(1e-8)
@@ -290,7 +291,13 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
         return S, Vfull, Vfull[:, :c_groups] if catch_all else Vfull
 
     log_hist = []
+    import math as _math
     for step in range(steps):
+        if lr_min is not None:                      # cosine decay lr -> lr_min
+            cur = lr_min + 0.5 * (lr - lr_min) * (
+                1 + _math.cos(_math.pi * step / max(steps - 1, 1)))
+            for pg in opt.param_groups:
+                pg["lr"] = cur
         U = torch.softmax(Wu, dim=1)
         S, Vfull, V = factors()
         M_hat = U @ S @ V.T
