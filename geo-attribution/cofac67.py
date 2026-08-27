@@ -225,9 +225,12 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
     """v2 co-factorization (U-simplex, residual V, I-div) on collected A.
     variant: "v2" (default); "snorm" = S columns L1-normalized in-graph,
     everything else unchanged (equal per-component throughput in S);
-    "s2v" = column-stochastic S with a FREE softplus V carrying all scale
-    (V is the actual additive allocation; no residual column; saved "V" is
-    the per-atom row-normalized allocation so mass stats/eval compare)."""
+    "srow" = S rows L1-normalized (equal per-factor budget over components);
+    "sboth" = 5 Sinkhorn iterations to equal marginals (rows sum to C/K,
+    columns to 1 — exact unit marginals on both sides are impossible for
+    K != C); "s2v" = column-stochastic S with a FREE softplus V carrying
+    all scale (V is the actual additive allocation; no residual column;
+    saved "V" is the per-atom row-normalized allocation)."""
     A, y, pos, n_chunks = _load_A(a_prefix)
     N = A.shape[0]
     n_hold = int(N * holdout_frac)
@@ -267,6 +270,13 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
         S = F.softplus(Ws)
         if variant in ("snorm", "s2v"):
             S = S / S.sum(0, keepdim=True).clamp_min(1e-8)
+        elif variant == "srow":
+            S = S / S.sum(1, keepdim=True).clamp_min(1e-8)
+        elif variant == "sboth":
+            for _ in range(5):
+                S = S / S.sum(1, keepdim=True).clamp_min(1e-8) \
+                    * (c_groups / k_factors)
+                S = S / S.sum(0, keepdim=True).clamp_min(1e-8)
         if variant == "s2v":
             Vfull = F.softplus(Wv)
             return S, Vfull, Vfull
