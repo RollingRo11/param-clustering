@@ -130,9 +130,14 @@ def verify(device="cuda"):
 
 
 def collect_chunk(chunk_id: int, n_chunks: int, seqs_per_chunk: int = 512,
-                  batch: int = 16, seq: int = 512, device="cuda"):
-    """Resumable: computes A rows for this chunk's sequences, saves fp16."""
-    out_f = RUN / f"A_chunk{chunk_id:04d}.pt"
+                  batch: int = 16, seq: int = 512, device="cuda",
+                  sensor="plain"):
+    """Resumable: computes A rows for this chunk's sequences, saves fp16.
+    sensor: a sensor_study67 mode ("plain" = true gradients; "gim" = corrected
+    backward — frozen RMS stats, tempered softmax jacobian, scaled qk/v/mlp
+    credit). Forward pass identical across modes; same events/positions."""
+    pref = "A_chunk" if sensor == "plain" else f"A_{sensor}_chunk"
+    out_f = RUN / f"{pref}{chunk_id:04d}.pt"
     if out_f.exists():
         return {"chunk": chunk_id, "cached": True}
     import pile_data
@@ -145,7 +150,7 @@ def collect_chunk(chunk_id: int, n_chunks: int, seqs_per_chunk: int = 512,
     sl = slice(chunk_id * seqs_per_chunk, (chunk_id + 1) * seqs_per_chunk)
     ids_all = ids_all[sl]
     labels = labels[sl]
-    model = load67(device, "plain")
+    model = load67(device, sensor)
     svd = torch.load(RUN / "atoms.pt", map_location="cpu",
                      weights_only=False)["svd"]
     gen = torch.Generator().manual_seed(1000 + chunk_id)
@@ -163,8 +168,8 @@ def collect_chunk(chunk_id: int, n_chunks: int, seqs_per_chunk: int = 512,
 
 # ------------------------------------------------------------------- fit ----
 
-def _load_A():
-    chunks = sorted(RUN.glob("A_chunk*.pt"))
+def _load_A(prefix="A_chunk"):
+    chunks = sorted(RUN.glob(f"{prefix}*.pt"))
     assert chunks, "no collected chunks"
     As, ys, poss = [], [], []
     for f in chunks:
@@ -175,10 +180,50 @@ def _load_A():
     return torch.cat(As), torch.cat(ys), torch.cat(poss), len(chunks)
 
 
+def spectrum_stats(a_prefix="A_chunk", holdout_frac=0.125, device="cuda"):
+    """Diagnostics of the matrix the fit actually sees (layer-RMS, abs,
+    row-L1): singular-energy concentration raw and mean-centered, plus the
+    rank-1 LS backbone share (fit_pinned's formula). Lets sensors be A/B'd
+    before paying for a refit."""
+    A, y, pos, _ = _load_A(a_prefix)
+    N = A.shape[0]
+    n_hold = int(N * holdout_frac)
+    A_fit = A[:-n_hold].to(device)
+    svd = torch.load(RUN / "atoms.pt", map_location="cpu", weights_only=False)
+    sizes = [svd["svd"][p]["S"].numel() for p in MODULES]
+    j0 = 0
+    for sz in sizes:
+        g = A_fit[:, j0:j0 + sz]
+        A_fit[:, j0:j0 + sz] = g / g.pow(2).mean().sqrt().clamp_min(1e-12)
+        j0 += sz
+    M_bar = A_fit.abs()
+    M_bar = M_bar / M_bar.sum(1, keepdim=True).clamp_min(1e-12)
+
+    def stats(X):
+        e = torch.linalg.svdvals(X).pow(2)
+        tot = e.sum()
+        cs = e.cumsum(0) / tot
+        return {"top1_energy": float(e[0] / tot),
+                "n50": int((cs < 0.5).sum().item()) + 1,
+                "n90": int((cs < 0.9).sum().item()) + 1,
+                "eff_rank_pr": float(tot.pow(2) / e.pow(2).sum())}
+
+    raw = stats(M_bar)
+    cen = stats(M_bar - M_bar.mean(0, keepdim=True))
+    mu = M_bar.mean(0)
+    u = mu / mu.norm()
+    a0 = M_bar @ u
+    beta = ((a0[:, None] * M_bar).sum(0) / a0.pow(2).sum()).clamp_min(0)
+    back_share = float(a0.sum() * beta.sum() / M_bar.sum())
+    return {"prefix": a_prefix, "N_fit": int(M_bar.shape[0]),
+            "raw": raw, "centered": cen, "rank1_ls_share": back_share}
+
+
 def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
-        holdout_frac=0.125, device="cuda"):
+        holdout_frac=0.125, device="cuda", a_prefix="A_chunk",
+        out_name="factorization.pt"):
     """v2 co-factorization (U-simplex, residual V, I-div) on collected A."""
-    A, y, pos, n_chunks = _load_A()
+    A, y, pos, n_chunks = _load_A(a_prefix)
     N = A.shape[0]
     n_hold = int(N * holdout_frac)
     A_fit = A[:-n_hold].to(device)
@@ -230,8 +275,9 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
     torch.save({"V": Vfull[:, :c_groups].cpu(), "r": Vfull[:, -1].cpu(),
                 "U": torch.softmax(Wu, 1).cpu(), "S": F.softplus(Ws).cpu(),
                 "sizes": sizes, "n_hold": n_hold,
-                "config": {"K": k_factors, "C": c_groups, "steps": steps}},
-               RUN / "factorization.pt")
+                "config": {"K": k_factors, "C": c_groups, "steps": steps,
+                           "a_prefix": a_prefix}},
+               RUN / out_name)
     return {"N_fit": n, "J": j, "r2_attr_euclid": r2,
             "mean_residual": Vfull[:, -1].mean().item(), "log": log_hist[-3:]}
 
@@ -389,9 +435,10 @@ def fit_pinned(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
 # ------------------------------------------------------------------ eval ----
 
 def eval_klkeep(ks=(8, 16, 32, 64, 128, 256, 512, 1024), n_events=96,
-                device="cuda", seed=0, fact_path=None, out_name="klkeep.json"):
+                device="cuda", seed=0, fact_path=None, out_name="klkeep.json",
+                a_prefix="A_chunk"):
     """KLKeep(k) on held-out events + matched-random null (sec 5.1)."""
-    A, y, pos, _ = _load_A()
+    A, y, pos, _ = _load_A(a_prefix)
     fact = torch.load(fact_path or (RUN / "factorization.pt"),
                       map_location="cpu", weights_only=False)
     V = fact["V"].to(device)                                   # [J, C]
@@ -402,7 +449,7 @@ def eval_klkeep(ks=(8, 16, 32, 64, 128, 256, 512, 1024), n_events=96,
     pile_data.CACHE = RUN / "piledata"
     from transformers import AutoTokenizer
     tok = AutoTokenizer.from_pretrained(S67.TOKENIZER)
-    chunks = sorted(RUN.glob("A_chunk*.pt"))
+    chunks = sorted(RUN.glob(f"{a_prefix}*.pt"))
     seqs_per = torch.load(chunks[0], map_location="cpu",
                           weights_only=False)["A"].shape[0]
     total = len(chunks) * seqs_per
