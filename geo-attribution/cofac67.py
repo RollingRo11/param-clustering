@@ -221,16 +221,21 @@ def spectrum_stats(a_prefix="A_chunk", holdout_frac=0.125, device="cuda"):
 
 def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
         holdout_frac=0.125, device="cuda", a_prefix="A_chunk",
-        out_name="factorization.pt", variant="v2"):
+        out_name="factorization.pt", variant="v2", catch_all=True):
     """v2 co-factorization (U-simplex, residual V, I-div) on collected A.
     variant: "v2" (default); "snorm" = S columns L1-normalized in-graph,
     everything else unchanged (equal per-component throughput in S);
     "srow" = S rows L1-normalized (equal per-factor budget over components);
     "sboth" = 5 Sinkhorn iterations to equal marginals (rows sum to C/K,
     columns to 1 — exact unit marginals on both sides are impossible for
-    K != C); "s2v" = column-stochastic S with a FREE softplus V carrying
-    all scale (V is the actual additive allocation; no residual column;
-    saved "V" is the per-atom row-normalized allocation)."""
+    K != C); "scol" = alias of "snorm"; "s2v" = column-stochastic S with a
+    FREE softplus V carrying all scale (V is the actual additive
+    allocation; no residual column; saved "V" is the per-atom
+    row-normalized allocation). catch_all=False removes V's residual
+    column (each atom's softmax runs over exactly C components — no
+    "none of the above" bucket)."""
+    if variant == "scol":
+        variant = "snorm"
     A, y, pos, n_chunks = _load_A(a_prefix)
     N = A.shape[0]
     n_hold = int(N * holdout_frac)
@@ -261,7 +266,8 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
         Wv = (torch.randn(j, c_groups, generator=g) * 0.05 + v0
               ).to(device).requires_grad_()
     else:
-        Wv = (torch.randn(j, c_groups + 1, generator=g) * 0.05
+        Wv = (torch.randn(j, c_groups + (1 if catch_all else 0),
+                          generator=g) * 0.05
               ).to(device).requires_grad_()
     opt = torch.optim.Adam([Wu, Ws, Wv], lr=lr)
     mass = M_bar.sum().clamp_min(1e-8)
@@ -281,7 +287,7 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
             Vfull = F.softplus(Wv)
             return S, Vfull, Vfull
         Vfull = torch.softmax(Wv, dim=1)
-        return S, Vfull, Vfull[:, :c_groups]
+        return S, Vfull, Vfull[:, :c_groups] if catch_all else Vfull
 
     log_hist = []
     for step in range(steps):
@@ -307,6 +313,10 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
             V_save = (V / V.sum(1, keepdim=True).clamp_min(1e-12)).cpu()
             r_save = torch.zeros(j)
             resid_mean = 0.0
+        elif not catch_all:
+            V_save = V.cpu()
+            r_save = torch.zeros(j)
+            resid_mean = 0.0
         else:
             V_save = V.cpu()
             r_save = Vfull[:, -1].cpu()
@@ -316,7 +326,8 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
                 "sizes": sizes, "n_hold": n_hold,
                 "V_raw": (V.cpu() if variant == "s2v" else None),
                 "config": {"K": k_factors, "C": c_groups, "steps": steps,
-                           "a_prefix": a_prefix, "variant": variant}},
+                           "a_prefix": a_prefix, "variant": variant,
+                           "catch_all": catch_all}},
                RUN / out_name)
     return {"N_fit": n, "J": j, "r2_attr_euclid": r2, "variant": variant,
             "mean_residual": resid_mean, "log": log_hist[-3:]}
