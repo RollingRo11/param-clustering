@@ -221,8 +221,13 @@ def spectrum_stats(a_prefix="A_chunk", holdout_frac=0.125, device="cuda"):
 
 def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
         holdout_frac=0.125, device="cuda", a_prefix="A_chunk",
-        out_name="factorization.pt"):
-    """v2 co-factorization (U-simplex, residual V, I-div) on collected A."""
+        out_name="factorization.pt", variant="v2"):
+    """v2 co-factorization (U-simplex, residual V, I-div) on collected A.
+    variant: "v2" (default); "snorm" = S columns L1-normalized in-graph,
+    everything else unchanged (equal per-component throughput in S);
+    "s2v" = column-stochastic S with a FREE softplus V carrying all scale
+    (V is the actual additive allocation; no residual column; saved "V" is
+    the per-atom row-normalized allocation so mass stats/eval compare)."""
     A, y, pos, n_chunks = _load_A(a_prefix)
     N = A.shape[0]
     n_hold = int(N * holdout_frac)
@@ -246,16 +251,32 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
           ).to(device).requires_grad_()
     Ws = (torch.rand(k_factors, c_groups, generator=g) * 0.5 + 0.2
           ).to(device).requires_grad_()
-    Wv = (torch.randn(j, c_groups + 1, generator=g) * 0.05
-          ).to(device).requires_grad_()
+    if variant == "s2v":
+        # free V initialized near uniform allocation with unit atom mass
+        import math
+        v0 = math.log(math.expm1(1.0 / c_groups))
+        Wv = (torch.randn(j, c_groups, generator=g) * 0.05 + v0
+              ).to(device).requires_grad_()
+    else:
+        Wv = (torch.randn(j, c_groups + 1, generator=g) * 0.05
+              ).to(device).requires_grad_()
     opt = torch.optim.Adam([Wu, Ws, Wv], lr=lr)
     mass = M_bar.sum().clamp_min(1e-8)
+
+    def factors():
+        S = F.softplus(Ws)
+        if variant in ("snorm", "s2v"):
+            S = S / S.sum(0, keepdim=True).clamp_min(1e-8)
+        if variant == "s2v":
+            Vfull = F.softplus(Wv)
+            return S, Vfull, Vfull
+        Vfull = torch.softmax(Wv, dim=1)
+        return S, Vfull, Vfull[:, :c_groups]
+
     log_hist = []
     for step in range(steps):
         U = torch.softmax(Wu, dim=1)
-        S = F.softplus(Ws)
-        Vfull = torch.softmax(Wv, dim=1)
-        V = Vfull[:, :c_groups]
+        S, Vfull, V = factors()
         M_hat = U @ S @ V.T
         loss = (M_bar * ((M_bar + 1e-8).log() - (M_hat + 1e-8).log())
                 - M_bar + M_hat).sum() / mass
@@ -268,18 +289,27 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
             log_hist.append(f"step {step} idiv {loss.item():.4e} rel {rel:.4f}")
             print(log_hist[-1], flush=True)
     with torch.no_grad():
-        Vfull = torch.softmax(Wv, dim=1)
-        r2 = 1 - (M_bar - torch.softmax(Wu, 1) @ F.softplus(Ws)
-                  @ Vfull[:, :c_groups].T).pow(2).sum().item() / \
+        S, Vfull, V = factors()
+        r2 = 1 - (M_bar - torch.softmax(Wu, 1) @ S @ V.T
+                  ).pow(2).sum().item() / \
             (M_bar - M_bar.mean()).pow(2).sum().item()
-    torch.save({"V": Vfull[:, :c_groups].cpu(), "r": Vfull[:, -1].cpu(),
-                "U": torch.softmax(Wu, 1).cpu(), "S": F.softplus(Ws).cpu(),
+        if variant == "s2v":
+            V_save = (V / V.sum(1, keepdim=True).clamp_min(1e-12)).cpu()
+            r_save = torch.zeros(j)
+            resid_mean = 0.0
+        else:
+            V_save = V.cpu()
+            r_save = Vfull[:, -1].cpu()
+            resid_mean = Vfull[:, -1].mean().item()
+    torch.save({"V": V_save, "r": r_save,
+                "U": torch.softmax(Wu, 1).cpu(), "S": S.cpu(),
                 "sizes": sizes, "n_hold": n_hold,
+                "V_raw": (V.cpu() if variant == "s2v" else None),
                 "config": {"K": k_factors, "C": c_groups, "steps": steps,
-                           "a_prefix": a_prefix}},
+                           "a_prefix": a_prefix, "variant": variant}},
                RUN / out_name)
-    return {"N_fit": n, "J": j, "r2_attr_euclid": r2,
-            "mean_residual": Vfull[:, -1].mean().item(), "log": log_hist[-3:]}
+    return {"N_fit": n, "J": j, "r2_attr_euclid": r2, "variant": variant,
+            "mean_residual": resid_mean, "log": log_hist[-3:]}
 
 
 def fit_centered(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
