@@ -42,6 +42,12 @@ from streaming_decomposition import reservoir_updates
 
 RUN = Path(os.environ.get("STREAM67_RUN", "/dev/shm/geo67_stream"))
 
+# cluster port: target ckpt + pile cache live under COFAC_DATA, not /dev/shm
+if os.environ.get("COFAC_DATA"):
+    import pile_data
+    S67.CKPT = Path(os.environ["COFAC_DATA"]) / "target" / "model_step_99999.pt"
+    pile_data.CACHE = Path(os.environ["COFAC_DATA"]) / "cofac67" / "piledata"
+
 # TF32 matmul: measured 33k -> 80k tok/s for the IG K=5 sensor. Its 10-bit
 # mantissa is the same precision the reservoir already stores (P, G) at.
 torch.backends.cuda.matmul.allow_tf32 = True
