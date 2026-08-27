@@ -40,7 +40,8 @@ import torch.distributed as dist
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-OUT_ROOT = Path("/workspace/circuit-decomp/geo-attribution/out")
+OUT_ROOT = Path(os.environ.get(
+    "GEO_OUT", "/workspace/circuit-decomp/geo-attribution/out"))
 
 MODULES: list[str] = []          # filled from pile_4L at load time
 # modules whose OUTPUT lives in the residual stream -> anchor on the g side;
@@ -71,13 +72,47 @@ LOCAL_TARGET = str(OUT_ROOT / "target_local" / "ckpt" / "model_step_99999.pt")
 
 
 def load_target(device: str) -> nn.Module:
-    from nano_param_decomp.pile_4L import C_PER_MODULE_4L, load_paper_target_model
-    MODULES[:] = list(C_PER_MODULE_4L.keys())
-    # local-path branch of PretrainRunInfo.from_path — avoids wandb auth entirely
-    target = load_paper_target_model(run_path=LOCAL_TARGET).float().to(device)
+    try:
+        from nano_param_decomp.pile_4L import C_PER_MODULE_4L, load_paper_target_model
+        MODULES[:] = list(C_PER_MODULE_4L.keys())
+        # local-path branch of PretrainRunInfo.from_path — avoids wandb auth
+        target = load_paper_target_model(run_path=LOCAL_TARGET).float().to(device)
+    except ImportError:
+        # cluster port: sensor_study67's Model67 — same ckpt, same 24 matrices,
+        # identical forward ("plain" mode = true gradients; the ig sensor's IG
+        # weight scaling lives in Capture/GatedRunner, not the model)
+        import sensor_study67 as S67
+        S67.CKPT = Path(os.environ["COFAC_DATA"]) / "target/model_step_99999.pt"
+        MODULES[:] = list(S67.MODULES)
+        target = S67.load67(device, "plain").float()
     for p in target.parameters():
         p.requires_grad_(True)   # activation grads; never optimized
     return target
+
+
+def make_loader67(batch: int, seq_len: int, rank: int, world: int,
+                  split: str, seed: int):
+    """Cluster stand-in for nano_param_decomp's make_loader: stratified Pile
+    blocks via pile_data (fixed pool per seed, cycled in order). Distinct seeds
+    give distinct stratified samples — same held-out semantics as the original
+    seed-offset streams."""
+    assert world == 1, "cluster port runs single-GPU"
+    import pile_data
+    import sensor_study67 as S67
+    from transformers import AutoTokenizer
+    pile_data.CACHE = Path(os.environ["COFAC_DATA"]) / "cofac67" / "piledata"
+    tok = AutoTokenizer.from_pretrained(S67.TOKENIZER)
+    pool = 4096 if seed < 500 else 512      # collect stream vs held-out streams
+    ids, _, _ = pile_data.load_pile_blocks(tok, pool, seq_len, seed=seed,
+                                           tokenizer_name=S67.TOKENIZER)
+
+    def gen():
+        i = 0
+        while True:
+            j = (i * batch) % (ids.shape[0] - batch + 1)
+            yield ids[j:j + batch]
+            i += 1
+    return gen()
 
 
 def is_write_side(path: str) -> bool:
@@ -115,6 +150,10 @@ def apply_gim(target: nn.Module, tau: float = 2.0):
     (attention scores only; CE/log_softmax paths untouched)."""
     if getattr(target, "_gim_applied", False):
         return
+    if not any(type(m).__name__ == "LlamaRMSNorm" for m in target.modules()):
+        raise RuntimeError(
+            "apply_gim patches the nano_param_decomp model classes; on the "
+            "sensor_study67 port use its baked-in sensor modes instead")
     target._gim_applied = True
     for mod in target.modules():
         if type(mod).__name__ == "LlamaRMSNorm":
@@ -211,7 +250,10 @@ def stage_collect(args):
     target = load_target(device)
     if args.sensor == "gim":
         apply_gim(target, args.gim_tau)
-    from nano_param_decomp.pile_4L import make_loader
+    try:
+        from nano_param_decomp.pile_4L import make_loader
+    except ImportError:
+        make_loader = make_loader67
     loader = make_loader(args.batch_seqs * world, args.seq_len, rank, world,
                          "train", args.seed)
     cap = Capture(target)
@@ -697,7 +739,10 @@ def stage_extract_pg(args):
             f"mass/supports from {args.mass_banks_tag}")
     run = GatedRunner(target, src, device)
     C, S = src["C"], src["soft_s"]
-    from nano_param_decomp.pile_4L import make_loader
+    try:
+        from nano_param_decomp.pile_4L import make_loader
+    except ImportError:
+        make_loader = make_loader67
     loader = make_loader(args.batch_seqs, args.seq_len, 0, 1, "train",
                          args.seed + 555)            # distinct from eval stream
     Bmat = torch.zeros(C, C, device=device)
@@ -946,7 +991,10 @@ def stage_eval(args):
     bk = torch.load(args.dir / f"banks{suf}.pt", weights_only=True,
                     map_location="cpu")
     run = GatedRunner(target, bk, device)
-    from nano_param_decomp.pile_4L import make_loader
+    try:
+        from nano_param_decomp.pile_4L import make_loader
+    except ImportError:
+        make_loader = make_loader67
     loader = make_loader(args.batch_seqs, args.seq_len, 0, 1, "train",
                          args.seed + 999)                        # held-out stream
     C = bk["C"]
@@ -959,6 +1007,7 @@ def stage_eval(args):
     log(f"faithfulness identity max |err| = {faith:.2e} (should be ~fp32 eps)")
 
     KLs, KLres, KLoff, KLones, gpt, topj_kls = [], [], [], [], [], {}
+    randj_kls = {}
     js = [1, 2, 4, 8, 16, 32, 64, 128, 256]
     for b in range(args.eval_batches):
         idx = next(loader).to(device)
@@ -1001,6 +1050,16 @@ def stage_eval(args):
                     gj = (attr >= thr).float()
                     topj_kls.setdefault(j, []).append(
                         kl_bt(lt, run.gated_pass(idx, gj)))
+                    # random-j null: same j components for every token
+                    # (base/rho stays on, mirroring the canonical rows)
+                    kls_r = []
+                    for sr in range(3):
+                        rg2 = torch.Generator().manual_seed(1000 * sr + j)
+                        rnd = torch.randperm(C, generator=rg2)[:min(j, C)]
+                        gr = torch.zeros_like(attr)
+                        gr[..., rnd.to(attr.device)] = 1.0
+                        kls_r.append(kl_bt(lt, run.gated_pass(idx, gr)))
+                    randj_kls.setdefault(j, []).append(sum(kls_r) / len(kls_r))
         log(f"eval batch {b}: KL {KLs[-1]:.4f}, gates/tok {gpt[-1]:.1f}, "
             f"resid-only {KLres[-1]:.3f}, off {KLoff[-1]:.3f}, ones {KLones[-1]:.2e}")
     res = {
@@ -1010,6 +1069,7 @@ def stage_eval(args):
         "kl_off_baseline": sum(KLoff) / len(KLoff),
         "gates_per_token": sum(gpt) / len(gpt),
         "keep_top_j": {j: sum(v) / len(v) for j, v in topj_kls.items()},
+        "keep_rand_j": {j: sum(v) / len(v) for j, v in randj_kls.items()},
         "faith_max_abs_err": faith,
         "gate_mode": args.gate_mode, "gate_tau": args.gate_tau,
         "gate_thresh": args.gate_thresh, "C": C, "m": bk["m"],
@@ -1020,6 +1080,41 @@ def stage_eval(args):
             "pr": "_pr"}.get(args.gate_mode, "")
     (args.dir / f"eval{suf}{ssuf}.json").write_text(json.dumps(res, indent=1))
     log("EVAL " + json.dumps(res, indent=1))
+
+
+# -------------------------------------------------------------------- mass ----
+
+def stage_mass(args):
+    """Per-component weight-mass distribution of a partition/softpart bank:
+    Frobenius (W^2) mass owned by each component, plus the base share."""
+    device = "cpu"
+    suf = f"_{args.banks_tag}" if args.banks_tag else ""
+    target = load_target(device)
+    bk = torch.load(args.dir / f"banks{suf}.pt", weights_only=True,
+                    map_location="cpu")
+    C = bk["C"]
+    mass = torch.zeros(C + 1, dtype=torch.float64)      # slot 0 = base
+    for p in bk["modules"]:
+        W2 = target.get_submodule(p).weight.detach().double().pow(2)
+        if bk.get("format") == "partition":
+            mass.index_add_(0, bk["assign"][p].long().flatten(), W2.flatten())
+        elif bk.get("format") == "softpart":
+            sidx, swgt = bk["sidx"][p].long(), bk["swgt"][p].double()
+            for s in range(sidx.shape[0]):
+                mass.index_add_(0, sidx[s].flatten() + 1,
+                                (swgt[s] * W2).flatten())
+        else:
+            raise ValueError("mass stage needs a partition/softpart bank")
+    tot = mass.sum().item()
+    top = mass[1:].sort(descending=True).values
+    res = {"C": C, "format": bk.get("format"), "total_fro_mass": tot,
+           "base_share": mass[0].item() / tot,
+           "top5_shares": [v.item() / tot for v in top[:5]],
+           "n_comps_over_0.1pct": int((top / tot > 1e-3).sum()),
+           "comp_shares_sorted": [v.item() / tot for v in top]}
+    (args.dir / f"mass{suf}.json").write_text(json.dumps(res))
+    log("MASS " + json.dumps({k: res[k] for k in
+        ("base_share", "top5_shares", "n_comps_over_0.1pct")}))
 
 
 # ------------------------------------------------------------------ canary ----
@@ -1079,7 +1174,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("stage", choices=["collect", "gram", "factor", "extract",
                                       "extract_p", "extract_ps", "extract_pg",
-                                      "eval", "canary"])
+                                      "eval", "canary", "mass"])
     ap.add_argument("--tag", default="run1")
     ap.add_argument("--n_positions", type=int, default=32768)
     ap.add_argument("--pos_per_seq", type=int, default=16)
@@ -1130,7 +1225,8 @@ def main():
     {"collect": stage_collect, "gram": stage_gram, "factor": stage_factor,
      "extract": stage_extract, "extract_p": stage_extract_p,
      "extract_ps": stage_extract_ps, "extract_pg": stage_extract_pg,
-     "eval": stage_eval, "canary": stage_canary}[args.stage](args)
+     "eval": stage_eval, "canary": stage_canary,
+     "mass": stage_mass}[args.stage](args)
 
 
 if __name__ == "__main__":
