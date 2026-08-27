@@ -1008,7 +1008,8 @@ def stage_eval(args):
 
     KLs, KLres, KLoff, KLones, gpt, topj_kls = [], [], [], [], [], {}
     randj_kls = {}
-    js = [1, 2, 4, 8, 16, 32, 64, 128, 256]
+    js = [j for j in (1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096)
+          if j <= C]
     for b in range(args.eval_batches):
         idx = next(loader).to(device)
         attr, lt = run.attribution(idx, args.ig_k)
