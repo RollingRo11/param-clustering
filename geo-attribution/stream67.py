@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import collections
 import json
+import os
 import time
 from pathlib import Path
 
@@ -39,7 +40,7 @@ import sensor_study67 as S67
 from sensor_study67 import MODULES, SENSORS, load67, capture, build_spec, kmeans
 from streaming_decomposition import reservoir_updates
 
-RUN = Path("/dev/shm/geo67_stream")
+RUN = Path(os.environ.get("STREAM67_RUN", "/dev/shm/geo67_stream"))
 
 # TF32 matmul: measured 33k -> 80k tok/s for the IG K=5 sensor. Its 10-bit
 # mantissa is the same precision the reservoir already stores (P, G) at.
@@ -438,9 +439,9 @@ def phase_bank(args, dev):
             Wt[p].copy_(W0[p])
 
     @torch.no_grad()
-    def tok_ce(b, t):
+    def tok_out(b, t):
         lg = model(eval_ids[b:b + 1])[0, t].float()
-        return float(F.cross_entropy(lg[None], eval_ids[b, t + 1][None]))
+        return lg, float(F.cross_entropy(lg[None], eval_ids[b, t + 1][None]))
 
     def token_attr(ids_row, t):
         A = {p: torch.zeros_like(W0[p]) for p in MODULES}
@@ -518,17 +519,28 @@ def phase_bank(args, dev):
     KEEP = [k for k in [0, 4, 8, 16, 32, 64, 128, 192, 256, 384, 512, 768,
                         1024, 1536, 2048, 3072, 4096, 6144] if k < C] + [C]
     restore()
-    base = float(np.mean([tok_ce(b, t) for b, t in samp]))
+    base_lg, base_ces = {}, []
+    for b, t in samp:
+        lg, ce = tok_out(b, t)
+        base_lg[(b, t)] = F.log_softmax(lg, -1)
+        base_ces.append(ce)
+    base = float(np.mean(base_ces))
     log(f"unablated CE on {len(samp)} target tokens: {base:.4f}")
 
     results = {}
     arms = [("original", swgt)] + ([("refined", swgt_r)] if swgt_r else [])
+    arms += [("random", swgt_r if swgt_r else swgt)]   # random rank, same bank
     AW_cache = [token_attr(eval_ids[b], t) for b, t in samp]
     for name, sw in arms:
         curves = np.zeros((len(samp), len(KEEP)))
+        curves_kl = np.zeros((len(samp), len(KEEP)))
         for j, (b, t) in enumerate(samp):
-            sc = comp_scores(AW_cache[j], sw)
-            order = torch.argsort(sc, descending=True)
+            if name == "random":
+                grj = torch.Generator().manual_seed(777 + j)
+                order = torch.randperm(C, generator=grj).to(dev)
+            else:
+                sc = comp_scores(AW_cache[j], sw)
+                order = torch.argsort(sc, descending=True)
             rank = torch.empty(C, dtype=torch.int32, device=dev)
             rank[order] = torch.arange(C, dtype=torch.int32, device=dev)
             with torch.no_grad():
@@ -538,12 +550,18 @@ def phase_bank(args, dev):
                         keep = (sw[m].float() * (R[m] < kk)
                                 ).sum(0, dtype=torch.float32)
                         Wt[m].copy_(W0[m] * keep)
-                    curves[j, ki] = tok_ce(b, t)
+                    lg, ce = tok_out(b, t)
+                    curves[j, ki] = ce
+                    curves_kl[j, ki] = float(F.kl_div(
+                        F.log_softmax(lg, -1), base_lg[(b, t)],
+                        log_target=True, reduction="sum"))
                 del R
             restore()
         mu = curves.mean(0)
+        mkl = curves_kl.mean(0)
         thr = next((k for k, v in zip(KEEP, mu) if v - base <= 0.25), C)
         results[name] = {"ce": [round(float(v), 5) for v in mu],
+                         "kl": [round(float(v), 5) for v in mkl],
                          "k_within_0.25": thr,
                          "roundtrip_err_at_C": round(float(mu[-1] - base), 6)}
         log(f"{name:<9} k needed {thr:>5}/{C}  "
