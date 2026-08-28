@@ -222,7 +222,8 @@ def spectrum_stats(a_prefix="A_chunk", holdout_frac=0.125, device="cuda"):
 def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
         holdout_frac=0.125, device="cuda", a_prefix="A_chunk",
         out_name="factorization.pt", variant="v2", catch_all=True,
-        lr_min=None, wv_init=0.05):
+        lr_min=None, wv_init=0.05, div_pen=0.0, ent_pen=0.0,
+        mask_pen=0.0, mask_k=64):
     """v2 co-factorization (U-simplex, residual V, I-div) on collected A.
     variant: "v2" (default); "snorm" = S columns L1-normalized in-graph,
     everything else unchanged (equal per-component throughput in S);
@@ -234,7 +235,12 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
     allocation; no residual column; saved "V" is the per-atom
     row-normalized allocation). catch_all=False removes V's residual
     column (each atom's softmax runs over exactly C components — no
-    "none of the above" bucket)."""
+    "none of the above" bucket). Anti-haze forces: div_pen penalizes
+    mean squared off-diagonal cosine between V columns (components must
+    differ); ent_pen penalizes mean V-row entropy (atoms must commit);
+    mask_pen adds a partial-sum I-div term reconstructing each event from
+    only its top-mask_k components by usage (components must matter
+    individually)."""
     if variant == "scol":
         variant = "snorm"
     A, y, pos, n_chunks = _load_A(a_prefix)
@@ -303,6 +309,23 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
         M_hat = U @ S @ V.T
         loss = (M_bar * ((M_bar + 1e-8).log() - (M_hat + 1e-8).log())
                 - M_bar + M_hat).sum() / mass
+        if div_pen:
+            Vn = V / V.norm(dim=0, keepdim=True).clamp_min(1e-8)
+            Gm = Vn.T @ Vn
+            loss = loss + div_pen * (
+                (Gm.pow(2).sum() - Gm.diagonal().pow(2).sum())
+                / (c_groups * (c_groups - 1)))
+        if ent_pen:
+            loss = loss + ent_pen * (
+                -(V * (V + 1e-9).log()).sum(1).mean())
+        if mask_pen:
+            z = U @ S
+            _, topi = z.topk(min(mask_k, c_groups), dim=1)
+            zm = z * torch.zeros_like(z).scatter_(1, topi, 1.0)
+            M_hat_k = zm @ V.T
+            loss = loss + mask_pen * (
+                (M_bar * ((M_bar + 1e-8).log() - (M_hat_k + 1e-8).log())
+                 - M_bar + M_hat_k).sum() / mass)
         opt.zero_grad(set_to_none=True)
         loss.backward()
         opt.step()
