@@ -1723,6 +1723,137 @@ def _load_A_big():
     return torch.cat(As), torch.cat(ys), torch.cat(poss), len(chunks)
 
 
+def fit_big_nmf(c_groups=4096, epochs=24, lr=2e-2, row_batch=16384,
+                seed=0, holdout_frac=0.0625, usage_local=0.05,
+                usage_global=0.2, align_pen=0.1, res_pen=1.0,
+                src=None, out_name="factorization_big_nmf.pt"):
+    """Row-minibatched port of fit(variant="nmf") for N up to ~1M, optionally
+    row-sharded across GPUs via torchrun (WORLD_SIZE ranks; each rank owns
+    rows rank::world plus their CPU Adam states; Wv gradients are
+    allreduce-averaged so every rank holds an identical Wv).
+
+    Objective per minibatch: I-div(M̄_b ‖ exp(Wu_b) Vᵀ) + usage_local·H(q_b)
+    − usage_global·H(q̄_b) + align·KL(q_b ‖ z̃_b) + res·⟨M̄_b, r_bg⟩. The
+    global-usage entropy uses the BATCH mean q̄_b (≥16k rows — a good
+    estimator of the dataset mean). Normalization (g_rms + abs + row-L1)
+    matches fit_big. Saves V/r/g_rms/sizes/n_hold in the layout
+    eval_klkeep_big's base path consumes."""
+    import os as _os2
+    rank = int(_os2.environ.get("RANK", 0))
+    world = int(_os2.environ.get("WORLD_SIZE", 1))
+    device = f"cuda:{int(_os2.environ.get('LOCAL_RANK', 0))}" \
+        if world > 1 else "cuda"
+    if world > 1:
+        import torch.distributed as dist
+        torch.cuda.set_device(device)
+        dist.init_process_group("nccl", device_id=torch.device(device))
+    srcdir = Path(src) if src else BIG
+    chunks = sorted(srcdir.glob("A_chunk*.pt"))
+    assert chunks, f"no chunks in {srcdir}"
+    A16 = torch.cat([torch.load(f, map_location="cpu",
+                                weights_only=False)["A"] for f in chunks])
+    N_all = A16.shape[0]
+    n_hold = int(N_all * holdout_frac)
+    N = N_all - n_hold
+    svdblob = torch.load(RUN / "atoms.pt", map_location="cpu",
+                         weights_only=False)
+    sizes = [svdblob["svd"][p]["S"].numel() for p in MODULES]
+    J = sum(sizes)
+    g_rms, j0 = torch.zeros(J), 0
+    for sz in sizes:
+        acc = 0.0
+        for i in range(0, N, 65536):
+            acc += A16[i:i + 65536, j0:j0 + sz].to(device).float() \
+                .pow(2).sum().item()
+        g_rms[j0:j0 + sz] = math.sqrt(acc / (N * sz)) + 1e-12
+        j0 += sz
+    rms_dev = g_rms.to(device)
+
+    my_rows = torch.arange(N)[rank::world]
+    n_local = my_rows.numel()
+    gen = torch.Generator().manual_seed(seed + 31 * rank)
+    Wu_all = (torch.randn(n_local, c_groups, generator=gen) * 0.05
+              + math.log(1.0 / J))                       # cpu fp32, exp param
+    gv = torch.Generator().manual_seed(seed)             # identical all ranks
+    Wv = (torch.randn(J, c_groups + 1, generator=gv) * 0.05
+          ).to(device).requires_grad_()
+    opt_v = torch.optim.Adam([Wv], lr=lr)
+    u_m = torch.zeros_like(Wu_all)
+    u_v = torch.zeros_like(Wu_all)
+    beta1, beta2, eps = 0.9, 0.999, 1e-8
+    step_count = 0
+    hist = []
+    for ep in range(epochs):
+        perm = torch.randperm(n_local, generator=gen)
+        ep_loss, ep_n = 0.0, 0
+        for bi in range(0, n_local, row_batch):
+            sel = perm[bi:bi + row_batch]
+            rows = my_rows[sel]
+            M = (A16[rows].to(device).float()).abs() / rms_dev
+            M_bar = M / M.sum(1, keepdim=True).clamp_min(1e-12)
+            Wu = Wu_all[sel].to(device).requires_grad_()
+            U = torch.exp(Wu)
+            Vfull = torch.softmax(Wv, dim=1)
+            V = Vfull[:, :c_groups]
+            M_hat = U @ V.T
+            mass = M_bar.sum().clamp_min(1e-8)
+            loss = (M_bar * ((M_bar + 1e-8).log() - (M_hat + 1e-8).log())
+                    - M_bar + M_hat).sum() / mass
+            q = U / U.sum(1, keepdim=True).clamp_min(1e-9)
+            loss = loss + usage_local * (
+                -(q * (q + 1e-9).log()).sum(1).mean())
+            qb = q.mean(0)
+            loss = loss - usage_global * (-(qb * (qb + 1e-9).log()).sum())
+            zt = M_bar @ V
+            zt = zt / zt.sum(1, keepdim=True).clamp_min(1e-9)
+            loss = loss + align_pen * (
+                q * ((q + 1e-9).log() - (zt + 1e-9).log())).sum(1).mean()
+            loss = loss + res_pen * (M_bar @ (1.0 - V.sum(1))).mean()
+            opt_v.zero_grad(set_to_none=True)
+            loss.backward()
+            if world > 1:
+                import torch.distributed as dist
+                dist.all_reduce(Wv.grad)
+                Wv.grad /= world
+            opt_v.step()
+            with torch.no_grad():
+                g = Wu.grad
+                m = u_m[sel].to(device)
+                v = u_v[sel].to(device)
+                m.mul_(beta1).add_(g, alpha=1 - beta1)
+                v.mul_(beta2).addcmul_(g, g, value=1 - beta2)
+                step_count += 1
+                mh = m / (1 - beta1 ** step_count)
+                vh = v / (1 - beta2 ** step_count)
+                Wu_all[sel] = (Wu.detach() - lr * mh / (vh.sqrt() + eps)).cpu()
+                u_m[sel] = m.cpu()
+                u_v[sel] = v.cpu()
+            ep_loss += loss.item() * rows.numel()
+            ep_n += rows.numel()
+        hist.append(f"epoch {ep} loss/row {ep_loss / ep_n:.5f}")
+        if rank == 0:
+            print(hist[-1], flush=True)
+    out = srcdir / out_name
+    if rank == 0:
+        with torch.no_grad():
+            Vfull = torch.softmax(Wv, dim=1)
+        torch.save({"V": Vfull[:, :c_groups].cpu(), "r": Vfull[:, -1].cpu(),
+                    "S": None, "g_rms": g_rms, "sizes": sizes,
+                    "n_hold": n_hold,
+                    "config": {"C": c_groups, "epochs": epochs, "N_fit": N,
+                               "variant": "nmf_big", "world": world,
+                               "usage_local": usage_local,
+                               "usage_global": usage_global,
+                               "align_pen": align_pen, "res_pen": res_pen}},
+                   out)
+    if world > 1:
+        import torch.distributed as dist
+        dist.barrier()
+        dist.destroy_process_group()
+    return {"N_fit": N, "J": J, "C": c_groups, "rank": rank,
+            "out": str(out), "hist": hist[-4:]}
+
+
 def fit_big(k_factors=8192, c_groups=4096, epochs=12, lr=2e-2,
             row_batch=16384, seed=0, holdout_frac=0.0625, device="cuda",
             atom_norm="none", out_name=None):
