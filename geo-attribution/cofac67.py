@@ -223,7 +223,8 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
         holdout_frac=0.125, device="cuda", a_prefix="A_chunk",
         out_name="factorization.pt", variant="v2", catch_all=True,
         lr_min=None, wv_init=0.05, div_pen=0.0, ent_pen=0.0,
-        mask_pen=0.0, mask_k=64):
+        mask_pen=0.0, mask_k=64, usage_local=0.0, usage_global=0.0,
+        align_pen=0.0, res_pen=0.0):
     """v2 co-factorization (U-simplex, residual V, I-div) on collected A.
     variant: "v2" (default); "snorm" = S columns L1-normalized in-graph,
     everything else unchanged (equal per-component throughput in S);
@@ -240,7 +241,13 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
     differ); ent_pen penalizes mean V-row entropy (atoms must commit);
     mask_pen adds a partial-sum I-div term reconstructing each event from
     only its top-mask_k components by usage (components must matter
-    individually)."""
+    individually). variant "nmf": S removed entirely (M ≈ U Vᵀ, U = exp
+    free nonneg [n, C] — no mixing freedom, direct U:c/V:c pairing);
+    usage_local penalizes per-event usage entropy (events use few comps),
+    usage_global rewards entropy of dataset-mean usage (all comps used),
+    align_pen = KL(q_i ‖ z̃_i) ties U's claimed usage to the attribution
+    the constructed component actually receives, res_pen penalizes
+    ATTRIBUTED mass hiding in the catch-all (Σ M̄_ij·r_j)."""
     if variant == "scol":
         variant = "snorm"
     A, y, pos, n_chunks = _load_A(a_prefix)
@@ -262,10 +269,17 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
 
     n, j = M_bar.shape
     g = torch.Generator().manual_seed(seed)
-    Wu = (torch.rand(n, k_factors, generator=g) * 0.5 + 0.2
-          ).to(device).requires_grad_()
-    Ws = (torch.rand(k_factors, c_groups, generator=g) * 0.5 + 0.2
-          ).to(device).requires_grad_()
+    import math
+    if variant == "nmf":
+        # exp-parametrized free U [n, C]; init so U@Vᵀ ≈ M̄'s scale
+        Wu = (torch.randn(n, c_groups, generator=g) * 0.05
+              + math.log(1.0 / j)).to(device).requires_grad_()
+        Ws = None
+    else:
+        Wu = (torch.rand(n, k_factors, generator=g) * 0.5 + 0.2
+              ).to(device).requires_grad_()
+        Ws = (torch.rand(k_factors, c_groups, generator=g) * 0.5 + 0.2
+              ).to(device).requires_grad_()
     if variant == "s2v":
         # free V initialized near uniform allocation with unit atom mass
         import math
@@ -276,8 +290,18 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
         Wv = (torch.randn(j, c_groups + (1 if catch_all else 0),
                           generator=g) * wv_init
               ).to(device).requires_grad_()
-    opt = torch.optim.Adam([Wu, Ws, Wv], lr=lr)
+    opt = torch.optim.Adam([Wu, Wv] if Ws is None else [Wu, Ws, Wv], lr=lr)
     mass = M_bar.sum().clamp_min(1e-8)
+
+    def forward():
+        if variant == "nmf":
+            U = torch.exp(Wu)
+            Vfull = torch.softmax(Wv, dim=1)
+            V = Vfull[:, :c_groups] if catch_all else Vfull
+            return U, None, Vfull, V, U @ V.T
+        U = torch.softmax(Wu, dim=1)
+        S, Vfull, V = factors()
+        return U, S, Vfull, V, U @ S @ V.T
 
     def factors():
         S = F.softplus(Ws)
@@ -304,11 +328,25 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
                 1 + _math.cos(_math.pi * step / max(steps - 1, 1)))
             for pg in opt.param_groups:
                 pg["lr"] = cur
-        U = torch.softmax(Wu, dim=1)
-        S, Vfull, V = factors()
-        M_hat = U @ S @ V.T
+        U, S, Vfull, V, M_hat = forward()
         loss = (M_bar * ((M_bar + 1e-8).log() - (M_hat + 1e-8).log())
                 - M_bar + M_hat).sum() / mass
+        if usage_local or usage_global or align_pen:
+            q = U / U.sum(1, keepdim=True).clamp_min(1e-9)
+            if usage_local:                 # events should use few comps
+                loss = loss + usage_local * (
+                    -(q * (q + 1e-9).log()).sum(1).mean())
+            if usage_global:                # ... but not all the SAME few
+                qb = q.mean(0)
+                loss = loss - usage_global * (
+                    -(qb * (qb + 1e-9).log()).sum())
+            if align_pen:                   # claimed usage = received attr
+                zt = M_bar @ V
+                zt = zt / zt.sum(1, keepdim=True).clamp_min(1e-9)
+                loss = loss + align_pen * (
+                    q * ((q + 1e-9).log() - (zt + 1e-9).log())).sum(1).mean()
+        if res_pen:                         # attributed mass can't hide in C0
+            loss = loss + res_pen * (M_bar @ (1.0 - V.sum(1))).mean()
         if div_pen:
             Vn = V / V.norm(dim=0, keepdim=True).clamp_min(1e-8)
             Gm = Vn.T @ Vn
@@ -319,7 +357,7 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
             loss = loss + ent_pen * (
                 -(V * (V + 1e-9).log()).sum(1).mean())
         if mask_pen:
-            z = U @ S
+            z = U if S is None else U @ S
             _, topi = z.topk(min(mask_k, c_groups), dim=1)
             zm = z * torch.zeros_like(z).scatter_(1, topi, 1.0)
             M_hat_k = zm @ V.T
@@ -335,9 +373,8 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
             log_hist.append(f"step {step} idiv {loss.item():.4e} rel {rel:.4f}")
             print(log_hist[-1], flush=True)
     with torch.no_grad():
-        S, Vfull, V = factors()
-        r2 = 1 - (M_bar - torch.softmax(Wu, 1) @ S @ V.T
-                  ).pow(2).sum().item() / \
+        U_f, S, Vfull, V, M_hat_f = forward()
+        r2 = 1 - (M_bar - M_hat_f).pow(2).sum().item() / \
             (M_bar - M_bar.mean()).pow(2).sum().item()
         if variant == "s2v":
             V_save = (V / V.sum(1, keepdim=True).clamp_min(1e-12)).cpu()
@@ -352,7 +389,7 @@ def fit(k_factors=2048, c_groups=1024, steps=3000, lr=2e-2, seed=0,
             r_save = Vfull[:, -1].cpu()
             resid_mean = Vfull[:, -1].mean().item()
     torch.save({"V": V_save, "r": r_save,
-                "U": torch.softmax(Wu, 1).cpu(), "S": S.cpu(),
+                "U": U_f.cpu(), "S": (None if S is None else S.cpu()),
                 "sizes": sizes, "n_hold": n_hold,
                 "V_raw": (V.cpu() if variant == "s2v" else None),
                 "config": {"K": k_factors, "C": c_groups, "steps": steps,
