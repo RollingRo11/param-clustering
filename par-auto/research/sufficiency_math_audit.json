@@ -1,0 +1,90 @@
+{
+  "cancellation": {
+    "atoms": [
+      1.0,
+      10.0,
+      -10.0
+    ],
+    "individual_kl": [
+      0.11094407167172737,
+      5.99744750097155,
+      2.376169227743046
+    ],
+    "ranked_one": [
+      1
+    ],
+    "optimal_one": [
+      0
+    ],
+    "ranked_kl": 2.1072565037109507,
+    "optimal_kl": 0.0
+  },
+  "identical_singleton_observations": {
+    "observed": [
+      [
+        1,
+        1
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        0
+      ]
+    ],
+    "joint": [
+      1.0,
+      11.0
+    ]
+  },
+  "nonmonotone": {
+    "exact_subset_kl": 0.0,
+    "superset_kl": 2.376169227743046
+  },
+  "positive_atoms_no_free_sparsity": {
+    "N": 1000,
+    "tolerance": 0.01,
+    "minimum_unweighted_kept": 689,
+    "reweighted_atoms_needed": 1
+  },
+  "upstream_error_amplification": {
+    "local_first_error": 0.01,
+    "local_second_error": 0.0,
+    "output_error": 10.0,
+    "selected_operator_norm": 1000.0,
+    "incorrect_original_operator_bound": 0.01
+  },
+  "kl_bounds": {
+    "cases": 10000,
+    "max_ratio_l2": 0.9922572458620335,
+    "max_ratio_range": 0.9922572458620335
+  },
+  "finite_error_recursion": {
+    "exhaustive_cases": 3200,
+    "max_actual_bound_ratio": 1.0
+  },
+  "gelu_derivative_check": {
+    "grid_points": 200001,
+    "observed_max": 1.1289930686554808,
+    "proved_upper": 1.75
+  },
+  "uniform_deletion_moment": {
+    "exact": 3.0533333333333332,
+    "formula": 3.0533333333333337
+  },
+  "finite_rms_bound": {
+    "cases": 5000,
+    "max_actual_bound_ratio": 0.8125974527795289
+  },
+  "finite_causal_attention_bound": {
+    "cases": 1000,
+    "max_actual_bound_ratio": 0.3510124809867323
+  },
+  "tail_and_allocation": {
+    "cases": 2000,
+    "max_tail_bound_ratio": 0.1493676786456989,
+    "max_optimal_arbitrary_allocation_ratio": 0.9747766544449759
+  }
+}

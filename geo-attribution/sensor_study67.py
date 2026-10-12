@@ -69,6 +69,9 @@ SENSORS = {
     "ig2": dict(mode="plain", K=2),
     "ig3": dict(mode="plain", K=3),
     "ig5": dict(mode="plain", K=5),
+    # same IG path, different differentiated scalar (see capture)
+    "ig5_pred": dict(mode="plain", K=5, scalar="pred"),
+    "ig5_ent": dict(mode="plain", K=5, scalar="ent"),
     "gim": dict(mode="gim", K=1),
     "gim_softmax_only": dict(mode="tau", K=1),
     "gim_scales_only": dict(mode="scales", K=1),
@@ -283,7 +286,18 @@ def load67(device, mode):
 
 # --------------------------------------------------------------- pipeline ----
 
-def capture(model, idx, embed=None):
+def capture(model, idx, embed=None, scalar="gold"):
+    """Cache (layer input, output cotangent) per module.
+
+    `scalar` is what gets differentiated, and it decides what "same mechanism"
+    can possibly mean downstream:
+      gold  the ground-truth next token's logit (default; every result before
+            2026-08-28 uses this). Its gradient is dominated by output
+            identity, so clusters come out organised by which token comes next.
+      pred  the model's own argmax logit -- what it says rather than its error.
+      ent   the output distribution's entropy -- carries no token identity at
+            all, so clusters cannot be "predicts X" by construction.
+    """
     pre, post, hs = {}, {}, []
     for p in MODULES:
         mod = model.get_submodule(p)
@@ -296,7 +310,16 @@ def capture(model, idx, embed=None):
     logits = model(idx, embed=embed)
     for h in hs:
         h.remove()
-    reward = logits[:, :-1].float().gather(-1, idx[:, 1:, None]).sum()
+    lg = logits[:, :-1].float()
+    if scalar == "gold":
+        reward = lg.gather(-1, idx[:, 1:, None]).sum()
+    elif scalar == "pred":
+        reward = lg.gather(-1, lg.argmax(-1, keepdim=True).detach()).sum()
+    elif scalar == "ent":
+        logp = F.log_softmax(lg, -1)
+        reward = -(logp.exp() * logp).sum()
+    else:
+        raise ValueError(f"unknown capture scalar {scalar!r}")
     grads = torch.autograd.grad(reward, [post[p] for p in MODULES])
     return ({p: pre[p].detach() for p in MODULES},
             {p: g.detach() for p, g in zip(MODULES, grads)})

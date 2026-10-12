@@ -1,0 +1,17 @@
+attn_bias: false
+block_size: 512
+flash_attention: false
+mlp_bias: false
+model_type: LlamaSimpleMLP
+n_ctx: 512
+n_embd: 768
+n_head: 6
+n_intermediate: 3072
+n_key_value_heads: 6
+n_layer: 4
+rms_norm_eps: 1.0e-06
+rotary_adjacent_pairs: false
+rotary_base: 10000
+rotary_dim: 128
+use_grouped_query_attention: true
+vocab_size: 50277

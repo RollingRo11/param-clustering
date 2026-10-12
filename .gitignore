@@ -12,6 +12,22 @@ __pycache__/
 geo-attribution/out/target_local/
 .claude/*.lock
 
+# Agent worktrees and per-user agent settings
+.claude/worktrees/
+.claude/settings.local.json
+
+# Results, figures, checkpoints and run logs are artifacts (R2 is the durable store)
+out/
+figures/
+/results/
+wandb/
+*.pt
+*.pth
+*.safetensors
+
+# Local scratch: temporary snapshots, page renders, reference clones
+/tmp/
+
 # Editor and OS metadata
 .DS_Store
 *.swp
@@ -27,3 +43,6 @@ spd_lib/
 
 # Local reference documents (proposal PDFs etc.)
 /*.pdf
+
+# Retired experiment snapshots, preserved during research resets
+/research_archive/

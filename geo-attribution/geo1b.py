@@ -177,6 +177,8 @@ geo67.OUT_ROOT = SHM_ROOT
 geo67.load_target = load_target_1b
 geo67.apply_gim = apply_gim_1b
 geo67.GatedRunner.SOFT_CHUNK = 16
+# Without param-decomp, collect/eval fall back to make_loader67 (67M corpus).
+geo67.make_loader67 = make_loader_1b
 
 # Older pipeline stages import the loader through param-decomp. The fast
 # collector calls make_loader_1b directly and therefore no longer requires

@@ -512,17 +512,79 @@ def stage_factor(args):
     log("spectrum head: " + ", ".join(f"{v:.3e}" for v in top[:12])
         + " ... " + " ".join(f"[{i}]={top[i]:.3e}" for i in marks))
     C = args.C if args.C > 0 else lo + int(order[0])
-    log(f"factor: using C={C}")
-    Y = evecs[:, :C].to(device) * evals[:C].to(device).clamp_min(0).sqrt()[None, :]
-    labels, _ = spherical_kmeans(Y, C, seed=args.seed)
-    sizes = torch.bincount(labels, minlength=C)
-    log(f"cluster sizes: min {sizes.min()}, median {sizes.median()}, "
+    D = C
+    if args.proj == "twonn":
+        D = min(max(2, round(twonn_dim(args.dir, device))), evecs.shape[1])
+    log(f"factor: C={C}, projection {args.proj} (dim {D}), "
+        f"clustering {args.cluster}")
+    Y = evecs[:, :D].to(device) * evals[:D].to(device).clamp_min(0).sqrt()[None, :]
+    if args.cluster == "skmeans":
+        labels, _ = spherical_kmeans(Y, C, seed=args.seed)
+    elif args.cluster == "hdbscan":
+        from sklearn.cluster import HDBSCAN
+        X = F.normalize(Y, dim=1).cpu().numpy()
+        labels = torch.from_numpy(HDBSCAN(
+            min_cluster_size=args.hdb_min_size, algorithm="brute",
+            n_jobs=-1).fit_predict(X)).long()
+    else:
+        from dadapy import Data
+        data = Data(F.normalize(Y, dim=1).double().cpu().numpy(), verbose=False)
+        data.compute_distances(maxk=min(Y.shape[0] - 1, 100))
+        data.compute_id_2NN()
+        data.compute_density_PAk()
+        data.compute_clustering_ADP(Z=args.adp_Z, halo=False)
+        log(f"ADP: intrinsic dim {data.intrinsic_dim:.1f}")
+        labels = torch.from_numpy(np.asarray(data.cluster_assignment)).long()
+    labels = labels.cpu()
+    noise = int((labels < 0).sum())
+    C = int(labels.max()) + 1                     # clusters found (-1 = noise)
+    if C == 0:
+        raise RuntimeError(f"{args.cluster} found no clusters (all noise)")
+    sizes = torch.bincount(labels[labels >= 0], minlength=C)
+    log(f"{C} clusters, {noise} noise points (excluded from extraction); "
+        f"sizes: min {sizes.min()}, median {sizes.median()}, "
         f"max {sizes.max()}, empty {(sizes == 0).sum()}")
-    torch.save({"labels": labels, "C": C, "sizes": sizes},
-               args.dir / f"labels_C{C}.pt")
+    rec = {"labels": labels, "C": C, "sizes": sizes, "proj": args.proj,
+           "dim": D, "cluster": args.cluster, "noise": noise}
+    if args.labels_tag:
+        torch.save(rec, args.dir / f"labels_{args.labels_tag}.pt")
+        return
+    torch.save(rec, args.dir / f"labels_C{C}.pt")
     if not (args.dir / "labels.pt").exists():
-        torch.save({"labels": labels, "C": C, "sizes": sizes},
-                   args.dir / "labels.pt")
+        torch.save(rec, args.dir / "labels.pt")
+
+
+def twonn_dim(dirp: Path, device: str, discard: float = 0.1) -> float:
+    """TwoNN intrinsic dimension (Facco et al. 2017) of the positions under the
+    normalized-gram (cosine) geometry: fit log(r2/r1) against -log(1-F),
+    dropping the largest `discard` fraction of ratios."""
+    G = torch.load(dirp / "gram.pt", weights_only=True, map_location=device)
+    Gn = normalize_gram(G)
+    del G
+    d2 = (2 - (Gn + Gn.t())).clamp_min(0)          # |u-v|^2 for unit u, v
+    del Gn
+    d2.fill_diagonal_(float("inf"))
+    r = d2.topk(2, dim=1, largest=False).values.sqrt()
+    del d2
+    keep = r[:, 0] > 0
+    mu = (r[keep, 1] / r[keep, 0]).sort().values.double()
+    n = mu.shape[0]
+    m = int(n * (1 - discard))
+    x = mu[:m].log()
+    y = -torch.log1p(-torch.arange(1, m + 1, device=mu.device,
+                                   dtype=torch.float64) / n)
+    dim = float((x * y).sum() / (x * x).sum())
+    log(f"TwoNN: intrinsic dim {dim:.2f} ({n} points, "
+        f"{int((~keep).sum())} exact duplicates dropped)")
+    return dim
+
+
+def labels_path(args) -> Path:
+    if args.labels_tag:
+        return args.dir / f"labels_{args.labels_tag}.pt"
+    if args.C > 0 and (args.dir / f"labels_C{args.C}.pt").exists():
+        return args.dir / f"labels_C{args.C}.pt"
+    return args.dir / "labels.pt"
 
 
 # ----------------------------------------------------------------- extract ----
@@ -592,9 +654,7 @@ def stage_extract_p(args):
     device = "cuda"
     target = load_target(device)
     col = load_extract_collect(args.dir)
-    lab_path = (args.dir / f"labels_C{args.C}.pt" if args.C > 0
-                and (args.dir / f"labels_C{args.C}.pt").exists()
-                else args.dir / "labels.pt")
+    lab_path = labels_path(args)
     lab = torch.load(lab_path, weights_only=True)
     labels, C = lab["labels"].to(device), int(lab["C"])
     log(f"extract_p: labels from {lab_path.name}, C={C}")
@@ -653,9 +713,7 @@ def stage_extract_ps(args):
     device = "cuda"
     target = load_target(device)
     col = load_extract_collect(args.dir)
-    lab_path = (args.dir / f"labels_C{args.C}.pt" if args.C > 0
-                and (args.dir / f"labels_C{args.C}.pt").exists()
-                else args.dir / "labels.pt")
+    lab_path = labels_path(args)
     lab = torch.load(lab_path, weights_only=True)
     labels, C = lab["labels"].to(device), int(lab["C"])
     log(f"extract_ps: labels from {lab_path.name}, C={C}, "
@@ -1218,6 +1276,17 @@ def main():
     ap.add_argument("--mass_banks_tag", default="",
                     help="extract_pg: bank supplying supports + relevance "
                          "masses when iterating (default: src_banks_tag)")
+    ap.add_argument("--proj", choices=["spectral", "twonn"], default="spectral",
+                    help="factor: projection dim = C (spectral) or the TwoNN "
+                         "intrinsic dimension of the normalized gram")
+    ap.add_argument("--cluster", choices=["skmeans", "hdbscan", "adp"],
+                    default="skmeans",
+                    help="factor: spherical k-means (C clusters), HDBSCAN or "
+                         "ADP (dadapy); the last two pick their own count")
+    ap.add_argument("--hdb_min_size", type=int, default=8)
+    ap.add_argument("--adp_Z", type=float, default=1.65)
+    ap.add_argument("--labels_tag", default="",
+                    help="factor writes / extract reads labels_<tag>.pt")
     ap.add_argument("--eval_batches", type=int, default=8)
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
