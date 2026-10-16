@@ -1,10 +1,10 @@
 # param-clustering
 
-Research repo for parameter-decomposition experiments on small language models: the current parameter autoencoder in `par-auto/`, Parfact toy/67M experiments in `parfact/`, and shared 67M utilities in `geo-attribution/`. Scripts, not frameworks.
+Research repo for parameter-decomposition experiments on small language models. Three folders: `matryoshka/` (the Matryoshka parameter autoencoder, its evals, and the old par-auto core modules it imports), `VPD/` (programs that replace groups of VPD's published pieces: `VPD/programs/`, plus the scripts that find the groups and dump VPD's CI) and `geo/` (geo-attribution). The 67M base model is at `matryoshka/data/model_step_99999.pt`. Scripts, not frameworks.
 
 ## Layout
 
-- `par-auto/`, `parfact/` and `geo-attribution/` hold the scripts. Result JSONs go in `<dir>/out/`, figures in `<dir>/figures/`. Both are gitignored artifacts: never `git add` them.
+- `matryoshka/`, `VPD/` and `geo/` hold the scripts. Result JSONs go in `<dir>/out/`, figures in `<dir>/figures/`. Both are gitignored artifacts: never `git add` them.
 - Data root for the 67M workstream is the `COFAC_DATA` env var (target checkpoint in `$COFAC_DATA/target`, VPD checkpoint in `$COFAC_DATA/vpd`).
 
 ## Compute: Northeastern Explorer cluster
@@ -15,6 +15,7 @@ Research repo for parameter-decomposition experiments on small language models: 
 - SLURM: `sbatch slurm_*.sh`, `squeue -u kathuria.r`. `gpu-short` caps at 2 h, `gpu` at 8 h, CPU work on `short`. Login nodes are load-balanced and OOM-kill heavy processes: anything that loads real data runs as a job.
 - Never scancel or touch jobs you did not launch.
 - Keep local and cluster copies of a script in sync (scp) and verify with a checksum before submitting jobs against it.
+- The local layout (matryoshka/, VPD/, geo/) is newer than the cluster's (code/compare, code/par-auto, geo-attribution). Do not re-sync the cluster to it until the running jobs have finished.
 
 ## Storage and secrets
 

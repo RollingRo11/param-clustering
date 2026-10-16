@@ -9,7 +9,7 @@ __pycache__/
 .mypy_cache/
 
 # Machine-local model links, weights, and task locks
-geo-attribution/out/target_local/
+geo/out/target_local/
 .claude/*.lock
 
 # Agent worktrees and per-user agent settings
@@ -44,5 +44,6 @@ spd_lib/
 # Local reference documents (proposal PDFs etc.)
 /*.pdf
 
-# Retired experiment snapshots, preserved during research resets
-/research_archive/
+
+# Local copies of the base model and its verification
+matryoshka/data/
