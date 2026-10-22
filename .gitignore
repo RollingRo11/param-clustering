@@ -47,3 +47,7 @@ spd_lib/
 
 # Local copies of the base model and its verification
 matryoshka/data/
+
+# Write-ups stay out of git (kept on disk); only the project instructions are tracked
+*.md
+!CLAUDE.md

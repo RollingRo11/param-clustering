@@ -9,6 +9,10 @@
 # (suffix _perN), MATRYOSHKA_BUDGET_POWER=P != 1 (suffix _powP), MATRYOSHKA_ADV_COEFF=C != 0 (VPD's persistent PGD loss
 # with weight C, suffix _advC), MATRYOSHKA_ADV_GATE=soft (the adversary's keep level is the sigmoid top-k alpha
 # instead of the hard keep set, suffix _advgatesoft), MATRYOSHKA_MASS_COEFF=C != 0 (piece-mass penalty with weight C, suffix _massC),
+# MATRYOSHKA_FREQ_BETA=B != 0 (VPD's frequency term on the Lp term, suffix _freqB),
+# MATRYOSHKA_CERT_GAMMA=G != 0 (signed tail certificate penalty with weight G and MATRYOSHKA_CERT_TAU, default 0.25,
+# suffix _certG_tauT), MATRYOSHKA_INIT_TAG=T with MATRYOSHKA_INIT=<checkpoint.pt> (start from another run's full
+# checkpoint, its step and lr schedule included; suffix _from_T),
 # MATRYOSHKA_HARD_PROBE_SNAP (the eval job then also submits the hard adversarial probes from that snapshot).
 #   smoke: tests + 20 steps into .../smoke_TAG (not logged to W&B)
 #   pilot: tests + the first 300 steps into .../pilot_TAG (not logged to W&B)
@@ -17,6 +21,7 @@
 #     smoke job), MATRYOSHKA_TIME_BUDGET (seconds of training before pausing; default 6300 for this 2-hour limit),
 #     MATRYOSHKA_SBATCH_EXTRA (extra sbatch options for continuations, e.g. "-p gpu -t 08:00:00"),
 #     MATRYOSHKA_EVAL_INLINE=1 (run the eval, and its adversarial-masking job, inside this job).
+#     MATRYOSHKA_EVAL_STEP (the step the eval loads; default 5000, set it to MATRYOSHKA_STEPS for a fine-tune).
 #SBATCH -A n.saad
 #SBATCH -p gpu-short,gpu
 #SBATCH --gres=gpu:h200:1
@@ -41,7 +46,10 @@ if [ "${MATRYOSHKA_BUDGET_CONTEXTS:-4}" != 4 ]; then suffix="${suffix}_per$MATRY
 if [ "${MATRYOSHKA_BUDGET_POWER:-1}" != 1 ]; then suffix="${suffix}_pow$MATRYOSHKA_BUDGET_POWER"; fi
 if [ "${MATRYOSHKA_ADV_COEFF:-0}" != 0 ]; then suffix="${suffix}_adv$MATRYOSHKA_ADV_COEFF"; fi
 if [ "${MATRYOSHKA_ADV_GATE:-hard}" != hard ]; then suffix="${suffix}_advgate$MATRYOSHKA_ADV_GATE"; fi
+if [ "${MATRYOSHKA_FREQ_BETA:-0}" != 0 ]; then suffix="${suffix}_freq$MATRYOSHKA_FREQ_BETA"; fi
 if [ "${MATRYOSHKA_MASS_COEFF:-0}" != 0 ]; then suffix="${suffix}_mass$MATRYOSHKA_MASS_COEFF"; fi
+if [ "${MATRYOSHKA_CERT_GAMMA:-0}" != 0 ]; then suffix="${suffix}_cert${MATRYOSHKA_CERT_GAMMA}_tau${MATRYOSHKA_CERT_TAU:-0.25}"; fi
+if [ -n "${MATRYOSHKA_INIT:-}" ]; then suffix="${suffix}_from_${MATRYOSHKA_INIT_TAG:?MATRYOSHKA_INIT needs MATRYOSHKA_INIT_TAG}"; fi
 tag="$MATRYOSHKA_FORWARD$suffix"
 snap="${MATRYOSHKA_SNAP:-$PAIR_ROOT/code/matryoshka67_20260923}"
 out="$PAIR_ROOT/output/matryoshka67_20260923"

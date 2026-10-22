@@ -2,7 +2,8 @@
 masked forward, gradient flow through one micro-batch into every matrix's free factors, the sped-up
 update (Triton bisection, topk threshold, chunked micro-batches, cached KL target) against the
 one-micro-batch-at-a-time implementation it replaced (reference_* below, as of commit 3c2ccc6), the
-budget sampler (power, stratification, one budget per context), and the persistent PGD loss against VPD's own code."""
+budget sampler (power, stratification, one budget per context), the persistent PGD loss against VPD's own code, and the
+signed tail certificate (against loops and a brute-force worst case, then inside one real update)."""
 import json
 import math
 
@@ -164,6 +165,41 @@ def reference_adversary(model, rows, cache, feasible, draws, lp, target_logp, cf
 
 
 def check_adversary(model, data, weights):
+    """check_hard_adversary with the hard gate (VPD's comparison is only defined for it), then, when the run uses
+    MATRYOSHKA_ADV_GATE=soft, check_soft_gate."""
+    gate = mt.ADV_GATE
+    try:
+        mt.ADV_GATE = 'hard'
+        result = check_hard_adversary(model, data, weights)
+    finally:
+        mt.ADV_GATE = gate
+    if gate == 'soft': result['soft_gate'] = check_soft_gate(model, data, weights)
+    return result
+
+
+def check_soft_gate(model, data, weights):
+    """MATRYOSHKA_ADV_GATE=soft: with sources at 0 the adversarial forward is the soft (sigmoid top-k alpha) forward,
+    while the main forward stays hard; the update's gradient is finite."""
+    cfg = mt.vpd_adversary_config()
+    pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, mt.COUNTS)]
+    tc = method.TrainConfig(precision='bf16', projection_precision='fp32')
+    rows = batch(data, 0)[:4]
+    draws = [40, 430, 4301, 30000]
+    cache, logp = mt.capture(model, rows, seed=5, sensor='fisher', chunk=mt.MICRO, keep_logp=True)
+    feasible = [method.project(w, p, tc) for w, p in zip(weights, pieces)]
+    _, soft_stats = mt.accumulate(model, rows, cache, feasible, draws, 'soft', None, target_logp=logp, chunk=4)
+    _, hard_stats = mt.accumulate(model, rows, cache, feasible, draws, 'hard', None, target_logp=logp, chunk=4)
+    zero = mt.Adversary(cfg, 1., 4, seed=0); zero.source.zero_(); zero.lr = 0.
+    leaves, stats = mt.accumulate(model, rows, cache, feasible, draws, 'hard', None, target_logp=logp, chunk=4, adversary=zero)
+    result = dict(adv_vs_soft_kl_max_rel_diff=max(abs(a['adv_kl'] - b['kl']) / b['kl'] for a, b in zip(stats, soft_stats)),
+                  main_vs_hard_kl_max_rel_diff=max(abs(a['kl'] - b['kl']) / b['kl'] for a, b in zip(stats, hard_stats)),
+                  soft_kl=[s['kl'] for s in soft_stats], hard_kl=[s['kl'] for s in hard_stats])
+    assert result['adv_vs_soft_kl_max_rel_diff'] < 1e-6 and result['main_vs_hard_kl_max_rel_diff'] < 1e-6, result
+    assert all(torch.isfinite(t.grad).all() for l in leaves for t in (l.read, l.write)), result
+    return result
+
+
+def check_hard_adversary(model, data, weights):
     """The persistent PGD loss against VPD's own code: the lr schedule (get_scheduled_value), the ascent step on slices
     of the sources (AdamPGDOptimizer + clamp, bit for bit), the update on 4 real contexts with per-context budgets
     (chunk 4: same shapes as the reference; chunk 2: two chunks), and sources at 0 giving back the masked forward."""
@@ -254,6 +290,119 @@ def check_adversary(model, data, weights):
     return result
 
 
+def check_frequency():
+    """frequency_lp: beta 0 is the plain Lp term; beta > 0 is VPD's sum_c mean_c (1 + beta log2(1 + usage_c)) term by term
+    (float64 loop); lp_term with a beta averages frequency_lp / denominator over matrices; the gradient is finite."""
+    g = torch.Generator().manual_seed(11)
+    parts = [torch.rand(256, n, generator=g, dtype=torch.float64).pow(6) * 3 for n in (40, 70)]   # heavy-tailed scores
+    p, eps, beta, positions = 0.7, 1e-6, 0.5, 32768
+    for a in parts:
+        plain = mt.frequency_lp(a, p, eps, 0., 1., positions)
+        assert torch.allclose(plain, method.lp_concentration(a, p, eps).mean(), rtol=1e-10), plain
+        scale = a.abs().mean()
+        expected = 0.
+        for c in range(a.shape[1]):
+            mean_c = float(((a[:, c] + eps) ** p - eps ** p).mean())
+            usage_c = float(((a[:, c] / scale + eps) ** p - eps ** p).mean()) * positions
+            expected += mean_c * (1 + beta * math.log2(1 + usage_c))
+        got = float(mt.frequency_lp(a, p, eps, beta, scale, positions))
+        assert abs(got - expected) <= 1e-9 * abs(expected), (got, expected)
+    scales = [a.abs().mean() for a in parts]
+    denominators = [mt.frequency_lp(a, p, eps, beta, sc, positions) for a, sc in zip(parts, scales)]
+    lp = dict(p=p, epsilon=eps, beta=beta, scales=scales, positions=positions, denominators=denominators)
+    assert abs(float(mt.lp_term(parts, lp)) - 1) < 1e-5            # each matrix over its own value (lp_term works in float32)
+    x = parts[0].clone().requires_grad_()
+    mt.frequency_lp(x, p, eps, beta, scales[0], positions).backward()
+    assert torch.isfinite(x.grad).all() and x.grad.abs().sum() > 0
+    usage = [float(((a / sc + eps) ** p - eps ** p).mean(0).max()) * positions for a, sc in zip(parts, scales)]
+    return dict(max_usage=usage, weight_at_max_usage=[1 + beta * math.log2(1 + u) for u in usage])
+
+
+def check_certificate():
+    """tail_certificate on small float64 pieces (two matrices, COUNTS swapped for the test): P_j, N_j, cert and quad
+    against a loop over pieces; cert >= the brute-force worst case over every 0/1 restoration of the switched-off pieces
+    of the sketched second-order KL, mean_j (sum_c v_c s_c^j)^2 / 2 (equal when K = 1), and quad is that KL at v = ablated;
+    with a fractional mask the bound holds over a grid of fractional v; the gradient reaches reads and writes."""
+    import itertools
+    def effects(cache, pieces):     # s_c^j = (r_c.h)(u_c.g_j) by explicit loops over the input and output dimensions
+        return torch.cat([(e['h'][:, :, None] * p.read).sum(1)[:, None, :] * (e['events']['cot'][..., None] * p.write).sum(2)
+                          for e, p in zip(cache, pieces)], -1).detach()
+    counts = mt.COUNTS
+    g = torch.Generator().manual_seed(12)
+    try:
+        mt.COUNTS = [4, 5]
+        for k_samples in (1, 4):
+            n, shapes = 6, ((7, 3), (5, 8))                                     # (d_in, d_out) per matrix
+            cache = [dict(kind='vjp', h=torch.randn(n, i, generator=g, dtype=torch.float64),
+                          events=dict(cot=torch.randn(n, k_samples, o, generator=g, dtype=torch.float64))) for i, o in shapes]
+            pieces = [core.FreePieces(torch.randn(i, c, generator=g, dtype=torch.float64).requires_grad_(),
+                                      torch.randn(o, c, generator=g, dtype=torch.float64).requires_grad_())
+                      for (i, o), c in zip(shapes, mt.COUNTS)]
+            ablated = (torch.rand(n, sum(mt.COUNTS), generator=g) < .6).double()
+            cert, quad = mt.tail_certificate(cache, pieces, 1, n, ablated[1:])
+            s = effects(cache, pieces)[1:]                                      # [n-1, K, N]
+            for t in range(n - 1):
+                off = ablated[1 + t].bool()
+                plus = s[t][:, off].clamp_min(0).sum(-1); minus = (-s[t][:, off]).clamp_min(0).sum(-1)
+                assert abs(float(cert[t]) - float(torch.maximum(plus, minus).square().mean() / 2)) < 1e-10
+                assert abs(float(quad[t]) - float((plus - minus).square().mean() / 2)) < 1e-10
+                index = off.nonzero().flatten().tolist()
+                worst = max(float((s[t][:, index] @ torch.tensor(v, dtype=torch.float64)).square().mean() / 2)
+                            for v in itertools.product((0., 1.), repeat=len(index))) if index else 0.
+                assert worst <= float(cert[t]) + 1e-10, (worst, float(cert[t]))
+                if k_samples == 1: assert abs(worst - float(cert[t])) < 1e-10, (worst, float(cert[t]))
+            (cert.sum() + quad.sum()).backward()
+            assert all(torch.isfinite(x.grad).all() and x.grad.abs().sum() > 0 for p in pieces for x in (p.read, p.write))
+        # Fractional mask: switched-off fraction 1 - m in [0, 1]; any restoration v in [0, 1 - m] stays under the bound.
+        frac = torch.rand(n, sum(mt.COUNTS), generator=g, dtype=torch.float64)
+        cert, _ = mt.tail_certificate(cache, pieces, 0, n, frac)
+        s_all = effects(cache, pieces)
+        for _ in range(200):
+            v = frac * torch.rand(frac.shape, generator=g, dtype=torch.float64).round()
+            kl = ((s_all * v[:, None, :]).sum(-1).square().mean(-1) / 2)
+            assert (kl <= cert.detach() + 1e-10).all()
+    finally:
+        mt.COUNTS = counts
+    return 'ok'
+
+
+def check_certificate_update(model, data, weights):
+    """The certificate inside accumulate on 4 real contexts at 4 budgets (hard forward): each group's cert and quad match
+    a float64 recomputation from the cache on the same hard keep set (bf16 tolerance); cert >= quad; with tau far above
+    any cert the leaf gradients are those of the run without the term; with tau = 0 they change and stay finite."""
+    pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, mt.COUNTS)]
+    tc = method.TrainConfig(precision='bf16', projection_precision='fp32')
+    rows = batch(data, 0)[:4]
+    draws = [40, 430, 4301, 30000]
+    cache, logp = mt.capture(model, rows, seed=5, sensor='fisher', chunk=mt.MICRO, keep_logp=True)
+    feasible = [method.project(w, p, tc) for w, p in zip(weights, pieces)]
+    run = lambda cert: mt.accumulate(model, rows, cache, feasible, draws, 'hard', None, target_logp=logp, chunk=4, cert=cert)
+    plain, _ = run(None)
+    idle, idle_stats = run(dict(gamma=1., tau=1e9))
+    active, active_stats = run(dict(gamma=1., tau=0.))
+    flat = lambda leaves: torch.cat([t.grad.flatten() for l in leaves for t in (l.read, l.write)])
+    base, same, moved = flat(plain), flat(idle), flat(active)
+    result = dict(idle_grad_rel_diff=float((same - base).norm() / base.norm()), active_grad_rel_diff=float((moved - base).norm() / base.norm()))
+    assert result['idle_grad_rel_diff'] < 1e-5 and result['active_grad_rel_diff'] > 1e-4 and torch.isfinite(moved).all(), result
+    with torch.no_grad():
+        s = mt.log_scores(cache, feasible, 0, len(rows)*CONTEXT)
+        mask, _ = mt.forward_mask(s, draws, 'hard', CONTEXT)
+        total = plus = 0.
+        for e, f, m in zip(cache, feasible, (1 - mask).split(mt.COUNTS, -1)):
+            effect = ((e['h'].double() @ f.read.double()) * m.double())[:, None, :] * (e['events']['cot'].double() @ f.write.double())
+            total, plus = total + effect.sum(-1), plus + effect.clamp_min(0).sum(-1)
+            del effect
+        cert = torch.maximum(plus, plus - total).square().mean(-1).div(2).view(len(draws), -1).mean(-1)
+        quad = total.square().mean(-1).div(2).view(len(draws), -1).mean(-1)
+    result.update(cert=[x['cert'] for x in idle_stats], cert_quad=[x['cert_quad'] for x in idle_stats],
+                  cert_float64=cert.tolist(), quad_float64=quad.tolist())
+    for x, c, q in zip(idle_stats, cert.tolist(), quad.tolist()):
+        assert abs(x['cert'] - c) <= 3e-2 * c and abs(x['cert_quad'] - q) <= 3e-2 * q + 1e-2 * c, result
+        assert x['cert'] >= x['cert_quad'] and x['cert_hinge'] == 0., result
+    assert all(abs(a['cert'] - b['cert']) <= 1e-6 * b['cert'] for a, b in zip(active_stats, idle_stats)), result
+    return result
+
+
 def check_mass(weights):
     """piece_mass is weight_mass67.py's per-matrix share (float64 reference), and the penalty's gradient reaches both
     factors of every matrix through the in-graph projection."""
@@ -270,6 +419,123 @@ def check_mass(weights):
     for p in pieces:
         for t in (p.read, p.write): assert t.grad is not None and torch.isfinite(t.grad).all() and t.grad.abs().sum() > 0
     return dict(initial_mass=[round(float(m), 3) for m in masses], initial_penalty=float(penalty))
+
+
+def check_routing():
+    """routing_masks is VPD's sample_uniform_k_subset_routing_masks bit for bit on the same generator; the number of
+    masked matrices per position is uniform on 1..24."""
+    from param_decomp.routing import sample_uniform_k_subset_routing_masks
+    shape = (64, 512)
+    ours = mt.routing_masks(torch.Generator().manual_seed(3), shape)
+    theirs = sample_uniform_k_subset_routing_masks(shape, list(MODULES), 'cpu', torch.Generator().manual_seed(3))
+    assert torch.equal(ours, torch.stack([theirs[n] for n in MODULES])), 'routing differs from VPD'
+    counts = torch.bincount(ours.sum(0).flatten(), minlength=len(MODULES) + 1) / ours[0].numel()
+    assert counts[0] == 0 and float((counts[1:] - 1 / len(MODULES)).abs().max()) < 0.01, counts
+    return dict(masked_share=float(ours.float().mean()), expected=(len(MODULES) + 1) / 2 / len(MODULES))
+
+
+def check_hard_frequency():
+    """hard_frequency against a float64 loop over pieces; its gradient is the frequency weight passed straight through
+    the hard mask to the soft mask's Jacobian; tail_share against a loop, with gradient only through the scores."""
+    g = torch.Generator().manual_seed(12)
+    s = (torch.randn(64, 300, generator=g, dtype=torch.float64) * 3).requires_grad_()
+    mask, _ = mt.forward_mask(s, 17, 'hard')
+    positions = 32768
+    f = mask.detach().mean(0)
+    expected = sum(float(x) * math.log2(1 + positions * float(x)) for x in f)
+    got = mt.hard_frequency(mask, positions)
+    assert abs(float(got) - expected) <= 1e-9 * expected, (float(got), expected)
+    ours, = torch.autograd.grad(got, s)
+    weight = (torch.log2(1 + positions * f) + positions * f / ((1 + positions * f) * math.log(2))) / mask.shape[0]
+    theirs, = torch.autograd.grad((mt.sigmoid_topk(s, 17) * weight).sum(), s)
+    assert torch.allclose(ours, theirs, atol=1e-12), float((ours - theirs).abs().max())
+    a = [torch.rand(64, n, generator=g, dtype=torch.float64).requires_grad_() for n in (100, 200)]
+    share = mt.tail_share(a, mask)
+    whole = torch.cat(a, -1).detach()
+    loop = [float(sum(whole[t, c] for c in range(300) if mask[t, c] == 0) / whole[t].sum()) for t in range(64)]
+    assert torch.allclose(share.detach(), torch.tensor(loop, dtype=torch.float64), atol=1e-12)
+    share.sum().backward()
+    assert all(torch.isfinite(x.grad).all() for x in a) and s.grad is None
+    return dict(hard_frequency=expected, tail_share_mean=float(share.mean()))
+
+
+def check_mainline(model, data, weights):
+    """The merged loss (MergedAdversary), on 4 real contexts with per-context budgets:
+      - nothing attacked is the plain update (KL and gradients), and the sources do not move;
+      - everything attacked at sources 0 with lr 0 is the plain update again;
+      - everything attacked from uniform sources: the sources follow the added-loss Adversary (weight 1) step for step
+        when both use the same Adam settings, the attacked KL is its adversarial KL, and the pieces' gradient is the
+        added-loss gradient minus the plain one;
+      - 2 particles: only the drawn particle moves, and the per-particle counts advance;
+      - routing nothing masked gives the intact model; the same router seed gives the same update."""
+    cfg = mt.vpd_adversary_config()
+    pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, mt.COUNTS)]
+    tc = method.TrainConfig(precision='bf16', projection_precision='fp32')
+    rows = batch(data, 0)[:4]
+    ids = rows[:, :-1]
+    draws = [40, 430, 4301, 30000]
+    cache, logp = mt.capture(model, rows, seed=5, sensor='fisher', chunk=mt.MICRO, keep_logp=True)
+    feasible = [method.project(w, p, tc) for w, p in zip(weights, pieces)]
+    grads = lambda leaves: [t.grad for l in leaves for t in (l.read, l.write)]
+    result = {}
+    plain, plain_stats = mt.accumulate(model, rows, cache, feasible, draws, 'hard', None, target_logp=logp, chunk=4)
+
+    def merged(fraction, particles=1, zero=False, lr=.01, chunk=4, router=None):
+        adversary = mt.MergedAdversary(cfg, fraction, particles, 4, seed=0)
+        if zero: adversary.source.zero_()
+        adversary.lr = lr
+        adversary.draw(0)
+        before = adversary.source.clone()
+        leaves, stats = mt.accumulate(model, rows, cache, feasible, draws, 'hard', None, target_logp=logp, chunk=chunk,
+                                      merged=adversary, router=router)
+        return adversary, before, leaves, stats
+
+    adversary, before, leaves, stats = merged(0.)
+    assert not any(s['attacked'] for s in stats) and torch.equal(adversary.source, before)
+    result['none_attacked'] = dict(kl_max_rel_diff=max(abs(a['kl'] - b['kl']) / b['kl'] for a, b in zip(stats, plain_stats)),
+                                   grad_max_rel_diff=relative(grads(leaves), grads(plain)))
+    assert result['none_attacked']['kl_max_rel_diff'] < 1e-6 and result['none_attacked']['grad_max_rel_diff'] < 1e-5, result
+    adversary, before, leaves, stats = merged(1., zero=True, lr=0.)
+    assert all(s['attacked'] for s in stats) and torch.equal(adversary.source, before)
+    result['zero_sources'] = dict(kl_max_rel_diff=max(abs(a['kl'] - b['kl']) / b['kl'] for a, b in zip(stats, plain_stats)),
+                                  grad_max_rel_diff=relative(grads(leaves), grads(plain)))
+    assert result['zero_sources']['kl_max_rel_diff'] < 1e-6 and result['zero_sources']['grad_max_rel_diff'] < 1e-5, result
+    assert int(adversary.count.sum()) == 4 * (cfg['n_warmup_steps'] + 1)
+    # Against the added-loss Adversary (weight 1) from the same sources.
+    adversary, before, leaves, stats = merged(1.)
+    added = mt.Adversary(cfg, 1., 4, seed=0); added.source.copy_(before[0]); added.lr = .01
+    added_leaves, added_stats = mt.accumulate(model, rows, cache, feasible, draws, 'hard', None, target_logp=logp, chunk=4, adversary=added)
+    moved = (adversary.source[0] - added.source).abs()
+    result['vs_added'] = dict(
+        kl_max_rel_diff=max(abs(a['kl'] - b['adv_kl']) / b['adv_kl'] for a, b in zip(stats, added_stats)),
+        start_max_rel_diff=max(abs(a['adv_kl_start'] - b['adv_kl_start']) / b['adv_kl_start'] for a, b in zip(stats, added_stats)),
+        grad_max_rel_diff=relative(grads(leaves), [a - b for a, b in zip(grads(added_leaves), grads(plain))]),
+        source_max_abs_diff=float(moved.max()), source_fraction_off_by_1e_4=float((moved > 1e-4).float().mean()),
+        source_mean_move=float((adversary.source - before).abs().mean()), adv_kl=[s['kl'] for s in stats],
+        adv_kl_start=[s['adv_kl_start'] for s in stats], plain_kl=[s['kl'] for s in plain_stats])
+    assert result['vs_added']['kl_max_rel_diff'] < 1e-3 and result['vs_added']['start_max_rel_diff'] < 1e-6, result
+    assert result['vs_added']['grad_max_rel_diff'] < 5e-2 and result['vs_added']['source_fraction_off_by_1e_4'] < 1e-2, result
+    # Two particles: the drawn one moves, the other stays.
+    adversary, before, _, _ = merged(1., particles=2)
+    picked = torch.zeros(2, 4, dtype=torch.bool); picked[adversary.pick, torch.arange(4)] = True
+    for p in range(2):
+        for slot in range(4):
+            same = torch.equal(adversary.source[p, slot], before[p, slot])
+            assert same != bool(picked[p, slot]), (p, slot)
+            assert int(adversary.count[p, slot]) == (cfg['n_warmup_steps'] + 1) * int(picked[p, slot])
+    # Routing: masking no matrix is the intact model; masking all is the plain masked forward; a fixed seed repeats.
+    keep = [(torch.rand(*ids.shape, c, device='cuda') < .5).float() for c in mt.COUNTS]
+    with torch.no_grad():
+        none = torch.zeros(len(MODULES), *ids.shape, dtype=torch.bool, device='cuda')
+        kl_none = float(mt.kl_per_position(mt.intact_logp(model, ids), mt.masked_logits(model, ids, pieces, keep, none)).max())
+        assert torch.equal(mt.masked_logits(model, ids, pieces, keep, ~none), mt.masked_logits(model, ids, pieces, keep))
+    assert kl_none < 1e-3, kl_none
+    seeded = lambda: torch.Generator(device='cuda').manual_seed(9)
+    _, _, routed_a, stats_a = merged(.5, router=seeded())
+    _, _, routed_b, stats_b = merged(.5, router=seeded())
+    assert [s['kl'] for s in stats_a] == [s['kl'] for s in stats_b] and relative(grads(routed_a), grads(routed_b)) < 1e-4
+    result['routing'] = dict(kl_unrouted_max=kl_none, routed_kl=[s['kl'] for s in stats_a], attacked=[s['attacked'] for s in stats_a])
+    return result
 
 
 def check_budgets():
@@ -331,16 +597,21 @@ def check_sigmoid_topk():
 def main():
     torch.backends.cuda.matmul.allow_tf32 = False
     result = dict(sigmoid_topk_jacobian_max_error=check_sigmoid_topk(), bisection_kernel=check_bisection_kernel(),
-                  budgets=check_budgets())
-    print(json.dumps(dict(budgets=result['budgets'])), flush=True)
+                  budgets=check_budgets(), frequency=check_frequency(), certificate=check_certificate(),
+                  routing=check_routing(), hard_frequency=check_hard_frequency())
+    print(json.dumps(dict(budgets=result['budgets'], frequency=result['frequency'])), flush=True)
     model = target(); data, _ = tokens('train')
     weights = [model.get_submodule(n).weight for n in MODULES]
     result['speedups'] = check_speedups(model, data, weights)
     print(json.dumps(dict(speedups=result['speedups'], bisection_kernel=result['bisection_kernel'])), flush=True)
     result['adversary'] = check_adversary(model, data, weights)
     print(json.dumps(dict(adversary=result['adversary'])), flush=True)
+    result['certificate_update'] = check_certificate_update(model, data, weights)
+    print(json.dumps(dict(certificate_update=result['certificate_update'])), flush=True)
     result['mass'] = check_mass(weights)
     print(json.dumps(dict(mass=result['mass'])), flush=True)
+    result['mainline'] = check_mainline(model, data, weights)
+    print(json.dumps(dict(mainline=result['mainline'])), flush=True)
     pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, mt.COUNTS)]
     rows = batch(data, 0)[:mt.MICRO]
     ids = rows[:, :-1]
