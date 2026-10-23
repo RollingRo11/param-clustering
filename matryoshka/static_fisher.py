@@ -88,3 +88,35 @@ def greedy_scores(cache, pieces, steps, fixed=(), scales=None):
             gains -= torch.where(frozen, 0., 2 * a * a[rows, pick, None] * gram[pick])
             gains[rows, pick] = float('-inf')
         return list(score.float().split(counts, -1))
+
+
+def gelu_scores(cache, pieces, model, modules):
+    """Static scores with each MLP's c_fc pieces scored through that token's nonlinearity: |a_c| * ||L_down^T W_down
+    (gelu'(z) * u_c)||, z = the token's c_fc pre-activation (its input times the target's c_fc weight), L_down the metric
+    of the same layer's down_proj output. Every other matrix keeps its static score. cache: metric_write entries in
+    `modules` order; returns per-matrix scores [n, C] (fp32)."""
+    import parauto_structured as structured
+    out = []
+    with torch.no_grad():
+        for j, (name, e, p) in enumerate(zip(modules, cache, pieces)):
+            if not name.endswith('mlp.c_fc'):
+                with torch.autocast('cuda', dtype=torch.bfloat16):
+                    out.append(structured.scores(e, p).float())
+                continue
+            down = modules.index(name.replace('c_fc', 'down_proj'))
+            mlp = model.get_submodule(name.rsplit('.', 1)[0])
+            h = e['h'].float()
+            with torch.enable_grad():
+                z = (h @ mlp.c_fc.weight.float().T).requires_grad_()
+                slope, = torch.autograd.grad(mlp.gelu(z).sum(), z)                       # gelu'(z) [n, 768]
+            basis = cache[down]['shared']['metric'].float().T @ mlp.down_proj.weight.float()   # L^T W_down [r, 768]
+            gram = basis.T @ basis                                                        # [768, 768]
+            a = (h @ p.read.float()).abs()                                                # [n, C]
+            u = p.write.float()                                                           # [768, C]
+            norms = []
+            for lo in range(0, len(h), 256):                                              # ||B diag(g) u_c||^2 per token
+                g = slope[lo:lo+256]
+                gu = g[:, :, None] * u[None]                                              # [t, 768, C]
+                norms.append((gu * torch.einsum('ij,tjc->tic', gram, gu)).sum(1).clamp_min(0).sqrt())
+            out.append(a * torch.cat(norms))
+    return out
