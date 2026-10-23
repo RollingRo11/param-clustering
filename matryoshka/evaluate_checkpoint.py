@@ -71,6 +71,9 @@ def main():
             owners.append((compact.cuda(), len(used)))
     # static sensor: the run's fixed output metric (static_fisher.py), saved in every model.pth
     metric = [(f['L'].cuda(), f['eigenvalues']) for f in saved['static_metric']] if 'static_metric' in saved else None
+    if metric is None and args.sensor == 'static':     # trained with another sensor: the target's own metric, cached
+        import static_fisher
+        metric = static_fisher.cached(model, os.environ.get('MATRYOSHKA_STATIC_CACHE', str(ROOT/'static_fisher.pt')))
     del saved
     data, manifest = tokens('val')
     fractions = [0., .0001, .0003, .001, .003, .01, .03, .1, .2, .4, .6, .8, 1.]

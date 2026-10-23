@@ -61,6 +61,9 @@ def main():
         pieces = [core.FreePieces(p['read'].cuda(), p['write'].cuda()) for p in saved['factors']]
     # static sensor: the run's fixed output metric (static_fisher.py), saved in every model.pth
     metric = [(f['L'].cuda(), f['eigenvalues']) for f in saved['static_metric']] if 'static_metric' in saved else None
+    if metric is None and args.sensor == 'static':     # trained with another sensor: the target's own metric, cached
+        import static_fisher
+        metric = static_fisher.cached(model, os.environ.get('MATRYOSHKA_STATIC_CACHE', str(ROOT/'static_fisher.pt')))
     del saved
     data, manifest = tokens('val')
     configs = (['native'] if 'native' in gate_kinds else [])+([f'top{k:g}' for k in keeps] if 'topk' in gate_kinds else [])

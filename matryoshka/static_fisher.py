@@ -35,3 +35,17 @@ def estimate(model, data, rows=ROWS, k=FISHER_K, seed=SEED, microbatch=16):
 def entries(cache, factors):
     """write_attribution.capture_inputs entries turned into metric_write entries (same h)."""
     return [dict(e, kind='metric_write', shared={'sensor': 'static_fisher', 'metric': L.to(e['h'].device)}) for e, (L, _) in zip(cache, factors)]
+
+
+def cached(model, path):
+    """The target's metric from `path`, estimated (estimate's defaults, as every run's) and saved there on first use:
+    for scoring checkpoints that carry no static_metric (runs trained with another sensor)."""
+    import os
+    from pathlib import Path
+    path = Path(path)
+    if not path.exists():
+        from common import tokens, checkpoint
+        data, _ = tokens()
+        factors = estimate(model, data)
+        checkpoint(dict(factors=[dict(L=L, eigenvalues=v) for L, v in factors], modules=list(MODULES)), path)
+    return [(f['L'].cuda(), f['eigenvalues'].cuda()) for f in torch.load(path, map_location='cpu')['factors']]
