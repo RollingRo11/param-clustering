@@ -46,6 +46,10 @@ score -> softplus((score - f_c) / tau_c) * tau_c (+1e-6 score, to order the piec
 log f_c starts at log of the piece's median score on the first batch and trains with the pieces (lr x FLOOR_LR_SCALE)
 through the ranking's gradient and the Lp / tail / frequency terms, which see the floored scores. An interference-level
 activation then scores ~0, so such pieces leave the keep set as a block (floored).
+MATRYOSHKA_FLOOR_SET_FRACTION=f (with floors): each update, each context is with probability f kept at its above-floor set
+(every piece whose static score exceeds its floor, so a per-token budget the floors set) instead of the drawn budget's
+top-k; hard in the forward, sigmoid((score - floor)/tau) passed straight through to the scores and the floors. The
+attacker, the penalties and the statistics treat that keep set like any other (stats: k = its mean size).
 MATRYOSHKA_SCORE_INPUT=masked (static or write sensor, hard forward): the intact ranking only decides how many pieces each
 matrix keeps per token (its share of the global top-k); which pieces is decided inside the masked forward, layer by layer,
 by the same score on the input that matrix actually receives there (MaskedScorer). The loss, Lp, frequency and tail terms,
@@ -109,6 +113,8 @@ FLOORS = os.environ.get('MATRYOSHKA_FLOORS', '0') == '1'        # learned per-pi
 FLOOR_LR_SCALE = float(os.environ.get('MATRYOSHKA_FLOOR_LR_SCALE', '10'))   # floors' lr over the pieces' (cosine) lr
 assert not FLOORS or SENSOR == 'static', 'floors are in static-score units'
 FLOOR = None              # FLOORS: log floor per piece [N] (a leaf trained with the pieces), set by main or a test
+FLOOR_SET_FRACTION = float(os.environ.get('MATRYOSHKA_FLOOR_SET_FRACTION', '0'))  # share of contexts kept at their above-floor set
+assert 0 <= FLOOR_SET_FRACTION <= 1 and (FLOOR_SET_FRACTION == 0 or FLOORS)
 SCORE_INPUT = os.environ.get('MATRYOSHKA_SCORE_INPUT', 'intact')   # masked: rank each matrix on its masked-forward input (MaskedScorer)
 assert SCORE_INPUT in ('intact', 'masked')
 assert SCORE_INPUT == 'intact' or (SENSOR in ('static', 'write') and FORWARD == 'hard'), 'masked scoring: forward-only sensors, hard forward'
@@ -337,13 +343,24 @@ def floored(parts):
     return out
 
 
-def log_scores(cache, pieces, lo, hi, parts_out=None):
+def floor_set(raw):
+    """The above-floor keep set of raw per-matrix scores [n, C] (FLOOR), concatenated [n, N]: hard (score > floor) in
+    the forward, sigmoid((score - floor) / tau) passed straight through."""
+    masks = []
+    for x, f in zip(raw, FLOOR.exp().split(COUNTS)):
+        soft = torch.sigmoid((x.float() - f) / (f.detach() / 10))
+        masks.append((x.float() > f).float().detach() + soft - soft.detach())
+    return torch.cat(masks, -1)
+
+
+def log_scores(cache, pieces, lo, hi, parts_out=None, raw_out=None):
     """log score for positions lo:hi, all matrices concatenated in MODULES order: [n, N] fp32.
     parts_out (a list) also receives the per-matrix scores themselves, for the Lp term. With FLOOR, the floored scores."""
     parts = []
     with torch.autocast('cuda', dtype=torch.bfloat16):
         for entry, p in zip(cache, pieces):
             parts.append(method.structured.scores(method.structured.slice_entry(entry, slice(lo, hi)), p))
+    if raw_out is not None: raw_out.extend(parts)
     parts = floored(parts)
     if parts_out is not None: parts_out.extend(parts)
     return torch.cat(parts, -1).float().clamp_min(1e-30).log()
@@ -650,7 +667,7 @@ def update_budgets(generator, total, count):
 
 
 def accumulate(model, rows, cache, feasible, draws, forward=FORWARD, lp=None, target_logp=None, chunk=None, adversary=None, cert=None,
-               merged=None, router=None, freq=None, tail=None):
+               merged=None, router=None, freq=None, tail=None, floor_contexts=None):
     """Masked-forward KL over the update's budget groups (len(rows) // len(draws) consecutive contexts share each
     budget draw), run `chunk` contexts at a time; gradients land on the feasible factors' leaves. The loss is the same
     as one group at a time: the sum over groups of (mean KL + lp coeff * lp_term) / their number.
@@ -683,11 +700,25 @@ def accumulate(model, rows, cache, feasible, draws, forward=FORWARD, lp=None, ta
         ks = draws[first//per:(first+len(block))//per]
         target = intact_logp(model, ids) if target_logp is None else target_logp[lo:hi].view(*ids.shape, -1)
         parts = [] if (lp or tail) and SCORE_INPUT == 'intact' else None
-        s = log_scores(cache, leaves, lo, hi, parts_out=parts)
+        raw = [] if floor_contexts is not None else None
+        s = log_scores(cache, leaves, lo, hi, parts_out=parts, raw_out=raw)
         mask, soft = forward_mask(s, ks, forward, per*CONTEXT)
+        if floor_contexts is not None:   # FLOOR_SET_FRACTION: these contexts keep their above-floor set instead
+            chosen = floor_contexts[first:first+len(block)].cuda()
+            if chosen.any():
+                at_floor = floor_set(raw)
+                mask = torch.where(chosen.repeat_interleave(CONTEXT)[:, None], at_floor, mask)
+                sizes = at_floor.detach().sum(-1).view(len(block), -1).mean(-1).round().clamp_min(1).long().tolist()
+                ks = [sizes[j] if chosen[j] else k for j, k in enumerate(ks)]
+                extra_floor = chosen.cpu()
+                del at_floor
+            else:
+                extra_floor = chosen.cpu()
+            del raw
         counts = matrix_counts(mask) if SCORE_INPUT == 'masked' else None
         route = None if router is None else routing_masks(router, tuple(ids.shape))
         extra, train_mask, local = {}, mask, ()
+        if floor_contexts is not None: extra['floor_set'] = extra_floor
         if merged is not None:
             here = torch.arange(first, first + len(block))
             extra['attacked'] = merged.attacked[here]
@@ -782,6 +813,7 @@ def accumulate(model, rows, cache, feasible, draws, forward=FORWARD, lp=None, ta
             if 'tail' in extra: stats[-1]['tail_share'] = float(extra['tail'][j])
             if 'tail_count' in extra: stats[-1]['tail_count'] = float(extra['tail_count'][j])
             if 'attacked' in extra: stats[-1]['attacked'] = bool(extra['attacked'][j])
+            if 'floor_set' in extra: stats[-1]['floor_set'] = bool(extra['floor_set'][j])
             if j in starts: stats[-1]['adv_kl_start'] = starts[j]
     return leaves, stats
 
@@ -950,6 +982,10 @@ def main():
         plan['init'] = dict(checkpoint=INIT, note='pieces, Adam state, budget generator, RNG states and step count (and the '
                                                   'adversary\'s sources when both runs have one) of that checkpoint; the lr '
                                                   'schedule continues from its step')
+    if FLOOR_SET_FRACTION:
+        plan['floor_set'] = dict(fraction=FLOOR_SET_FRACTION, rule='per update and context, with this probability the keep set is the '
+                                 'above-floor set (score > floor, per token) instead of the drawn budget top-k; sigmoid((score - floor)'
+                                 '/tau) straight through; attacker and penalties as for any keep set')
     if FLOORS:
         plan['floors'] = dict(lr_scale=FLOOR_LR_SCALE, init='log median static score per piece, first batch, initial pieces',
                               score='softplus((score - f) / tau) * tau + 1e-6 score, tau = f / 10; ranking and Lp / tail / '
@@ -1094,9 +1130,11 @@ def main():
                 lp.update(beta=FREQ_BETA, scales=scales, positions=BATCH*CONTEXT,
                           denominators=[frequency_lp(s, p_now, cfg.lp_epsilon, FREQ_BETA, scale, BATCH*CONTEXT).clamp_min(1e-8)
                                         for s, scale in zip(initial_scores, scales)])
+        floor_contexts = (torch.rand(BATCH, generator=torch.Generator().manual_seed(cfg.seed * 1_000_003 + 909 + step)) < FLOOR_SET_FRACTION) \
+            if FLOOR_SET_FRACTION else None
         leaves, stats = accumulate(model, rows, cache, feasible, draws, lp=lp, target_logp=target_logp, adversary=adversary,
                                    cert=dict(gamma=CERT_GAMMA, tau=CERT_TAU) if CERT_GAMMA else None, merged=merged, router=router,
-                                   freq=freq, tail=dict(coeff=TAIL_COEFF) if TAIL_COEFF else None)
+                                   freq=freq, tail=dict(coeff=TAIL_COEFF) if TAIL_COEFF else None, floor_contexts=floor_contexts)
         del cache, target_logp
         # Push the leaf gradients through the in-graph projection onto the free factors, as method.fit does.
         outputs, cotangents = [t for f in feasible for t in (f.read, f.write)], [t.grad for l in leaves for t in (l.read, l.write)]
@@ -1136,6 +1174,10 @@ def main():
         if freq is not None: row.update(freq_normalized=float(np.mean([s['freq_normalized'] for s in stats])), freq_scale=freq['scale'])
         if TAIL_COEFF: row['tail_share'] = float(np.mean([s['tail_share'] for s in stats]))
         if FLOORS: row.update(floor_log_mean=float(FLOOR.mean()), floor_log_std=float(FLOOR.std()))
+        if FLOOR_SET_FRACTION:
+            at = [s for s in stats if s.get('floor_set')]
+            row['floor_set_share'] = len(at) / len(stats)
+            if at: row.update(floor_set_kl=float(np.mean([s['kl'] for s in at])), floor_set_size=float(np.mean([s['k'] for s in at])))
         if FORWARD == 'hard':
             row['tail_count'] = float(np.mean([s['tail_count'] for s in stats]))
             row['tail_count_over_k'] = float(np.mean([s['tail_count'] / s['k'] for s in stats]))

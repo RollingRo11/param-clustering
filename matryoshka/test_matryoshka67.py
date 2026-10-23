@@ -788,6 +788,34 @@ def check_floors():
         mt.FLOOR = old
 
 
+def check_floor_set(model, data, weights):
+    """FLOOR_SET_FRACTION: a context drawn for the floor set trains at exactly its above-floor pieces (stats k = their
+    mean count), the others at their budget; the floors get a gradient through the floor-set contexts."""
+    import static_fisher
+    old_metric, old_floor = mt.STATIC_METRIC, mt.FLOOR
+    try:
+        mt.STATIC_METRIC = static_fisher.estimate(model, data, rows=16, k=4)
+        pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, mt.COUNTS)]
+        rows = batch(data, 0)[:4]
+        cache = mt.capture(model, rows, seed=0, sensor='static', chunk=4)
+        with torch.no_grad(), torch.autocast('cuda', dtype=torch.bfloat16):
+            med = torch.cat([method.structured.scores(e, p).float().median(0).values for e, p in zip(cache, pieces)])
+        mt.FLOOR = med.clamp_min(1e-12).log().add(1.).requires_grad_()       # floors at e x median: a small set
+        tc = method.TrainConfig(precision='bf16', projection_precision='fp32')
+        feasible = [method.project(w, p, tc) for w, p in zip(weights, pieces)]
+        chosen = torch.tensor([True, False, True, False])
+        leaves, stats = mt.accumulate(model, rows, cache, feasible, list(DRAWS), 'hard', None, chunk=4, floor_contexts=chosen)
+        with torch.no_grad(), torch.autocast('cuda', dtype=torch.bfloat16):
+            raw = torch.cat([method.structured.scores(e, p).float() for e, p in zip(cache, feasible)], -1)
+        sizes = (raw > mt.FLOOR.exp()).float().sum(-1).view(4, -1).mean(-1).round().clamp_min(1).long().tolist()
+        assert [st['floor_set'] for st in stats] == chosen.tolist()
+        assert [st['k'] for st in stats] == [sizes[0], DRAWS[1], sizes[2], DRAWS[3]], ([st['k'] for st in stats], sizes)
+        assert mt.FLOOR.grad is not None and float(mt.FLOOR.grad.abs().sum()) > 0
+        return dict(floor_set_sizes=[sizes[0], sizes[2]])
+    finally:
+        mt.STATIC_METRIC, mt.FLOOR = old_metric, old_floor
+
+
 def main():
     torch.backends.cuda.matmul.allow_tf32 = False
     run_score_input, mt.SCORE_INPUT = mt.SCORE_INPUT, 'intact'    # the reference checks below are on intact scoring
@@ -814,6 +842,8 @@ def main():
     print(json.dumps(dict(interact_score=result['interact_score'])), flush=True)
     result['greedy_scores'] = check_greedy_scores(model, data, weights)
     result['masked_scorer'] = check_masked_scorer(model, data, weights)
+    result['floor_set'] = check_floor_set(model, data, weights)
+    print(json.dumps(dict(floor_set=result['floor_set'])), flush=True)
     print(json.dumps(dict(masked_scorer=result['masked_scorer'])), flush=True)
     if mt.SENSOR == 'static':      # the checks below use the run's own sensor
         import static_fisher
