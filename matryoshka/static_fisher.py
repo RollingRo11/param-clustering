@@ -12,14 +12,15 @@ from common import CONTEXT, MODULES
 ROWS, FISHER_K, SEED = 128, 8, 4242
 
 
-def estimate(model, data, rows=ROWS, k=FISHER_K, seed=SEED, microbatch=16):
-    """[(L, eigenvalues)] in MODULES order: L [d_out, d_out] fp32 with L L^T = M, from data[-rows:]."""
+def estimate(model, data, rows=ROWS, k=FISHER_K, seed=SEED, microbatch=16, gim=False):
+    """[(L, eigenvalues)] in MODULES order: L [d_out, d_out] fp32 with L L^T = M, from data[-rows:]. gim: the cotangents
+    of the GIM rules (gim_attribution.RULES: T=2 softmax, Q/K/V scaling, frozen RMSNorm), an LRP-style backward."""
     import numpy as np
     from fisher_attribution import capture_fisher
     block = torch.from_numpy(np.array(data[len(data)-rows:], dtype=np.int64)).cuda()
     sums, count = None, 0
     for first in range(0, rows, microbatch):
-        cache = capture_fisher(model, block[first:first+microbatch], k=k, seed=seed + first, microbatch=microbatch)
+        cache = capture_fisher(model, block[first:first+microbatch], k=k, seed=seed + first, microbatch=microbatch, gim=gim)
         cots = [e['events']['cot'].double().flatten(0, 1) for e in cache]          # [n*k, d_out]
         sums = [c.T @ c for c in cots] if sums is None else [a + c.T @ c for a, c in zip(sums, cots)]
         count += len(cots[0])
