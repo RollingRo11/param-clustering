@@ -19,6 +19,8 @@ sources = [('', run_dir/'eval_fisher_k8/klkeep.json', run_dir/'adversarial_globa
 for s in ('static', 'write'):
     probe = run_dir/f'adversarial_global_128_{s}.json'
     sources.append((f'_{s}', run_dir/f'eval_{s}/klkeep.json', probe if plan['sensor'] == s else None))
+if plan.get('score_input', {}).get('kind') == 'masked':
+    sources.append((f'_{plan["sensor"]}_masked', run_dir/f'eval_{plan["sensor"]}_masked/klkeep.json', None))
 missing = [str(p) for _, *paths in sources for p in paths if p is not None and not p.exists()]
 if missing: sys.exit(f'evals not ready: {missing}')
 training = json.loads((run_dir/'wandb.json').read_text())

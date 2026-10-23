@@ -41,6 +41,10 @@ the intact model per update and no loss gradient, so the ranking needs no backwa
 MATRYOSHKA_SENSOR=static ranks by |r_c.h| sqrt(u_c^T M u_c), M the target's token-averaged output Fisher at that matrix
 (static_fisher.py, estimated once per run and saved beside it and in every model.pth): the write sensor's forward, measured
 in the metric the Fisher sensor uses, with the per-token Fisher replaced by its average.
+MATRYOSHKA_SCORE_INPUT=masked (static or write sensor, hard forward): the intact ranking only decides how many pieces each
+matrix keeps per token (its share of the global top-k); which pieces is decided inside the masked forward, layer by layer,
+by the same score on the input that matrix actually receives there (MaskedScorer). The loss, Lp, frequency and tail terms,
+the attacker's gates and the monitor all use those masked-input scores and keep sets.
 MATRYOSHKA_WANDB_DIR puts W&B's local files somewhere other than the run directory.
 
 With temperature 1 in log-score space, alpha = a / (a + theta): no temperature knob.
@@ -96,6 +100,9 @@ assert FORWARD in ('soft', 'hard')
 SENSOR = os.environ.get('MATRYOSHKA_SENSOR', 'fisher')          # the per-token score that ranks pieces
 assert SENSOR in ('fisher', 'gim', 'write', 'static')
 STATIC_METRIC = None      # static: [(L, eigenvalues)] per matrix (static_fisher.py), set by main or a test
+SCORE_INPUT = os.environ.get('MATRYOSHKA_SCORE_INPUT', 'intact')   # masked: rank each matrix on its masked-forward input (MaskedScorer)
+assert SCORE_INPUT in ('intact', 'masked')
+assert SCORE_INPUT == 'intact' or (SENSOR in ('static', 'write') and FORWARD == 'hard'), 'masked scoring: forward-only sensors, hard forward'
 LP_COEFF = float(os.environ.get('MATRYOSHKA_LP_COEFF', '0'))    # weight of the old par-auto Lp term; 0 = off
 assert LP_COEFF >= 0 and math.isfinite(LP_COEFF)
 ADV_COEFF = float(os.environ.get('MATRYOSHKA_ADV_COEFF', '0'))  # weight of VPD's persistent PGD loss (Adversary); 0 = off
@@ -233,6 +240,56 @@ def forward_mask(s, ks, forward, group=None):
         threshold = torch.cat([scores[i*group:(i+1)*group].topk(k, dim=-1, sorted=False).values.amin(-1, keepdim=True)
                                for i, k in enumerate(ks)])
     return HardTopk.apply(soft, scores, threshold), soft
+
+
+def write_factors(pieces):
+    """The forward-only sensors' per-piece write factor, [C] fp32 per matrix: ||L^T u_c|| (static) or ||u_c|| (write)."""
+    if SENSOR == 'static':
+        return [(L.T.to(p.write.dtype) @ p.write).float().square().sum(0).add(1e-30).sqrt() for p, (L, _) in zip(pieces, STATIC_METRIC)]
+    return [p.write.float().square().sum(0).add(1e-30).sqrt() for p in pieces]
+
+
+def matrix_keep(s, k):
+    """Hard per-row top-k mask of one matrix's log scores s [n, C], k [n] long (0 allowed: nothing kept), with the
+    sigmoid top-k Jacobian at the same budgets passed straight through, as forward_mask."""
+    soft = sigmoid_topk(s, k.to(s.dtype).clamp_min(1e-3))
+    with torch.no_grad():                   # exactly k per row, ties broken by topk's order
+        index = s.detach().topk(max(1, int(k.max())), -1).indices
+        chosen = torch.arange(index.shape[-1], device=s.device) < k[:, None]
+        hard = torch.zeros_like(s).scatter_(-1, index, chosen.to(s.dtype))
+    return hard + soft - soft.detach()
+
+
+class MaskedScorer:
+    """MATRYOSHKA_SCORE_INPUT=masked: matrix j keeps counts[:, j] pieces per token (its share of the intact global
+    top-k), chosen by log(|x r_c| * factor_c) on the input x it receives in the masked forward. alpha(j) is the callable
+    masked_logits takes for that matrix; with sources (per matrix [n, C]) the mask is keep + (1 - keep) * source.
+    After the forward, scores(), parts and keeps hold each matrix's log scores, scores and keep masks."""
+
+    def __init__(self, pieces, factors, counts, sources=None):
+        self.pieces, self.factors, self.counts, self.sources = pieces, factors, counts, sources
+        self.log, self.parts, self.keeps = [None] * len(pieces), [None] * len(pieces), [None] * len(pieces)
+
+    def alpha(self, j):
+        def mask(x):
+            a = (x.flatten(0, -2) @ self.pieces[j].read).float().abs() * self.factors[j]
+            s = a.clamp_min(1e-30).log()
+            keep = matrix_keep(s, self.counts[:, j])
+            self.log[j], self.parts[j], self.keeps[j] = s, a, keep
+            out = keep if self.sources is None else keep + (1 - keep) * self.sources[j]
+            return out.view(*x.shape[:-1], -1)
+        return mask
+
+    def alphas(self):
+        return [self.alpha(j) for j in range(len(self.pieces))]
+
+    def scores(self):
+        return torch.cat(self.log, -1), torch.cat(self.keeps, -1)
+
+
+def matrix_counts(mask):
+    """Kept pieces per row and matrix of a global keep mask [n, N]: [n, len(MODULES)] long."""
+    return torch.stack([m.detach().sum(-1).round().long() for m in mask.split(COUNTS, -1)], -1)
 
 
 def capture(model, rows, seed, sensor=None, chunk=None, keep_logp=False):
@@ -373,6 +430,7 @@ def masked_logits(model, ids, pieces, alphas, route=None):
     try:
         for j, (name, p, a) in enumerate(zip(MODULES, pieces, alphas)):
             def replace(layer, inputs, output, p=p, a=a, r=None if route is None else route[j]):
+                if callable(a): a = a(inputs[0])         # MaskedScorer: the mask from this very input
                 masked = ((inputs[0] @ p.read) * a) @ p.write.T
                 return masked if r is None else torch.where(r[..., None], masked, output)
             hooks.append(model.get_submodule(name).register_forward_hook(replace))
@@ -603,9 +661,10 @@ def accumulate(model, rows, cache, feasible, draws, forward=FORWARD, lp=None, ta
         lo, hi = first*CONTEXT, (first+len(block))*CONTEXT
         ks = draws[first//per:(first+len(block))//per]
         target = intact_logp(model, ids) if target_logp is None else target_logp[lo:hi].view(*ids.shape, -1)
-        parts = [] if (lp or tail) else None
+        parts = [] if (lp or tail) and SCORE_INPUT == 'intact' else None
         s = log_scores(cache, leaves, lo, hi, parts_out=parts)
         mask, soft = forward_mask(s, ks, forward, per*CONTEXT)
+        counts = matrix_counts(mask) if SCORE_INPUT == 'masked' else None
         route = None if router is None else routing_masks(router, tuple(ids.shape))
         extra, train_mask, local = {}, mask, ()
         if merged is not None:
@@ -618,9 +677,13 @@ def accumulate(model, rows, cache, feasible, draws, forward=FORWARD, lp=None, ta
                 sub_route = None if route is None else route[:, inside]
                 gate = mask.detach().view(len(block), CONTEXT, -1)[inside].flatten(0, 1)
                 frozen = [core.FreePieces(p.read.detach(), p.write.detach()) for p in leaves]
+                if counts is not None:
+                    sub_counts, frozen_factors = counts.view(len(block), CONTEXT, -1)[inside].flatten(0, 1), write_factors(frozen)
                 for j in range(merged.warmup):
                     source = merged.sources(slots).requires_grad_()
-                    kl = kl_per_position(sub_target, masked_logits(model, sub_ids, frozen, merged.masks(gate, source, sub_ids), sub_route))
+                    if counts is None: warm = merged.masks(gate, source, sub_ids)
+                    else: warm = MaskedScorer(frozen, frozen_factors, sub_counts, list(source.flatten(0, 1).split(COUNTS, -1))).alphas()
+                    kl = kl_per_position(sub_target, masked_logits(model, sub_ids, frozen, warm, sub_route))
                     if j == 0: extra['adv_start'] = kl.detach().view(len(local), -1).mean(-1)
                     grad, = torch.autograd.grad(kl.sum() / positions, source)
                     merged.ascend(slots, grad)
@@ -629,9 +692,18 @@ def accumulate(model, rows, cache, feasible, draws, forward=FORWARD, lp=None, ta
                 source = merged.sources(slots).requires_grad_()
                 spread = torch.zeros(len(block), CONTEXT, source.shape[-1], device='cuda').index_copy(0, inside, source)
                 train_mask = mask + (1 - mask) * spread.flatten(0, 1)      # plain contexts: spread = 0, the keep mask
+                sources = list(spread.flatten(0, 1).split(COUNTS, -1))
                 del spread
-        alphas = [a.reshape(*ids.shape, -1) for a in train_mask.split(COUNTS, -1)]
+        if counts is None:
+            alphas = [a.reshape(*ids.shape, -1) for a in train_mask.split(COUNTS, -1)]
+        else:
+            scorer = MaskedScorer(leaves, write_factors(leaves), counts, sources if len(local) else None)
+            alphas = scorer.alphas()
         kl = kl_per_position(target, masked_logits(model, ids, leaves, alphas, route)).view(len(ks), -1).mean(-1)   # per budget group
+        if counts is not None:          # the penalties and statistics below see the masked-input scores and keep sets
+            s, mask = scorer.scores()
+            parts = scorer.parts if (lp or tail) else None
+            del scorer
         term = lp_term(parts, lp) if lp else None
         loss = kl.sum() if term is None else kl.sum() + lp['coeff'] * term * len(ks)
         if freq is not None:
@@ -720,7 +792,8 @@ def monitor(model, rows, pieces, seed):
         result = {}
         for k in MONITOR_BUDGETS + (scores.shape[-1],):
             keep = torch.zeros_like(scores).scatter_(-1, order[:, :k], 1.)
-            alphas = [m.reshape(*ids.shape, -1) for m in keep.split(COUNTS, -1)]
+            alphas = [m.reshape(*ids.shape, -1) for m in keep.split(COUNTS, -1)] if SCORE_INPUT == 'intact' else \
+                     MaskedScorer(pieces, write_factors(pieces), matrix_counts(keep)).alphas()
             result[k] = float(kl_per_position(target_logp, masked_logits(model, ids, pieces, alphas)).mean())
     return result
 
@@ -856,6 +929,10 @@ def main():
         plan['init'] = dict(checkpoint=INIT, note='pieces, Adam state, budget generator, RNG states and step count (and the '
                                                   'adversary\'s sources when both runs have one) of that checkpoint; the lr '
                                                   'schedule continues from its step')
+    if SCORE_INPUT == 'masked':
+        plan['score_input'] = dict(kind='masked', rule='per token, the intact global top-k fixes how many pieces each matrix keeps; '
+                                   'each matrix then keeps its top pieces by the same score on the input it receives in the masked '
+                                   'forward (attacked forwards too); the loss, penalties and monitor use those scores and keep sets')
     if SENSOR == 'static':
         path = OUT/'static_fisher.pt'
         if path.exists():

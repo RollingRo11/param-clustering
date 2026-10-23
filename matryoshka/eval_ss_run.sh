@@ -18,9 +18,9 @@ sensor=$($py -c "import json,sys; print(json.load(open(sys.argv[1]))['sensor'])"
 name=$(basename "$run")
 mkdir -p "$MATRYOSHKA_WANDB_DIR"
 cd "$code"
-klkeep() {     # sensor, folder
+klkeep() {     # sensor, folder, [extra options]
   [ -f "$run/$2/klkeep.json" ] || $py -u evaluate_checkpoint.py parauto --expected-step "$step" --sensor "$1" --fisher-k 8 \
-    --checkpoint "$ckpt" --output "$run/$2" --run-tag "ss-$name-$step-$1-klkeep"
+    --checkpoint "$ckpt" --output "$run/$2" --run-tag "ss-$name-$step-$1-klkeep" "${@:3}"
 }
 probe() {      # sensor, output file
   [ -f "$run/$2" ] || WANDB_MODE=disabled $py -u adversarial_probe.py --checkpoint "$ckpt" --output "$run/$2" --sensor "$1" \
@@ -30,6 +30,9 @@ probe() {      # sensor, output file
 klkeep fisher eval_fisher_k8
 klkeep static eval_static
 klkeep write eval_write
+# A run trained with masked-input scoring: also its own sensor, ranked inside the masked forward as in training.
+score_input=$($py -c "import json,sys; print(json.load(open(sys.argv[1])).get('score_input', {}).get('kind', 'intact'))" "$run/plan.json")
+[ "$score_input" = intact ] || klkeep "$sensor" "eval_${sensor}_masked" --score-input masked
 probe fisher adversarial_global_128.json
 [ "$sensor" = fisher ] || probe "$sensor" "adversarial_global_128_$sensor.json"
 $py -u log_evals_ss.py "$run"

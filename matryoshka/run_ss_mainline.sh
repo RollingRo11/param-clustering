@@ -10,6 +10,7 @@
 # 5,000-step SS runs used 8,700), MATRYOSHKA_K_MIN (smallest budget, default 32), MATRYOSHKA_SENSOR (default fisher;
 # write = rank by |r.h| ||u||, one forward; static = |r.h| sqrt(u^T M u)), MATRYOSHKA_BUDGET_POWER (budget density
 # k^-power, default 1.5), MATRYOSHKA_MONITOR_EVERY (default 250),
+# MATRYOSHKA_SCORE_INPUT=masked (static or write sensor): rank each matrix on its masked-forward input (matryoshka67.py).
 # Sparser budgets: MATRYOSHKA_K_MIN=8 (power 1.5: median budget 30, 69% of draws at k <= 71, about VPD's 47 active pieces
 # per token, 7.5% at k >= 710; power 2: median 16, 89% at k <= 71, 1% at k >= 710).
 #

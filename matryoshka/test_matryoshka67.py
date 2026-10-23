@@ -730,6 +730,47 @@ def check_greedy_scores(model, data, weights):
     return 'ok'
 
 
+def check_masked_scorer(model, data, weights):
+    """MaskedScorer (MATRYOSHKA_SCORE_INPUT=masked): every matrix keeps exactly the intact top-k's count per token; the
+    layer-0 q/k/v inputs are untouched by masking, so their keep sets equal the intact ones; the whole budget keeps every
+    piece (the target, up to bf16); gradients reach both factors of every matrix and the attack source."""
+    import static_fisher
+    from write_attribution import capture_inputs
+    pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, mt.COUNTS)]
+    factors = static_fisher.estimate(model, data, rows=16, k=4)
+    old, mt.STATIC_METRIC = mt.STATIC_METRIC, factors
+    try:
+        rows = batch(data, 0)[:2]; ids = rows[:, :-1]
+        cache = static_fisher.entries(capture_inputs(model, rows), factors)
+        leaves = [core.FreePieces(p.read.detach().requires_grad_(), p.write.detach().requires_grad_()) for p in pieces]
+        # Intact scores computed exactly as MaskedScorer does (bf16 matmul, fp32 product), so only the input can differ.
+        factors_w = mt.write_factors(leaves)
+        with torch.autocast('cuda', dtype=torch.bfloat16):
+            s = torch.cat([((e['h'] @ q.read).float().abs() * f).clamp_min(1e-30).log() for e, q, f in zip(cache, leaves, factors_w)], -1)
+        mask, _ = mt.forward_mask(s, [71, 710], 'hard', CONTEXT)
+        counts = mt.matrix_counts(mask)
+        source = torch.rand(2 * CONTEXT, sum(mt.COUNTS), device='cuda').requires_grad_()
+        scorer = mt.MaskedScorer(leaves, mt.write_factors(leaves), counts, list(source.split(mt.COUNTS, -1)))
+        target_logp = mt.intact_logp(model, ids)
+        kl = mt.kl_per_position(target_logp, mt.masked_logits(model, ids, leaves, scorer.alphas())).mean()
+        s_m, keep = scorer.scores()
+        assert torch.equal(mt.matrix_counts(keep), counts)
+        for j in range(3):                      # h.0 q, k, v: the same sets (exact ties aside)
+            a, b = keep.split(mt.COUNTS, -1)[j].detach().round(), mask.split(mt.COUNTS, -1)[j].detach().round()
+            assert float((a != b).float().sum() / b.sum().clamp_min(1)) < 1e-3, (MODULES[j], float((a != b).float().sum()))
+        changed = float((keep.detach() != mask.detach()).float().sum(-1).mean())
+        (kl + scorer.parts[0].sum() * 0).backward()
+        assert all(float(t.grad.abs().sum()) > 0 for q in leaves for t in (q.read, q.write)), 'gradient misses a factor'
+        assert float(source.grad.abs().sum()) > 0
+        full = mt.MaskedScorer(leaves, mt.write_factors(leaves), torch.tensor(mt.COUNTS, device='cuda').expand(2 * CONTEXT, -1))
+        with torch.no_grad():
+            kl_all = float(mt.kl_per_position(target_logp, mt.masked_logits(model, ids, leaves, full.alphas())).mean())
+        assert kl_all < 0.05, kl_all
+        return dict(kept_changed_per_token=changed, kl_all_kept=kl_all)
+    finally:
+        mt.STATIC_METRIC = old
+
+
 def main():
     torch.backends.cuda.matmul.allow_tf32 = False
     result = dict(sigmoid_topk_jacobian_max_error=check_sigmoid_topk(), bisection_kernel=check_bisection_kernel(),
@@ -754,6 +795,8 @@ def main():
     result['interact_score'] = check_interact_score(model, data, weights)
     print(json.dumps(dict(interact_score=result['interact_score'])), flush=True)
     result['greedy_scores'] = check_greedy_scores(model, data, weights)
+    result['masked_scorer'] = check_masked_scorer(model, data, weights)
+    print(json.dumps(dict(masked_scorer=result['masked_scorer'])), flush=True)
     if mt.SENSOR == 'static':      # the checks below use the run's own sensor
         import static_fisher
         mt.STATIC_METRIC = static_fisher.estimate(model, data, rows=16, k=4)
