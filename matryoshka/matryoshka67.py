@@ -670,6 +670,19 @@ def accumulate(model, rows, cache, feasible, draws, forward=FORWARD, lp=None, ta
     return leaves, stats
 
 
+# The 20 Oct 2026 SimpleStories runs (particles_ss.py) logged the merged-loss and sharpening curves under these names;
+# SS runs log them under both names so their W&B panels overlay. (With 7,104 pieces, 1000_10000 is their ge1000.)
+SS_ALIASES = dict(particles_adv_kl='kl_attacked', particles_adv_kl_start='kl_attacked_start', particles_plain_kl='kl_plain',
+                  particles_adv_share='attacked_share', particles_r_mean='adv_source_mean', freq_new_term='freq_normalized',
+                  sharp_tail_share='tail_share',
+                  **{f'particles_{a}_kl_k_{old}': f'kl_{b}_k_{new}' for a, b in (('adv', 'attacked'), ('plain', 'plain'))
+                     for old, new in (('lt100', 'lt100'), ('100_1000', '100_1000'), ('ge1000', '1000_10000'))})
+
+
+def ss_aliases(row):
+    return {old: row[new] for old, new in SS_ALIASES.items() if new in row}
+
+
 def monitor(model, rows, pieces, seed):
     """Hard top-k KL (KLKeep's mask, on 4 held-out contexts, the run's own ranking) at fixed budgets."""
     pieces = [core.FreePieces(p.read.detach(), p.write.detach()) for p in pieces]
@@ -989,6 +1002,9 @@ def main():
             if inside and CERT_GAMMA:
                 row[f'cert_k_{label}'] = float(np.mean([s['cert'] for s in inside]))
                 row[f'cert_quad_k_{label}'] = float(np.mean([s['cert_quad'] for s in inside]))
+        if TARGET != 'pile67':
+            row.update(ss_aliases(row))
+            if merged is not None: row['particles_r_saturated'] = float(((merged.source == 0) | (merged.source == 1)).float().mean())
         if not all(math.isfinite(v) for v in row.values()): raise RuntimeError(f'Nonfinite metrics: {row}')
         run.log({'update': completed, **{'train/'+k: v for k, v in row.items()}})
         if completed % 10 == 0 or completed <= 5:
