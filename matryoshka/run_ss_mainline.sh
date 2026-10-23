@@ -10,8 +10,8 @@
 # 5,000-step SS runs used 8,700), MATRYOSHKA_K_MIN (smallest budget, default 32), MATRYOSHKA_SENSOR (default fisher;
 # write = rank by |r.h| ||u||, one forward; static = |r.h| sqrt(u^T M u)), MATRYOSHKA_BUDGET_POWER (budget density
 # k^-power, default 1.5), MATRYOSHKA_MONITOR_EVERY (default 250),
-# Supersparse budgets: MATRYOSHKA_K_MIN=8 MATRYOSHKA_BUDGET_POWER=2 (median budget 16, 89% of draws at k <= 71, about
-# VPD's 47 active pieces per token; 1% at k >= 710, so the dense end is still trained).
+# Sparser budgets: MATRYOSHKA_K_MIN=8 (power 1.5: median budget 30, 69% of draws at k <= 71, about VPD's 47 active pieces
+# per token, 7.5% at k >= 710; power 2: median 16, 89% at k <= 71, 1% at k >= 710).
 #
 # MATRYOSHKA_RUN (run folder name, default mainline), SS_DATA (target + token rows, default /root/data/ss),
 # SS_OUT (run folders, default /root/runs/matryoshka_ss_mainline), PY (python with torch, wandb and
