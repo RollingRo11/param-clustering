@@ -668,11 +668,23 @@ def check_static_sensor(model, data, weights):
     return result
 
 
+def check_tail_count():
+    """tail_count: dropped pieces within TAIL_COUNT_FRACTION of the k-th kept score, per token."""
+    import math as m
+    s = torch.log(torch.tensor([[1., .5, .2, .09, .11, .04], [3., 2., 1., .3, .29, .5]]))
+    mask = torch.tensor([[1., 1., 0., 0., 0., 0.], [1., 1., 1., 0., 0., 0.]])   # k-th kept: .5 and 1.
+    count = mt.tail_count(s, mask)
+    expected = torch.tensor([float(((torch.tensor([.2, .09, .11, .04]) >= .5 * mt.TAIL_COUNT_FRACTION)).sum()),
+                             float(((torch.tensor([.3, .29, .5]) >= 1. * mt.TAIL_COUNT_FRACTION)).sum())])
+    assert torch.equal(count, expected), (count, expected)
+    return count.tolist()
+
+
 def main():
     torch.backends.cuda.matmul.allow_tf32 = False
     result = dict(sigmoid_topk_jacobian_max_error=check_sigmoid_topk(), bisection_kernel=check_bisection_kernel(),
                   budgets=check_budgets(), frequency=check_frequency(), certificate=check_certificate(),
-                  routing=check_routing(), hard_frequency=check_hard_frequency())
+                  routing=check_routing(), hard_frequency=check_hard_frequency(), tail_count=check_tail_count())
     print(json.dumps(dict(budgets=result['budgets'], frequency=result['frequency'])), flush=True)
     model = target(); data, _ = tokens('train')
     weights = [model.get_submodule(n).weight for n in MODULES]

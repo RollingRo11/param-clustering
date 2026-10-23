@@ -346,6 +346,18 @@ def tail_share(parts, mask):
     return ((1 - mask.detach()) * a).sum(-1) / a.sum(-1).clamp_min(1e-30)
 
 
+TAIL_COUNT_FRACTION = 0.1     # tail_count: a dropped piece counts when its score is at least this share of the k-th kept score
+
+
+def tail_count(s, mask):
+    """Per token, the number of pieces outside the hard keep set whose score is at least TAIL_COUNT_FRACTION of the
+    smallest kept score (the k-th): how many near-misses the top-k cut off. s = log scores [n, N]. Monitoring only. [n]"""
+    with torch.no_grad():
+        kept = mask.detach() > .5
+        kth = s.masked_fill(~kept, float('inf')).min(-1, keepdim=True).values
+        return ((~kept) & (s >= kth + math.log(TAIL_COUNT_FRACTION))).sum(-1).float()
+
+
 def routing_masks(generator, shape):
     """VPD's UniformKSubsetRouter (param_decomp.routing.sample_uniform_k_subset_routing_masks): per position k ~ U{1..24},
     then a random k of the 24 matrices are masked. Returns [24, *shape] bool, MODULES order; True = masked."""
@@ -628,6 +640,7 @@ def accumulate(model, rows, cache, feasible, draws, forward=FORWARD, lp=None, ta
             loss = loss + freq['coeff'] * (raw / freq['scale']) * len(ks)
             extra['freq'] = raw.detach() / freq['scale']
             del raw
+        if forward == 'hard': extra['tail_count'] = tail_count(s, mask).view(len(ks), -1).mean(-1)
         if tail is not None:
             share = tail_share(parts, mask).view(len(ks), -1).mean(-1)
             loss = loss + tail['coeff'] * share.sum()
@@ -674,6 +687,7 @@ def accumulate(model, rows, cache, feasible, draws, forward=FORWARD, lp=None, ta
             if certs is not None: stats[-1].update(cert=certs[0][j], cert_quad=certs[1][j], cert_hinge=certs[2][j])
             if 'freq' in extra: stats[-1]['freq_normalized'] = float(extra['freq'])
             if 'tail' in extra: stats[-1]['tail_share'] = float(extra['tail'][j])
+            if 'tail_count' in extra: stats[-1]['tail_count'] = float(extra['tail_count'][j])
             if 'attacked' in extra: stats[-1]['attacked'] = bool(extra['attacked'][j])
             if j in starts: stats[-1]['adv_kl_start'] = starts[j]
     return leaves, stats
@@ -1007,6 +1021,9 @@ def main():
             if plain: row['kl_plain'] = float(np.mean([s['kl'] for s in plain]))
         if freq is not None: row.update(freq_normalized=float(np.mean([s['freq_normalized'] for s in stats])), freq_scale=freq['scale'])
         if TAIL_COEFF: row['tail_share'] = float(np.mean([s['tail_share'] for s in stats]))
+        if FORWARD == 'hard':
+            row['tail_count'] = float(np.mean([s['tail_count'] for s in stats]))
+            row['tail_count_over_k'] = float(np.mean([s['tail_count'] / s['k'] for s in stats]))
         if CERT_GAMMA:
             # cancellation index: cert over the second-order KL of the top-k mask itself (1 = no cancellation in the tail)
             row.update(cert=float(np.mean([s['cert'] for s in stats])), cert_quad=float(np.mean([s['cert_quad'] for s in stats])),
@@ -1015,6 +1032,7 @@ def main():
         for lo, hi, label in ((0, 100, 'lt100'), (100, 1000, '100_1000'), (1000, 10000, '1000_10000'), (10000, total, 'ge10000')):
             inside = [s for s in stats if lo <= s['k'] < hi]
             if inside: row[f'kl_k_{label}'] = float(np.mean([s['kl'] for s in inside]))
+            if inside and FORWARD == 'hard': row[f'tail_count_k_{label}'] = float(np.mean([s['tail_count'] for s in inside]))
             if inside and adversary is not None: row[f'adv_kl_k_{label}'] = float(np.mean([s['adv_kl'] for s in inside]))
             if merged is not None:
                 for kind, flag in (('attacked', True), ('plain', False)):
