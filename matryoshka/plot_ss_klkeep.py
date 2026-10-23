@@ -15,7 +15,8 @@ VPD = (f'{RUNS}/old/vpd', 'VPD s-9e774a82 (CI)')
 # (run dir, label, trained with, colour): categorical slots 1-3 of the dataviz reference palette, in fixed order.
 TRAINED = [(f'{RUNS}/old/main_tail', 'main_tail (Fisher)', 'fisher', '#2a78d6'),
            (f'{RUNS}/matryoshka_ss_mainline/static_5k', 'static_5k (static)', 'static', '#eb6834'),
-           (f'{RUNS}/matryoshka_ss_mainline/write_5k', 'write_5k @2137 (write)', 'write', '#1baf7a')]
+           (f'{RUNS}/matryoshka_ss_mainline/write_5k', 'write_5k @2137 (write)', 'write', '#1baf7a'),
+           (f'{RUNS}/matryoshka_ss_mainline/static_kmin8_5k', 'static_kmin8_5k (static, K_MIN 8)', 'static', '#eda100')]
 RANKINGS = [('eval_fisher_k8', 'Ranked by per-token Fisher K=8'), ('eval_static', 'Ranked by cached Fisher (static)'),
             ('eval_write', 'Ranked by write size')]
 INK, MUTED, GRID = '#1f1f1e', '#6b6a64', '#e4e3df'
