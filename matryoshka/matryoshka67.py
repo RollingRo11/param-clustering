@@ -34,6 +34,10 @@ Mainline options (the 21 Oct 2026 recipe, main.md; all off by default):
   MATRYOSHKA_SCHEDULE_STEPS   horizon of the lr cosine, the p schedule and the attacker's lr warm-up (control: 8,700).
   MATRYOSHKA_PROJECTION=fp64  exact-sum projection in float64 (the 13B run's fix for slow fp32 drift).
 
+MATRYOSHKA_TARGET=simplestories trains on the 2-layer SimpleStories target (gf6rbga0, 7,104 pieces; common_ss.py) instead
+of the 67M one, with the same method and options; its training config is the control's, inlined (no gim_1h plan to read).
+MATRYOSHKA_WANDB_DIR puts W&B's local files somewhere other than the run directory.
+
 With temperature 1 in log-score space, alpha = a / (a + theta): no temperature knob.
 MATRYOSHKA_FORWARD=hard runs step 3 with the exact hard top-k mask KLKeep uses and passes gradients to
 the scores through the sigmoid top-k Jacobian (MAttr's "+hard" ablation); soft uses alpha both ways.
@@ -67,7 +71,7 @@ try:
 except ImportError:
     triton = None
 
-from common import ROOT, HERE, MODULES, TARGET_SHA, CONTEXT, BATCH, credentials, tokens, batch, target, checkpoint, save_json
+from common import ROOT, HERE, MODULES, TARGET_SHA, CONTEXT, BATCH, PIECE_COUNTS, EXPERIMENT, TARGET, credentials, tokens, batch, target, checkpoint, save_json
 from train_pair import core, method
 from gim_attribution import RULES, capture_gim
 from fisher_attribution import capture_fisher
@@ -119,12 +123,11 @@ SCORES =dict(fisher=f'|r.h| * RMS over K={FISHER_K} sampled next tokens of (g_k.
               gim='|r.h| * |g.u|, g the GIM cotangent of the true next-token CE (gim_1h sensor: T=2 softmax, Q/K/V scaling, frozen RMS)')
 TARGET_STEPS = int(os.environ.get('MATRYOSHKA_STEPS', '5000'))
 MONITOR_EVERY = int(os.environ.get('MATRYOSHKA_MONITOR_EVERY', '100'))
-MONITOR_BUDGETS = (43, 129, 430, 1290, 4301)       # 0.1%, 0.3%, 1%, 3%, 10% of 43,008
+COUNTS = [PIECE_COUNTS[n.split('.')[-1]] for n in MODULES]
+MONITOR_BUDGETS = tuple(round(f * sum(COUNTS)) for f in (.001, .003, .01, .03, .1))   # 67M: 43 ... 4301 of 43,008; SS: 7 ... 710 of 7,104
 MONITOR_ROWS = slice(1000, 1004)                   # held-out; KLKeep uses val rows 0-127
 CHECKPOINT_EVERY = 500
-EXPERIMENT = 'matryoshka67_20260923'
 OUT = Path(os.environ.get('MATRYOSHKA_OUT', ROOT/f'output/{EXPERIMENT}/main'))
-COUNTS = [dict(q_proj=1024, k_proj=1024, v_proj=1024, o_proj=1024, c_fc=3072, down_proj=3584)[n.split('.')[-1]] for n in MODULES]
 EXIT_CONTINUE = 75
 
 
@@ -697,11 +700,15 @@ def main():
     monitor_rows = torch.from_numpy(np.array(val[MONITOR_ROWS], dtype=np.int64)).cuda()
     weights = [model.get_submodule(n).weight for n in MODULES]
     total = sum(COUNTS)
-    control = json.loads((ROOT/'output/gim_1h/plan.json').read_text())
-    assert control['sensor'] == 'gim' and control['rules'] == RULES
-    assert control['target_sha256'] == TARGET_SHA and control['data_sha256'] == manifest['train']['sha256']
-    assert control['component_counts'] == dict(zip(MODULES, COUNTS))
-    cfg = method.TrainConfig(**control['training_config'])
+    if TARGET == 'pile67':
+        control = json.loads((ROOT/'output/gim_1h/plan.json').read_text())
+        assert control['sensor'] == 'gim' and control['rules'] == RULES
+        assert control['target_sha256'] == TARGET_SHA and control['data_sha256'] == manifest['train']['sha256']
+        assert control['component_counts'] == dict(zip(MODULES, COUNTS))
+        cfg = method.TrainConfig(**control['training_config'])
+    else:
+        from common import TRAINING_CONFIG
+        cfg = method.TrainConfig(**TRAINING_CONFIG)
     assert cfg.steps == 8700 and cfg.precision == 'bf16' and cfg.projection_precision == 'fp32'
     assert BATCH % BUDGET_CONTEXTS == 0
     cfg = replace(cfg, steps=SCHEDULE_STEPS, projection_precision=PROJECTION)    # defaults: the control's own
@@ -803,6 +810,13 @@ def main():
         plan['init'] = dict(checkpoint=INIT, note='pieces, Adam state, budget generator, RNG states and step count (and the '
                                                   'adversary\'s sources when both runs have one) of that checkpoint; the lr '
                                                   'schedule continues from its step')
+    if TARGET != 'pile67':
+        # The plan's wording is the 67M run's; restate its counts, and drop the 67M controls this target has no copy of.
+        text = json.dumps(plan)
+        for old, new in (('24 matrices', f'{len(MODULES)} matrices'), ('U{1..24}', f'U{{1..{len(MODULES)}}}'), ('43,008', f'{total:,}')):
+            text = text.replace(old, new)
+        plan = dict(json.loads(text), target=TARGET, matched_control=None, initialization='seed-0 projected factors (core.initialize_pieces)',
+                    data='train rows in order, one row per context, never repeated')
     pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, COUNTS)]
     weight_mass = float(sum(w.double().pow(2).sum() for w in weights))
     weight_norms = [float(w.double().pow(2).sum()) for w in weights]
@@ -848,9 +862,10 @@ def main():
     if not resuming:
         save_json(plan, OUT/'plan.json'); print(json.dumps(dict(plan=plan)), flush=True)
     previous = json.loads((OUT/'wandb.json').read_text()) if resuming else None
+    name = f'parauto-matryoshka-{FORWARD}-fisher-k4-5000' if OUT.name == 'main' else f'parauto-matryoshka-{OUT.name}'
     run = wandb.init(project='matryoshka', entity='rohan-kathuria-neu', group=EXPERIMENT,
-                     name=f'parauto-matryoshka-{FORWARD}-fisher-k4-5000' if OUT.name == 'main' else f'parauto-matryoshka-{OUT.name}',
-                     job_type='training', dir=str(OUT), config=plan,
+                     name=name if TARGET == 'pile67' else f'ss-{OUT.name}', job_type='training',
+                     dir=os.environ.get('MATRYOSHKA_WANDB_DIR', str(OUT)), config=plan,
                      id=previous['id'] if previous else None, resume='must' if previous else None)
     save_json(dict(id=run.id, url=run.url), OUT/'wandb.json')
     run.define_metric('update'); run.define_metric('train/*', step_metric='update'); run.define_metric('monitor/*', step_metric='update')

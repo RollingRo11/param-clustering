@@ -15,6 +15,8 @@ CONTEXT, BATCH = 512, 64
 STEPS = (POSITIONS + CONTEXT*BATCH-1)//(CONTEXT*BATCH)
 MODULES = tuple(f'h.{i}.{m}' for i in range(4) for m in
                 ('attn.q_proj', 'attn.k_proj', 'attn.v_proj', 'attn.o_proj', 'mlp.c_fc', 'mlp.down_proj'))
+EXPERIMENT = 'matryoshka67_20260923'          # matryoshka67.py's output folder and W&B group
+PIECE_COUNTS = dict(q_proj=1024, k_proj=1024, v_proj=1024, o_proj=1024, c_fc=3072, down_proj=3584)
 R2_PREFIX = 'parauto/vpd_matched_1b_20260910'
 
 
@@ -119,3 +121,10 @@ def checkpoint(value, path):
     torch.save(cpu_tree(value), tmp)
     os.replace(tmp, path)
 
+
+# MATRYOSHKA_TARGET=simplestories swaps in the 2-layer SimpleStories target, its data and piece counts (common_ss.py)
+# for every script that imports common; the default is the 67M Pile target above.
+TARGET = os.environ.get('MATRYOSHKA_TARGET', 'pile67')
+assert TARGET in ('pile67', 'simplestories'), TARGET
+if TARGET == 'simplestories':
+    from common_ss import *  # noqa: E402,F401,F403

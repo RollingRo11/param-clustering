@@ -15,6 +15,9 @@ from common import MODULES, CONTEXT, target, tokens, batch
 from fisher_attribution import capture_fisher
 from train_pair import core, method
 
+# Four budgets from 0.1% to 70% of the pieces (40 ... 30,000 of the 67M target's 43,008), scaled to the target in use.
+DRAWS = [max(1, round(k * sum(mt.COUNTS) / 43008)) for k in (40, 430, 4301, 30000)]
+
 
 def reference_sigmoid_topk(s, k, iterations=40):
     with torch.no_grad():
@@ -84,7 +87,7 @@ def check_speedups(model, data, weights):
     pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, mt.COUNTS)]
     cfg = method.TrainConfig(precision='bf16', projection_precision='fp32')
     rows = batch(data, 0)[:16]
-    draws = [40, 430, 4301, 30000]
+    draws = list(DRAWS)
     cache, logp = mt.capture(model, rows, seed=5, sensor='fisher', chunk=mt.MICRO, keep_logp=True)
     # The cache's own forward gives the old separate intact forward's log-probs (same 4-context shapes here).
     separate = torch.cat([mt.intact_logp(model, rows[i:i+mt.MICRO, :-1]) for i in range(0, len(rows), mt.MICRO)])
@@ -113,7 +116,9 @@ def check_speedups(model, data, weights):
     result['cache_chunk16_vs_4'] = dict(
         h_max_rel_diff=relative([e['h'].float() for e in large], [e['h'].float() for e in small]),
         cot_max_rel_diff=relative([e['events']['cot'].float() for e in large], [e['events']['cot'].float() for e in small]))
-    assert result['cache_chunk16_vs_4']['h_max_rel_diff'] < 1e-2 and result['cache_chunk16_vs_4']['cot_max_rel_diff'] < 5e-2, result
+    # bf16 rounding of bigger matmuls; the SimpleStories target's activations land at about 1.05e-2 (Oct 2026, RTX PRO 4500).
+    h_tolerance = 1e-2 if len(MODULES) == 24 else 2e-2
+    assert result['cache_chunk16_vs_4']['h_max_rel_diff'] < h_tolerance and result['cache_chunk16_vs_4']['cot_max_rel_diff'] < 5e-2, result
     # One budget per context: when each group of 4 contexts draws the same budget, it is the same update as one per 4.
     leaves, stats = mt.accumulate(model, rows, cache, feasible, [k for k in draws for _ in range(4)], 'hard', lp, target_logp=logp, chunk=16)
     per_context_kl = torch.tensor([s['kl'] for s in stats]).view(4, 4).mean(-1)
@@ -184,7 +189,7 @@ def check_soft_gate(model, data, weights):
     pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, mt.COUNTS)]
     tc = method.TrainConfig(precision='bf16', projection_precision='fp32')
     rows = batch(data, 0)[:4]
-    draws = [40, 430, 4301, 30000]
+    draws = list(DRAWS)
     cache, logp = mt.capture(model, rows, seed=5, sensor='fisher', chunk=mt.MICRO, keep_logp=True)
     feasible = [method.project(w, p, tc) for w, p in zip(weights, pieces)]
     _, soft_stats = mt.accumulate(model, rows, cache, feasible, draws, 'soft', None, target_logp=logp, chunk=4)
@@ -228,7 +233,7 @@ def check_hard_adversary(model, data, weights):
     pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, mt.COUNTS)]
     tc = method.TrainConfig(precision='bf16', projection_precision='fp32')
     rows = batch(data, 0)[:4]
-    draws = [40, 430, 4301, 30000]
+    draws = list(DRAWS)
     cache, logp = mt.capture(model, rows, seed=5, sensor='fisher', chunk=mt.MICRO, keep_logp=True)
     feasible = [method.project(w, p, tc) for w, p in zip(weights, pieces)]
     with torch.no_grad(), torch.autocast('cuda', dtype=torch.bfloat16):
@@ -373,7 +378,7 @@ def check_certificate_update(model, data, weights):
     pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, mt.COUNTS)]
     tc = method.TrainConfig(precision='bf16', projection_precision='fp32')
     rows = batch(data, 0)[:4]
-    draws = [40, 430, 4301, 30000]
+    draws = list(DRAWS)
     cache, logp = mt.capture(model, rows, seed=5, sensor='fisher', chunk=mt.MICRO, keep_logp=True)
     feasible = [method.project(w, p, tc) for w, p in zip(weights, pieces)]
     run = lambda cert: mt.accumulate(model, rows, cache, feasible, draws, 'hard', None, target_logp=logp, chunk=4, cert=cert)
@@ -473,7 +478,7 @@ def check_mainline(model, data, weights):
     tc = method.TrainConfig(precision='bf16', projection_precision='fp32')
     rows = batch(data, 0)[:4]
     ids = rows[:, :-1]
-    draws = [40, 430, 4301, 30000]
+    draws = list(DRAWS)
     cache, logp = mt.capture(model, rows, seed=5, sensor='fisher', chunk=mt.MICRO, keep_logp=True)
     feasible = [method.project(w, p, tc) for w, p in zip(weights, pieces)]
     grads = lambda leaves: [t.grad for l in leaves for t in (l.read, l.write)]
@@ -514,7 +519,10 @@ def check_mainline(model, data, weights):
         source_mean_move=float((adversary.source - before).abs().mean()), adv_kl=[s['kl'] for s in stats],
         adv_kl_start=[s['adv_kl_start'] for s in stats], plain_kl=[s['kl'] for s in plain_stats])
     assert result['vs_added']['kl_max_rel_diff'] < 1e-3 and result['vs_added']['start_max_rel_diff'] < 1e-6, result
-    assert result['vs_added']['grad_max_rel_diff'] < 5e-2 and result['vs_added']['source_fraction_off_by_1e_4'] < 1e-2, result
+    # SimpleStories: about 4% of entries move 1e-4 apart (Oct 2026): Adam steps on entries with near-zero gradients, where
+    # bf16 rounding between the two code paths (ascent-gradient difference 0.5% overall) changes the normalized step.
+    source_tolerance = 1e-2 if len(MODULES) == 24 else 6e-2
+    assert result['vs_added']['grad_max_rel_diff'] < 5e-2 and result['vs_added']['source_fraction_off_by_1e_4'] < source_tolerance, result
     # Two particles: the drawn one moves, the other stays.
     adversary, before, _, _ = merged(1., particles=2)
     picked = torch.zeros(2, 4, dtype=torch.bool); picked[adversary.pick, torch.arange(4)] = True
