@@ -8,7 +8,11 @@
 # Env (optional): MATRYOSHKA_STEPS (default: one epoch of the train split, 18,522 updates = 607M tokens; the lr cosine,
 # p schedule and attacker warm-up are stretched to it unless MATRYOSHKA_SCHEDULE_STEPS sets another horizon; the earlier
 # 5,000-step SS runs used 8,700), MATRYOSHKA_K_MIN (smallest budget, default 32), MATRYOSHKA_SENSOR (default fisher;
-# write = rank by |r.h| ||u||, one forward), MATRYOSHKA_MONITOR_EVERY (default 250),
+# write = rank by |r.h| ||u||, one forward; static = |r.h| sqrt(u^T M u)), MATRYOSHKA_BUDGET_POWER (budget density
+# k^-power, default 1.5), MATRYOSHKA_MONITOR_EVERY (default 250),
+# Supersparse budgets: MATRYOSHKA_K_MIN=8 MATRYOSHKA_BUDGET_POWER=2 (median budget 16, 89% of draws at k <= 71, about
+# VPD's 47 active pieces per token; 1% at k >= 710, so the dense end is still trained).
+#
 # MATRYOSHKA_RUN (run folder name, default mainline), SS_DATA (target + token rows, default /root/data/ss),
 # SS_OUT (run folders, default /root/runs/matryoshka_ss_mainline), PY (python with torch, wandb and
 # param_decomp's model classes; default /root/venvs/ss/bin/python), VPD_CODE (param_decomp checkout for PYTHONPATH).
@@ -28,7 +32,7 @@ py="${PY:-/root/venvs/ss/bin/python}"
 # The mainline recipe (main.md; knobs in newmethod.md), as on 67M, except the attacker's lr is constant from the first
 # update (MATRYOSHKA_ADV_LR_WARMUP=0), as in the SimpleStories runs it was measured on (particles_ss.py).
 export MATRYOSHKA_FORWARD=hard MATRYOSHKA_SENSOR="${MATRYOSHKA_SENSOR:-fisher}" MATRYOSHKA_K_MIN="${MATRYOSHKA_K_MIN:-32}" \
-  MATRYOSHKA_BUDGET_POWER=1.5 MATRYOSHKA_BUDGET_CONTEXTS=1 MATRYOSHKA_BUDGET_STRATIFIED=1 \
+  MATRYOSHKA_BUDGET_POWER="${MATRYOSHKA_BUDGET_POWER:-1.5}" MATRYOSHKA_BUDGET_CONTEXTS=1 MATRYOSHKA_BUDGET_STRATIFIED=1 \
   MATRYOSHKA_LP_COEFF=1 MATRYOSHKA_MASS_COEFF=10 MATRYOSHKA_FREQ_COEFF=0.5 MATRYOSHKA_TAIL_COEFF=1 \
   MATRYOSHKA_ADV_FRACTION=0.9 MATRYOSHKA_PARTICLES=1 \
   MATRYOSHKA_ADV_LR=0.02 MATRYOSHKA_ADV_BETA1=0.01 MATRYOSHKA_ADV_BETA2=0.99 MATRYOSHKA_ADV_LR_WARMUP=0 \
