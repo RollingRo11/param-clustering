@@ -689,6 +689,9 @@ def main():
     print(json.dumps(dict(write_sensor=result['write_sensor'])), flush=True)
     result['static_sensor'] = check_static_sensor(model, data, weights)
     print(json.dumps(dict(static_sensor=result['static_sensor'])), flush=True)
+    if mt.SENSOR == 'static':      # the checks below use the run's own sensor
+        import static_fisher
+        mt.STATIC_METRIC = static_fisher.estimate(model, data, rows=16, k=4)
     print(json.dumps(dict(mainline=result['mainline'])), flush=True)
     pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, mt.COUNTS)]
     rows = batch(data, 0)[:mt.MICRO]
