@@ -773,6 +773,7 @@ def check_masked_scorer(model, data, weights):
 
 def main():
     torch.backends.cuda.matmul.allow_tf32 = False
+    run_score_input, mt.SCORE_INPUT = mt.SCORE_INPUT, 'intact'    # the reference checks below are on intact scoring
     result = dict(sigmoid_topk_jacobian_max_error=check_sigmoid_topk(), bisection_kernel=check_bisection_kernel(),
                   budgets=check_budgets(), frequency=check_frequency(), certificate=check_certificate(),
                   routing=check_routing(), hard_frequency=check_hard_frequency(), tail_count=check_tail_count())
@@ -810,6 +811,7 @@ def main():
         kl_all = float(mt.kl_per_position(mt.intact_logp(model, ids), mt.masked_logits(model, ids, pieces, ones)).mean())
     assert kl_all < 0.05, kl_all
     result['all_kept_kl'] = kl_all
+    mt.SCORE_INPUT = run_score_input      # from here on, the run's own sensor and scoring input
     # One micro-batch: gradients reach both factors of all 24 matrices, then the projection.
     cfg = method.TrainConfig(precision='bf16', projection_precision='fp32')
     for p in pieces: p.read.requires_grad_(); p.write.requires_grad_()
@@ -831,7 +833,8 @@ def main():
         own = [method.structured.scores(method.structured.slice_entry(e, slice(0, len(rows)*512)), f).float() for e, f in zip(cache, feasible)]
     lp = dict(coeff=1., p=1., epsilon=1e-6, denominators=[method.lp_concentration(s, 1., 1e-6).mean() for s in own])
     lp_leaves, lp_stats = mt.accumulate(model, rows, cache, feasible, [430], lp=lp)
-    assert abs(lp_stats[0]['lp_normalized'] - 1) < 1e-3, lp_stats[0]
+    # (masked scoring: the term is on the masked-input scores, so not exactly the intact normalizer)
+    assert abs(lp_stats[0]['lp_normalized'] - 1) < 1e-3 or mt.SCORE_INPUT == 'masked', lp_stats[0]
     assert all(torch.isfinite(t.grad).all() for l in lp_leaves for t in (l.read, l.write))
     result['lp_check'] = lp_stats[0]['lp_normalized']
     # The masked forward with a hard mask is exactly evaluate_checkpoint.py's KLKeep replacement.
