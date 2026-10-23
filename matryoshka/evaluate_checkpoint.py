@@ -27,7 +27,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--expected-step', type=int, default=2000)
     parser.add_argument('--run-tag', default=None)
-    parser.add_argument('--sensor', choices=['gradient','ig','gim','write','static','finite','fisher','fisher_gim'], default='gradient')
+    parser.add_argument('--sensor', choices=['gradient','ig','gim','write','static','interact','finite','fisher','fisher_gim'], default='gradient')
     parser.add_argument('--ig-k', type=int, default=5)
     parser.add_argument('--fisher-k', type=int, default=8)
     args = parser.parse_args(); credentials(); torch.set_num_threads(4)
@@ -71,7 +71,7 @@ def main():
             owners.append((compact.cuda(), len(used)))
     # static sensor: the run's fixed output metric (static_fisher.py), saved in every model.pth
     metric = [(f['L'].cuda(), f['eigenvalues']) for f in saved['static_metric']] if 'static_metric' in saved else None
-    if metric is None and args.sensor == 'static':     # trained with another sensor: the target's own metric, cached
+    if metric is None and args.sensor in ('static', 'interact'):     # trained with another sensor: the target's own metric, cached
         import static_fisher
         metric = static_fisher.cached(model, os.environ.get('MATRYOSHKA_STATIC_CACHE', str(ROOT/'static_fisher.pt')))
     del saved
@@ -95,10 +95,11 @@ def main():
                 elif args.sensor == 'write':
                     from write_attribution import capture_inputs
                     cache = capture_inputs(model, rows)
-                elif args.sensor == 'static':
+                elif args.sensor in ('static', 'interact'):
                     import static_fisher
                     from write_attribution import capture_inputs
-                    cache = static_fisher.entries(capture_inputs(model, rows), metric)
+                    cache = static_fisher.entries(capture_inputs(model, rows), metric,
+                                                  'metric_write' if args.sensor == 'static' else 'metric_interact')
                 elif args.sensor == 'finite':
                     from finite_ablation import capture_finite
                     cache = capture_finite(model, rows)
@@ -163,7 +164,7 @@ def main():
                   ce=s['ce']/s['n']) for f, s in zip(fractions, sums)]
     result = dict(method=args.method, curve=curve, baseline_ce=baseline_ce/(args.sequences*512),
                   positions=args.sequences*512, total_components=sum(counts),
-                  delta_components_included=False, sensor=(f'scalar CE integrated gradients k={args.ig_k}' if args.sensor == 'ig' else 'scalar CE GIM' if args.sensor == 'gim' else 'write size |r.h| ||u||' if args.sensor == 'write' else 'static Fisher write |r.h| sqrt(u^T M u)' if args.sensor == 'static' else 'per-piece finite local ablation' if args.sensor == 'finite' else f'Fisher k={args.fisher_k} sampled labels' + (' + GIM rules' if args.sensor == 'fisher_gim' else '') if args.sensor.startswith('fisher') else 'scalar CE') if args.method == 'parauto' else 'VPD CI',
+                  delta_components_included=False, sensor=(f'scalar CE integrated gradients k={args.ig_k}' if args.sensor == 'ig' else 'scalar CE GIM' if args.sensor == 'gim' else 'write size |r.h| ||u||' if args.sensor == 'write' else 'static Fisher write |r.h| sqrt(u^T M u)' if args.sensor == 'static' else 'static Fisher interaction 2 v.y - ||v||^2' if args.sensor == 'interact' else 'per-piece finite local ablation' if args.sensor == 'finite' else f'Fisher k={args.fisher_k} sampled labels' + (' + GIM rules' if args.sensor == 'fisher_gim' else '') if args.sensor.startswith('fisher') else 'scalar CE') if args.method == 'parauto' else 'VPD CI',
                   seconds=time.perf_counter()-started, data_sha256=manifest['val']['sha256'])
     if integration_audits:
         estimate=sum(a['signed_attribution_sum'] for a in integration_audits)/(args.sequences*512)

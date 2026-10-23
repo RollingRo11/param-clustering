@@ -680,6 +680,29 @@ def check_tail_count():
     return count.tolist()
 
 
+def check_interact_score(model, data, weights):
+    """metric_interact: per token and matrix, 2 v_c.y - ||v_c||^2 = ||y||^2 - ||y - v_c||^2 with v_c = a_c L^T u_c and
+    y = sum_c v_c, checked by brute force in float64."""
+    import static_fisher
+    pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, mt.COUNTS)]
+    factors = static_fisher.estimate(model, data, rows=16, k=4)
+    rows = batch(data, 0)[:1]
+    from write_attribution import capture_inputs
+    cache = static_fisher.entries(capture_inputs(model, rows), factors, 'metric_interact')
+    worst = 0.
+    for e, q, (L, _) in zip(cache, pieces, factors):
+        sub = dict(e, h=e['h'][:8])
+        with torch.no_grad(), torch.autocast('cuda', dtype=torch.bfloat16):
+            ours = method.structured.scores(sub, q).double()
+        a = sub['h'].double() @ q.read.double()                                   # [8, C]
+        v = a[:, :, None] * (L.double().T @ q.write.double()).T[None]              # [8, C, rank]
+        y = v.sum(1, keepdim=True)
+        brute = y.square().sum(-1) - (y - v).square().sum(-1)
+        worst = max(worst, float((ours - brute).abs().max() / brute.abs().max()))
+    assert worst < 1e-3, worst
+    return dict(interact_max_rel_diff=worst)
+
+
 def main():
     torch.backends.cuda.matmul.allow_tf32 = False
     result = dict(sigmoid_topk_jacobian_max_error=check_sigmoid_topk(), bisection_kernel=check_bisection_kernel(),
@@ -701,6 +724,8 @@ def main():
     print(json.dumps(dict(write_sensor=result['write_sensor'])), flush=True)
     result['static_sensor'] = check_static_sensor(model, data, weights)
     print(json.dumps(dict(static_sensor=result['static_sensor'])), flush=True)
+    result['interact_score'] = check_interact_score(model, data, weights)
+    print(json.dumps(dict(interact_score=result['interact_score'])), flush=True)
     if mt.SENSOR == 'static':      # the checks below use the run's own sensor
         import static_fisher
         mt.STATIC_METRIC = static_fisher.estimate(model, data, rows=16, k=4)

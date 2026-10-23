@@ -32,9 +32,9 @@ def estimate(model, data, rows=ROWS, k=FISHER_K, seed=SEED, microbatch=16):
     return factors
 
 
-def entries(cache, factors):
-    """write_attribution.capture_inputs entries turned into metric_write entries (same h)."""
-    return [dict(e, kind='metric_write', shared={'sensor': 'static_fisher', 'metric': L.to(e['h'].device)}) for e, (L, _) in zip(cache, factors)]
+def entries(cache, factors, kind='metric_write'):
+    """write_attribution.capture_inputs entries turned into metric_write (or metric_interact) entries (same h)."""
+    return [dict(e, kind=kind, shared={'sensor': 'static_fisher', 'metric': L.to(e['h'].device)}) for e, (L, _) in zip(cache, factors)]
 
 
 def cached(model, path):

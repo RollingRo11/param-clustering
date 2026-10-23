@@ -141,6 +141,17 @@ def scores(entry, pieces):
         h = entry['h'] if torch.is_autocast_enabled(pieces.read.device.type) else entry['h'].to(pieces.read.dtype)
         read = h @ pieces.read
         return norm_input(read).abs() * norm_input(pieces.write).square().sum(0).add(1e-30).sqrt()
+    if entry['kind'] == 'metric_interact':
+        # Interaction-aware score in the fixed metric M = L L^T (static_fisher.py): with v_c = a_c L^T u_c and
+        # y = sum_c v_c (the matrix's whole output, L^T W h, since the pieces sum to W), 2 v_c.y - ||v_c||^2 is how much
+        # keeping c alone reduces ||y - kept||^2; it sees overlap and cancellation with all other pieces through y.
+        # In KL units (squared), may be negative; computed in fp32 because of the cancellation.
+        with torch.autocast(pieces.read.device.type, enabled=False):
+            read, write = pieces.read.float(), pieces.write.float()
+            a = entry['h'].float() @ read                                      # [n, C]
+            basis = entry['shared']['metric'].float().T @ write                # L^T U [rank, C]
+            w = (a @ write.T) @ entry['shared']['metric'].float()              # L^T (sum_c a_c u_c), as a row [n, rank]
+            return 2 * a * (w @ basis) - a.square() * basis.square().sum(0)
     if entry['kind'] == 'metric_write':
         # |r_c.h| sqrt(u_c^T M u_c): the write's size in a fixed output metric M = L L^T (static_fisher.py: the
         # target's token-averaged output Fisher), shared['metric'] = L [d_out, rank]. Needs no loss cotangent.
