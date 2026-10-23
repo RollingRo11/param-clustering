@@ -41,6 +41,11 @@ the intact model per update and no loss gradient, so the ranking needs no backwa
 MATRYOSHKA_SENSOR=static ranks by |r_c.h| sqrt(u_c^T M u_c), M the target's token-averaged output Fisher at that matrix
 (static_fisher.py, estimated once per run and saved beside it and in every model.pth): the write sensor's forward, measured
 in the metric the Fisher sensor uses, with the per-token Fisher replaced by its average.
+MATRYOSHKA_FLOORS=1 (static sensor): every piece's score counts only above its own learned floor f_c,
+score -> softplus((score - f_c) / tau_c) * tau_c (+1e-6 score, to order the pieces under their floors), tau_c = f_c / 10;
+log f_c starts at log of the piece's median score on the first batch and trains with the pieces (lr x FLOOR_LR_SCALE)
+through the ranking's gradient and the Lp / tail / frequency terms, which see the floored scores. An interference-level
+activation then scores ~0, so such pieces leave the keep set as a block (floored).
 MATRYOSHKA_SCORE_INPUT=masked (static or write sensor, hard forward): the intact ranking only decides how many pieces each
 matrix keeps per token (its share of the global top-k); which pieces is decided inside the masked forward, layer by layer,
 by the same score on the input that matrix actually receives there (MaskedScorer). The loss, Lp, frequency and tail terms,
@@ -100,9 +105,14 @@ assert FORWARD in ('soft', 'hard')
 SENSOR = os.environ.get('MATRYOSHKA_SENSOR', 'fisher')          # the per-token score that ranks pieces
 assert SENSOR in ('fisher', 'gim', 'write', 'static')
 STATIC_METRIC = None      # static: [(L, eigenvalues)] per matrix (static_fisher.py), set by main or a test
+FLOORS = os.environ.get('MATRYOSHKA_FLOORS', '0') == '1'        # learned per-piece score floors (floored); static sensor
+FLOOR_LR_SCALE = float(os.environ.get('MATRYOSHKA_FLOOR_LR_SCALE', '10'))   # floors' lr over the pieces' (cosine) lr
+assert not FLOORS or SENSOR == 'static', 'floors are in static-score units'
+FLOOR = None              # FLOORS: log floor per piece [N] (a leaf trained with the pieces), set by main or a test
 SCORE_INPUT = os.environ.get('MATRYOSHKA_SCORE_INPUT', 'intact')   # masked: rank each matrix on its masked-forward input (MaskedScorer)
 assert SCORE_INPUT in ('intact', 'masked')
 assert SCORE_INPUT == 'intact' or (SENSOR in ('static', 'write') and FORWARD == 'hard'), 'masked scoring: forward-only sensors, hard forward'
+assert not (FLOORS and SCORE_INPUT == 'masked')
 LP_COEFF = float(os.environ.get('MATRYOSHKA_LP_COEFF', '0'))    # weight of the old par-auto Lp term; 0 = off
 assert LP_COEFF >= 0 and math.isfinite(LP_COEFF)
 ADV_COEFF = float(os.environ.get('MATRYOSHKA_ADV_COEFF', '0'))  # weight of VPD's persistent PGD loss (Adversary); 0 = off
@@ -317,13 +327,24 @@ def capture(model, rows, seed, sensor=None, chunk=None, keep_logp=False):
     return cache, torch.cat(logps)
 
 
+def floored(parts):
+    """MATRYOSHKA_FLOORS: each matrix's scores [n, C] above the pieces' learned floors (FLOOR), smoothly."""
+    if FLOOR is None: return parts
+    out = []
+    for x, f in zip(parts, FLOOR.exp().split(COUNTS)):
+        tau = f.detach() / 10
+        out.append(torch.nn.functional.softplus((x.float() - f) / tau) * tau + 1e-6 * x.float())
+    return out
+
+
 def log_scores(cache, pieces, lo, hi, parts_out=None):
     """log score for positions lo:hi, all matrices concatenated in MODULES order: [n, N] fp32.
-    parts_out (a list) also receives the per-matrix scores themselves, for the Lp term."""
+    parts_out (a list) also receives the per-matrix scores themselves, for the Lp term. With FLOOR, the floored scores."""
     parts = []
     with torch.autocast('cuda', dtype=torch.bfloat16):
         for entry, p in zip(cache, pieces):
             parts.append(method.structured.scores(method.structured.slice_entry(entry, slice(lo, hi)), p))
+    parts = floored(parts)
     if parts_out is not None: parts_out.extend(parts)
     return torch.cat(parts, -1).float().clamp_min(1e-30).log()
 
@@ -785,7 +806,7 @@ def monitor(model, rows, pieces, seed):
     ids = rows[:, :-1]
     with torch.no_grad():
         with torch.autocast('cuda', dtype=torch.bfloat16):
-            scores = torch.cat([method.structured.scores(e, p) for e, p in zip(cache, pieces)], -1).float()
+            scores = torch.cat(floored([method.structured.scores(e, p) for e, p in zip(cache, pieces)]), -1).float()
         del cache
         order = scores.argsort(dim=-1, descending=True, stable=True)
         target_logp = intact_logp(model, ids)
@@ -799,7 +820,7 @@ def monitor(model, rows, pieces, seed):
 
 
 def main():
-    global STATIC_METRIC
+    global STATIC_METRIC, FLOOR
     credentials(); torch.set_num_threads(4); torch.backends.cuda.matmul.allow_tf32 = False
     torch.manual_seed(0); np.random.seed(0); random.seed(0)
     OUT.mkdir(parents=True, exist_ok=True)
@@ -929,6 +950,10 @@ def main():
         plan['init'] = dict(checkpoint=INIT, note='pieces, Adam state, budget generator, RNG states and step count (and the '
                                                   'adversary\'s sources when both runs have one) of that checkpoint; the lr '
                                                   'schedule continues from its step')
+    if FLOORS:
+        plan['floors'] = dict(lr_scale=FLOOR_LR_SCALE, init='log median static score per piece, first batch, initial pieces',
+                              score='softplus((score - f) / tau) * tau + 1e-6 score, tau = f / 10; ranking and Lp / tail / '
+                                    'frequency terms all on the floored scores')
     if SCORE_INPUT == 'masked':
         plan['score_input'] = dict(kind='masked', rule='per token, the intact global top-k fixes how many pieces each matrix keeps; '
                                    'each matrix then keeps its top pieces by the same score on the input it receives in the masked '
@@ -963,6 +988,14 @@ def main():
         del first
     parameters = [t.requires_grad_() for p in pieces for t in (p.read, p.write)]
     optimizer = torch.optim.Adam(parameters, lr=cfg.lr, betas=(0.9, 0.99))
+    if FLOORS:
+        with torch.no_grad():       # log of each piece's median score on the first batch, at the initial pieces
+            first = capture(model, batch(data, 0), seed=321, chunk=MICRO)
+            with torch.autocast('cuda', dtype=torch.bfloat16):
+                medians = [method.structured.scores(e, p).float().median(0).values for e, p in zip(first, pieces)]
+            del first
+        FLOOR = torch.cat(medians).clamp_min(1e-12).log().requires_grad_()
+        optimizer.add_param_group(dict(params=[FLOOR], lr_scale=FLOOR_LR_SCALE))
     budgets = torch.Generator().manual_seed(cfg.seed + 505)
     adversary = Adversary(adversary_cfg, ADV_COEFF, BATCH, seed=cfg.seed + 606) if ADV_COEFF else None
     merged = MergedAdversary(merged_cfg, ADV_FRACTION, PARTICLES, BATCH, seed=cfg.seed + 606) if ADV_FRACTION else None
@@ -979,6 +1012,8 @@ def main():
         with torch.no_grad():
             for p, s in zip(pieces, full['state']['pieces'], strict=True):
                 p.read.copy_(s['read']); p.write.copy_(s['write'])
+        if FLOORS:
+            with torch.no_grad(): FLOOR.copy_(full['state']['floor'].cuda())
         optimizer.load_state_dict(full['state']['optimizer'])
         budgets.set_state(full['state']['budgets'])
         if adversary is not None and 'adversary' in full['state']: adversary.load(full['state']['adversary'])
@@ -1010,9 +1045,11 @@ def main():
                         data_sha256=manifest['train']['sha256'], target_sha256=TARGET_SHA)
         factors = [{'read': p.read.detach(), 'write': p.write.detach()} for p in pieces]
         extra = {} if STATIC_METRIC is None else dict(static_metric=[dict(L=L, eigenvalues=v) for L, v in STATIC_METRIC])
+        if FLOORS: extra['score_floor'] = FLOOR.detach().exp()       # static-score units; ranking: matryoshka67.floored
         checkpoint(dict(**identity, factors=factors, provenance=dict(kind='Matryoshka masked-forward training', plan=plan,
                         training_config=asdict(cfg)), **extra), out/'model.pth')
         state = dict(pieces=factors, optimizer=optimizer.state_dict(), budgets=budgets.get_state())
+        if FLOORS: state['floor'] = FLOOR.detach()
         if adversary is not None: state['adversary'] = adversary.state()
         if merged is not None: state['merged_adversary'] = merged.state()
         if freq is not None: state['freq_scale'] = freq['scale']
@@ -1037,7 +1074,7 @@ def main():
     completed = start
     for step in range(start, TARGET_STEPS):
         tick = time.perf_counter()
-        for group in optimizer.param_groups: group['lr'] = core.cosine_lr(step, cfg)
+        for group in optimizer.param_groups: group['lr'] = core.cosine_lr(step, cfg) * group.get('lr_scale', 1.)
         if adversary is not None: adversary.set_lr(step, cfg.steps)
         if merged is not None: merged.set_lr(step, cfg.steps); merged.draw(step)
         router = torch.Generator(device='cuda').manual_seed(cfg.seed + 707 + 1_000_003 * step) if ROUTING != 'all' else None
@@ -1098,6 +1135,7 @@ def main():
             if plain: row['kl_plain'] = float(np.mean([s['kl'] for s in plain]))
         if freq is not None: row.update(freq_normalized=float(np.mean([s['freq_normalized'] for s in stats])), freq_scale=freq['scale'])
         if TAIL_COEFF: row['tail_share'] = float(np.mean([s['tail_share'] for s in stats]))
+        if FLOORS: row.update(floor_log_mean=float(FLOOR.mean()), floor_log_std=float(FLOOR.std()))
         if FORWARD == 'hard':
             row['tail_count'] = float(np.mean([s['tail_count'] for s in stats]))
             row['tail_count_over_k'] = float(np.mean([s['tail_count'] / s['k'] for s in stats]))

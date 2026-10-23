@@ -80,6 +80,7 @@ def main():
             owners.append((compact.cuda(), len(used)))
     # static sensor: the run's fixed output metric (static_fisher.py), saved in every model.pth
     metric = [(f['L'].cuda(), f['eigenvalues']) for f in saved['static_metric']] if 'static_metric' in saved else None
+    floor_trained = saved['score_floor'].cuda() if 'score_floor' in saved else None   # MATRYOSHKA_FLOORS runs
     if metric is None and args.sensor in ('static', 'interact', 'greedy', 'gelu'):     # trained with another sensor: the target's own metric, cached
         import static_fisher
         metric = static_fisher.cached(model, os.environ.get('MATRYOSHKA_STATIC_CACHE', str(ROOT/'static_fisher.pt')))
@@ -135,6 +136,12 @@ def main():
                     else:
                         scores = [method.scores_of(e, p, piece_rank).reshape(*ids.shape, -1) for e, p in zip(cache, pieces)]
                 del cache
+                if floor_trained is not None and args.sensor == 'static' and not args.score_floor:   # the run's own floors
+                    parts = []
+                    for x, f in zip(scores, floor_trained.split([x.shape[-1] for x in scores])):
+                        tau = f / 10
+                        parts.append(torch.nn.functional.softplus((x.float() - f) / tau) * tau + 1e-6 * x.float())
+                    scores = parts
                 if args.score_floor:
                     floors = torch.load(args.score_floor, map_location='cuda')['floor'].split([x.shape[-1] for x in scores])
                     scores = [(x.float() - f).clamp_min(0) + 1e-6 * x.float() for x, f in zip(scores, floors)]

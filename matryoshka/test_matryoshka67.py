@@ -771,12 +771,29 @@ def check_masked_scorer(model, data, weights):
         mt.STATIC_METRIC = old
 
 
+def check_floors():
+    """floored (floor 1, tau 0.1): a score at its floor maps to tau*log 2, one far above to score - floor, one far below
+    to ~0; the floors get a gradient through it."""
+    old = mt.FLOOR
+    try:
+        mt.FLOOR = torch.zeros(sum(mt.COUNTS), device='cuda').requires_grad_()       # floors at 1
+        x = torch.full((3, sum(mt.COUNTS)), 1., device='cuda'); x[1] = 100.; x[2] = 1e-3
+        out = torch.cat(mt.floored(list(x.split(mt.COUNTS, -1))), -1)
+        assert abs(float(out[0, 0]) - (0.1 * math.log(2) + 1e-6)) < 1e-5 and abs(float(out[1, 0]) - 99) < 1e-3
+        assert float(out[2, 0]) < 1e-5
+        out.sum().backward()
+        assert float(mt.FLOOR.grad.abs().sum()) > 0
+        return 'ok'
+    finally:
+        mt.FLOOR = old
+
+
 def main():
     torch.backends.cuda.matmul.allow_tf32 = False
     run_score_input, mt.SCORE_INPUT = mt.SCORE_INPUT, 'intact'    # the reference checks below are on intact scoring
     result = dict(sigmoid_topk_jacobian_max_error=check_sigmoid_topk(), bisection_kernel=check_bisection_kernel(),
                   budgets=check_budgets(), frequency=check_frequency(), certificate=check_certificate(),
-                  routing=check_routing(), hard_frequency=check_hard_frequency(), tail_count=check_tail_count())
+                  routing=check_routing(), hard_frequency=check_hard_frequency(), tail_count=check_tail_count(), floors=check_floors())
     print(json.dumps(dict(budgets=result['budgets'], frequency=result['frequency'])), flush=True)
     model = target(); data, _ = tokens('train')
     weights = [model.get_submodule(n).weight for n in MODULES]
