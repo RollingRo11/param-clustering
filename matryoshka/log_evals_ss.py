@@ -1,4 +1,5 @@
-"""Attach a SimpleStories run's KLKeep and adversarial-probe results to its W&B training run, under the names the
+"""Log a SimpleStories run's KLKeep and adversarial-probe results to W&B project matryoshka-evals (one run per training
+run, same id and name; the training dashboard stays training-only), under the names the
 earlier SS runs used (log_evals.py of the 20 Oct runs): summary eval/klkeep/kl_<fraction> and eval/adv/<gate>/step_<n>,
 line plots eval/klkeep_curve and eval/adv_curve_<gate>, all ranked by Fisher K=8; KLKeep ranked by the cached
 text-averaged Fisher and by write size under eval/klkeep_static/... and eval/klkeep_write/...; a run trained with one of
@@ -20,8 +21,12 @@ for s in ('static', 'write'):
     sources.append((f'_{s}', run_dir/f'eval_{s}/klkeep.json', probe if plan['sensor'] == s else None))
 missing = [str(p) for _, *paths in sources for p in paths if p is not None and not p.exists()]
 if missing: sys.exit(f'evals not ready: {missing}')
-run = wandb.init(id=json.loads((run_dir/'wandb.json').read_text())['id'], resume='must', project='matryoshka',
-                 entity='rohan-kathuria-neu', dir=os.environ.get('MATRYOSHKA_WANDB_DIR', '/root/wandb_eval'))
+training = json.loads((run_dir/'wandb.json').read_text())
+# One run per training run in project matryoshka-evals, kept off the training dashboard; same id and name.
+name = wandb.Api().run(f'rohan-kathuria-neu/matryoshka/{training["id"]}').name
+run = wandb.init(id=training['id'], resume='allow', project='matryoshka-evals', entity='rohan-kathuria-neu', name=name,
+                 job_type='evaluation', config=dict(training_run=training['url'], sensor=plan['sensor']),
+                 dir=os.environ.get('MATRYOSHKA_WANDB_DIR', '/root/wandb_eval'))
 summary, charts = {}, {}
 for suffix, klkeep, adversarial in sources:
     k = json.loads(klkeep.read_text())

@@ -182,8 +182,8 @@ def main():
     if TARGET == 'pile67':
         place = dict(project='param-autoenc', name=args.run_tag or f'paired-1b-{args.method}-klkeep-{args.expected_step}',
                      group='paired-h200-1b-20260910', dir=str(root))
-    else:      # W&B's local files off the network volume, as in training
-        place = dict(project='matryoshka', name=args.run_tag or f'ss-{args.method}-klkeep-{args.expected_step}',
+    else:      # W&B project matryoshka-evals (kept off the training dashboard); local files off the network volume
+        place = dict(project='matryoshka-evals', name=args.run_tag or f'ss-{args.method}-klkeep-{args.expected_step}',
                      group=EXPERIMENT, dir=os.environ.get('MATRYOSHKA_WANDB_DIR', str(root)))
     run = wandb.init(entity='rohan-kathuria-neu', job_type='evaluation', **place,
                      config={k: v for k, v in result.items() if k != 'curve'})
