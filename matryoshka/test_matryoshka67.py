@@ -703,6 +703,33 @@ def check_interact_score(model, data, weights):
     return dict(interact_max_rel_diff=worst)
 
 
+def check_greedy_scores(model, data, weights):
+    """static_fisher.greedy_scores: on 4 tokens, each of the first 20 picks is the piece whose addition most shrinks
+    sum_m ||y_m - kept_m||^2, recomputed from scratch in float64; the picks come first in the returned order."""
+    import static_fisher
+    from write_attribution import capture_inputs
+    pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, mt.COUNTS)]
+    factors = static_fisher.estimate(model, data, rows=16, k=4)
+    cache = [dict(e, h=e['h'][:4]) for e in static_fisher.entries(capture_inputs(model, batch(data, 0)[:1]), factors)]
+    scores = torch.cat(static_fisher.greedy_scores(cache, pieces, 20), -1)
+    order = scores.argsort(-1, descending=True)[:, :20]
+    vs = []                                                    # v_c for every piece, [4, N, rank_max] per matrix
+    for e, q, (L, _) in zip(cache, pieces, factors):
+        a = e['h'].double() @ q.read.double()
+        vs.append(a[:, :, None] * (L.double().T @ q.write.double()).T[None])
+    owner = torch.cat([torch.full((v.shape[1],), j) for j, v in enumerate(vs)])
+    local = torch.cat([torch.arange(v.shape[1]) for v in vs])
+    for t in range(4):
+        residual = [v[t].sum(0) for v in vs]
+        for step in range(20):
+            gains = torch.cat([2 * (v[t] @ r) - v[t].square().sum(-1) for v, r in zip(vs, residual)])
+            for c in order[t, :step].tolist(): gains[c] = float('-inf')
+            best, chosen = gains.argmax().item(), order[t, step].item()
+            assert abs(float(gains[best] - gains[chosen])) <= 1e-9 * float(gains[best].abs()), (t, step, best, chosen)
+            residual[owner[chosen]] = residual[owner[chosen]] - vs[owner[chosen]][t, local[chosen]]
+    return 'ok'
+
+
 def main():
     torch.backends.cuda.matmul.allow_tf32 = False
     result = dict(sigmoid_topk_jacobian_max_error=check_sigmoid_topk(), bisection_kernel=check_bisection_kernel(),
@@ -726,6 +753,7 @@ def main():
     print(json.dumps(dict(static_sensor=result['static_sensor'])), flush=True)
     result['interact_score'] = check_interact_score(model, data, weights)
     print(json.dumps(dict(interact_score=result['interact_score'])), flush=True)
+    result['greedy_scores'] = check_greedy_scores(model, data, weights)
     if mt.SENSOR == 'static':      # the checks below use the run's own sensor
         import static_fisher
         mt.STATIC_METRIC = static_fisher.estimate(model, data, rows=16, k=4)
