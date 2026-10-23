@@ -36,6 +36,8 @@ Mainline options (the 21 Oct 2026 recipe, main.md; all off by default):
 
 MATRYOSHKA_TARGET=simplestories trains on the 2-layer SimpleStories target (gf6rbga0, 7,104 pieces; common_ss.py) instead
 of the 67M one, with the same method and options; its training config is the control's, inlined (no gim_1h plan to read).
+MATRYOSHKA_SENSOR=write ranks pieces by the size of their write, |r_c.h| ||u_c|| (write_attribution.py): one forward of
+the intact model per update and no loss gradient, so the ranking needs no backward at training or inference time.
 MATRYOSHKA_WANDB_DIR puts W&B's local files somewhere other than the run directory.
 
 With temperature 1 in log-score space, alpha = a / (a + theta): no temperature knob.
@@ -75,6 +77,7 @@ from common import ROOT, HERE, MODULES, TARGET_SHA, CONTEXT, BATCH, PIECE_COUNTS
 from train_pair import core, method
 from gim_attribution import RULES, capture_gim
 from fisher_attribution import capture_fisher
+from write_attribution import capture_inputs
 
 FISHER_K = 4
 MICRO = 4                                                       # the earlier runs' micro-batch: budget draw and Fisher label chunk
@@ -87,7 +90,7 @@ assert BUDGET_POWER > 0 and math.isfinite(BUDGET_POWER) and CHUNK % BUDGET_CONTE
 FORWARD = os.environ.get('MATRYOSHKA_FORWARD', 'soft')
 assert FORWARD in ('soft', 'hard')
 SENSOR = os.environ.get('MATRYOSHKA_SENSOR', 'fisher')          # the per-token score that ranks pieces
-assert SENSOR in ('fisher', 'gim')
+assert SENSOR in ('fisher', 'gim', 'write')
 LP_COEFF = float(os.environ.get('MATRYOSHKA_LP_COEFF', '0'))    # weight of the old par-auto Lp term; 0 = off
 assert LP_COEFF >= 0 and math.isfinite(LP_COEFF)
 ADV_COEFF = float(os.environ.get('MATRYOSHKA_ADV_COEFF', '0'))  # weight of VPD's persistent PGD loss (Adversary); 0 = off
@@ -120,7 +123,8 @@ SCHEDULE_STEPS = int(os.environ.get('MATRYOSHKA_SCHEDULE_STEPS', '8700'))  # lr 
 PROJECTION = os.environ.get('MATRYOSHKA_PROJECTION', 'fp32')
 assert SCHEDULE_STEPS > 1 and PROJECTION in ('fp32', 'fp64')
 SCORES =dict(fisher=f'|r.h| * RMS over K={FISHER_K} sampled next tokens of (g_k.u); plain CE gradients (fisher_k4_5000 sensor)',
-              gim='|r.h| * |g.u|, g the GIM cotangent of the true next-token CE (gim_1h sensor: T=2 softmax, Q/K/V scaling, frozen RMS)')
+              gim='|r.h| * |g.u|, g the GIM cotangent of the true next-token CE (gim_1h sensor: T=2 softmax, Q/K/V scaling, frozen RMS)',
+              write='|r.h| * ||u||, the norm of the piece\'s write on the intact input; one forward, no backward (write_attribution.py)')
 TARGET_STEPS = int(os.environ.get('MATRYOSHKA_STEPS', '5000'))
 MONITOR_EVERY = int(os.environ.get('MATRYOSHKA_MONITOR_EVERY', '100'))
 COUNTS = [PIECE_COUNTS[n.split('.')[-1]] for n in MODULES]
@@ -233,11 +237,15 @@ def capture(model, rows, seed, sensor=None, chunk=None, keep_logp=False):
     if (sensor or SENSOR) == 'gim':
         assert not keep_logp
         return capture_gim(model, rows)
-    if not keep_logp: return capture_fisher(model, rows, k=FISHER_K, seed=seed, microbatch=chunk or CHUNK)
+    if (sensor or SENSOR) == 'write':      # write size: only the inputs, from one no-grad forward
+        run = lambda: capture_inputs(model, rows, microbatch=chunk or CHUNK)
+    else:
+        run = lambda: capture_fisher(model, rows, k=FISHER_K, seed=seed, microbatch=chunk or CHUNK)
+    if not keep_logp: return run()
     logps = []
     hook = model.register_forward_hook(lambda _m, _i, out: logps.append(out[0].detach().float().log_softmax(-1).flatten(0, 1)))
     try:
-        cache = capture_fisher(model, rows, k=FISHER_K, seed=seed, microbatch=chunk or CHUNK)
+        cache = run()
     finally:
         hook.remove()
     return cache, torch.cat(logps)
@@ -724,14 +732,15 @@ def main():
                 sparsity_penalty=None, gate_network=None, fisher_k=FISHER_K,
                 training_config=asdict(cfg), lr_note='lr/lr_min/8700-step cosine horizon and Adam betas of fisher_k4_5000; p_end unused',
                 stop_after=TARGET_STEPS, matched_control=dict(fisher='output/fisher_k4_5000 (KLKeep eval_fisher_k8)',
-                                                              gim='output/gim_1h at 5000 (KLKeep GIM and Fisher K=8 rankings)')[SENSOR],
+                                                              gim='output/gim_1h at 5000 (KLKeep GIM and Fisher K=8 rankings)',
+                                                              write=None)[SENSOR],
                 initialization='same seed-0 projected factors as the control', data='same train order as the control',
                 monitor=dict(val_rows=[MONITOR_ROWS.start, MONITOR_ROWS.stop], budgets=list(MONITOR_BUDGETS), every=MONITOR_EVERY,
                              ranking=f'{SENSOR} score, hard global top-k'),
                 target_sha256=TARGET_SHA, data_sha256=manifest['train']['sha256'], val_sha256=val_manifest['val']['sha256'],
                 component_counts=dict(zip(MODULES, COUNTS)), gpu=torch.cuda.get_device_name(),
                 implementation=dict(chunk_contexts=CHUNK, bisection='triton kernel' if triton is not None else 'eager',
-                                    hard_threshold='topk', kl_target='score cache forward' if SENSOR == 'fisher' else 'separate intact forward',
+                                    hard_threshold='topk', kl_target='score cache forward' if SENSOR in ('fisher', 'write') else 'separate intact forward',
                                     fisher_labels=f'sampled per {CHUNK} contexts'))
     if LP_COEFF:
         plan['lp'] = dict(coeff=LP_COEFF, epsilon=cfg.lp_epsilon, p_end=cfg.p_end,
@@ -910,7 +919,7 @@ def main():
         optimizer.zero_grad(set_to_none=True)
         rows = batch(data, step)
         # The control's seeds, step for step (its labels too when CHUNK == MICRO).
-        cache, target_logp = capture(model, rows, seed=1_000_003+step, keep_logp=True) if SENSOR == 'fisher' else \
+        cache, target_logp = capture(model, rows, seed=1_000_003+step, keep_logp=True) if SENSOR in ('fisher', 'write') else \
                              (capture(model, rows, seed=1_000_003+step), None)
         feasible = [method.project(w, p, cfg) for w, p in zip(weights, pieces)]
         draws = update_budgets(budgets, total, BATCH // BUDGET_CONTEXTS)

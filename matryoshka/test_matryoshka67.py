@@ -602,6 +602,36 @@ def check_sigmoid_topk():
     return float((jac - expected).abs().max())
 
 
+def check_write_sensor(model, data, weights):
+    """MATRYOSHKA_SENSOR=write: the cache's scores are |h r_c| ||u_c|| on each matrix's intact input, its log-probs are
+    intact_logp's, and gradients reach both factors (read through h r, write through ||u||) of every matrix."""
+    pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, mt.COUNTS)]
+    rows = batch(data, 0)[:4]
+    ids = rows[:, :-1]
+    cache, logp = mt.capture(model, rows, seed=0, sensor='write', chunk=4, keep_logp=True)
+    inputs = {}
+    hooks = [model.get_submodule(n).register_forward_hook(lambda _m, i, _o, n=n: inputs.__setitem__(n, i[0])) for n in MODULES]
+    try:
+        with torch.no_grad(), torch.autocast('cuda', dtype=torch.bfloat16):
+            separate = mt.intact_logp(model, ids)
+    finally:
+        for h in hooks: h.remove()
+    result = dict(logp_max_abs_diff=float((logp.view(*ids.shape, -1) - separate).abs().max()))
+    errors = []
+    for n, e, q in zip(MODULES, cache, pieces):
+        h = inputs[n].flatten(0, 1).bfloat16().double()
+        direct = (h @ q.read.double()).abs() * q.write.double().norm(dim=0)
+        with torch.no_grad(), torch.autocast('cuda', dtype=torch.bfloat16):
+            ours = method.structured.scores(e, q).double()
+        errors.append(float(((ours - direct).abs() / direct.abs().clamp_min(1e-12)).median()))
+    result['score_median_rel_diff_max'] = max(errors)
+    assert result['logp_max_abs_diff'] < 1e-3 and result['score_median_rel_diff_max'] < 1e-2, result
+    leaves = [core.FreePieces(q.read.detach().requires_grad_(), q.write.detach().requires_grad_()) for q in pieces]
+    mt.log_scores(cache, leaves, 0, 4 * CONTEXT).logsumexp(-1).sum().backward()
+    assert all(float(t.grad.abs().sum()) > 0 for q in leaves for t in (q.read, q.write)), 'gradient misses a factor'
+    return result
+
+
 def main():
     torch.backends.cuda.matmul.allow_tf32 = False
     result = dict(sigmoid_topk_jacobian_max_error=check_sigmoid_topk(), bisection_kernel=check_bisection_kernel(),
@@ -619,6 +649,8 @@ def main():
     result['mass'] = check_mass(weights)
     print(json.dumps(dict(mass=result['mass'])), flush=True)
     result['mainline'] = check_mainline(model, data, weights)
+    result['write_sensor'] = check_write_sensor(model, data, weights)
+    print(json.dumps(dict(write_sensor=result['write_sensor'])), flush=True)
     print(json.dumps(dict(mainline=result['mainline'])), flush=True)
     pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, mt.COUNTS)]
     rows = batch(data, 0)[:mt.MICRO]
