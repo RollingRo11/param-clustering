@@ -13,7 +13,7 @@ from pathlib import Path
 __all__ = ['DATA', 'TARGET_SHA', 'CONTEXT', 'BATCH', 'MODULES', 'PIECE_COUNTS', 'EXPERIMENT', 'TRAINING_CONFIG',
            'credentials', 'target', 'tokens', 'batch', 'train_updates']
 
-DATA = Path(os.environ.get('SS_DATA', '/workspace/paired/data_ss'))
+DATA = Path(os.environ.get('SS_DATA', '/root/data/ss'))
 TARGET_SHA = 'a98273427d063db4ab23f56e14b33a32e674d06d4161a47a89fd676a0988d7af'
 CONTEXT, BATCH = 512, 64
 MODULES = tuple(f'h.{i}.{m}' for i in range(2) for m in

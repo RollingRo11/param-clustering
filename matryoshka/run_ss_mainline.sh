@@ -7,8 +7,8 @@
 #   matryoshka/run_ss_mainline.sh train   resumable (rerun the same command to continue from the newest full checkpoint)
 # Env (optional): MATRYOSHKA_STEPS (default: one epoch of the train split, 18,522 updates = 607M tokens; the lr cosine,
 # p schedule and attacker warm-up are stretched to it), MATRYOSHKA_K_MIN (smallest budget, default 32),
-# MATRYOSHKA_RUN (run folder name, default mainline), SS_DATA (target + token rows, default /workspace/paired/data_ss),
-# SS_OUT (run folders, default /workspace/paired/output/matryoshka_ss_mainline), PY (python with torch, wandb and
+# MATRYOSHKA_RUN (run folder name, default mainline), SS_DATA (target + token rows, default /root/data/ss),
+# SS_OUT (run folders, default /root/runs/matryoshka_ss_mainline), PY (python with torch, wandb and
 # param_decomp's model classes; default /root/venvs/ss/bin/python), VPD_CODE (param_decomp checkout for PYTHONPATH).
 # W&B: project matryoshka, group matryoshka_ss_mainline; log in once with `wandb login` (the key stays in ~/.netrc).
 set -euo pipefail
@@ -18,8 +18,8 @@ commit=$(git -C "$repo" rev-parse HEAD)
 if [ -n "$(git -C "$repo" status --porcelain --untracked-files=no)" ]; then echo "UNCOMMITTED CHANGES in $repo"; exit 1; fi
 echo "COMMIT $commit"
 
-export MATRYOSHKA_TARGET=simplestories SS_DATA="${SS_DATA:-/workspace/paired/data_ss}"
-export PYTHONPATH="${VPD_CODE:-/workspace/paired/code/vpd}${PYTHONPATH:+:$PYTHONPATH}"
+export MATRYOSHKA_TARGET=simplestories SS_DATA="${SS_DATA:-/root/data/ss}"
+export PYTHONPATH="${VPD_CODE:-/root/vpd}${PYTHONPATH:+:$PYTHONPATH}"
 export OMP_NUM_THREADS=4 MKL_NUM_THREADS=4 TOKENIZERS_PARALLELISM=false
 py="${PY:-/root/venvs/ss/bin/python}"
 
@@ -33,7 +33,7 @@ export MATRYOSHKA_FORWARD=hard MATRYOSHKA_SENSOR=fisher MATRYOSHKA_K_MIN="${MATR
   MATRYOSHKA_ROUTING=uniform_k_subset MATRYOSHKA_PROJECTION=fp64
 steps="${MATRYOSHKA_STEPS:-$(cd "$code" && $py -c 'import common_ss; print(common_ss.train_updates())')}"
 export MATRYOSHKA_STEPS="$steps" MATRYOSHKA_SCHEDULE_STEPS="$steps" MATRYOSHKA_MONITOR_EVERY="${MATRYOSHKA_MONITOR_EVERY:-250}"
-out="${SS_OUT:-/workspace/paired/output/matryoshka_ss_mainline}"
+out="${SS_OUT:-/root/runs/matryoshka_ss_mainline}"
 mkdir -p "$out"
 mode="${1:-train}"
 cd "$code"
