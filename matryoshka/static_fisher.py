@@ -54,30 +54,36 @@ def cached(model, path):
 _gram = {}
 
 
-def greedy_scores(cache, pieces, steps):
+def greedy_scores(cache, pieces, steps, fixed=(), scales=None):
     """Greedy (matching-pursuit) ranking in the metric, for KLKeep: per token, start from nothing kept and add, `steps`
     times, the piece (over all matrices) whose addition most shrinks sum_m ||y_m - kept_m||^2, y_m = sum_c v_c the
     matrix's whole output in the metric, v_c = a_c L^T u_c; gain_c = 2 v_c.(y - kept) - ||v_c||^2, updated after each
     pick through the block-diagonal Gram G = U^T M U (no interactions across matrices). The remaining pieces follow in
     the order of their static score |v_c|. cache: metric_write entries. Returns per-matrix scores [n, C_m] whose
-    descending order across matrices is that ranking (picks first, in pick order). float64."""
+    descending order across matrices is that ranking (picks first, in pick order). float64.
+    fixed: matrix indices whose pieces compete with their own static cost ||v_c||^2 (no interactions, never updated);
+    scales: {matrix index: factor} multiplying that matrix's metric (its Gram block and its gains)."""
     with torch.no_grad(), torch.autocast('cuda', enabled=False):
-        key = tuple(p.read.data_ptr() for p in pieces)
+        scales = scales or {}
+        key = (tuple(p.read.data_ptr() for p in pieces), tuple(sorted(scales.items())))
         if key not in _gram:
             blocks = [(e['shared']['metric'].double().T @ p.write.double()) for e, p in zip(cache, pieces)]   # L^T U
             _gram.clear()
-            _gram[key] = torch.block_diag(*[b.T @ b for b in blocks])                                      # [N, N]
+            _gram[key] = torch.block_diag(*[scales.get(j, 1.) * (b.T @ b) for j, b in enumerate(blocks)])     # [N, N]
         gram = _gram[key]
         a = torch.cat([e['h'].double() @ p.read.double() for e, p in zip(cache, pieces)], -1)            # [n, N]
         diag = gram.diagonal()
         static = a.abs() * diag.clamp_min(0).sqrt()
         gains = 2 * a * (a @ gram) - a.square() * diag
         score = static / static.max(-1, keepdim=True).values.clamp_min(1e-300)                           # in [0, 1]
+        counts = [p.read.shape[1] for p in pieces]
+        frozen = torch.zeros(sum(counts), dtype=torch.bool, device=a.device)
+        for j in fixed: frozen[sum(counts[:j]):sum(counts[:j+1])] = True
+        gains = torch.where(frozen, a.square() * diag, gains)            # fixed matrices: the cost of leaving c out
         rows = torch.arange(len(a), device=a.device)
         for step in range(steps):
             pick = gains.argmax(-1)
             score[rows, pick] = 1. + steps - step
-            gains -= 2 * a * a[rows, pick, None] * gram[pick]
+            gains -= torch.where(frozen, 0., 2 * a * a[rows, pick, None] * gram[pick])
             gains[rows, pick] = float('-inf')
-        counts = [p.read.shape[1] for p in pieces]
         return list(score.float().split(counts, -1))
