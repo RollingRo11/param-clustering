@@ -33,6 +33,9 @@ def main():
     parser.add_argument('--greedy-steps', type=int, default=710)   # greedy: picks per token before the static order takes over
     parser.add_argument('--score-input', choices=['intact', 'masked'], default='intact')   # masked: each matrix re-ranks its
     # share of the top-k on the input it receives in the masked forward (matryoshka67 MATRYOSHKA_SCORE_INPUT=masked)
+    parser.add_argument('--score-floor', default=None)       # .pt of per-piece floors in score units (floor_ranking.py): rank
+    # max(0, score - floor) (+1e-6 score to order the zeros)
+    parser.add_argument('--always-keep', default='')         # comma-separated modules kept whole; fractions count the rest
     parser.add_argument('--matrix-log-scale', default='')   # module=beta,...: rank exp(beta) * score (fit_matrix_scales.py)
     parser.add_argument('--greedy-fixed', default='')       # greedy: comma-separated modules ranked by their static cost (no interactions)
     parser.add_argument('--greedy-scale', default='')       # greedy: module=factor,... scaling that module's metric
@@ -130,6 +133,9 @@ def main():
                     else:
                         scores = [method.scores_of(e, p, piece_rank).reshape(*ids.shape, -1) for e, p in zip(cache, pieces)]
                 del cache
+                if args.score_floor:
+                    floors = torch.load(args.score_floor, map_location='cuda')['floor'].split([x.shape[-1] for x in scores])
+                    scores = [(x.float() - f).clamp_min(0) + 1e-6 * x.float() for x, f in zip(scores, floors)]
                 if args.matrix_log_scale:
                     betas = {k: float(v) for k, v in (x.split('=') for x in args.matrix_log_scale.split(','))}
                     scores = [x.float() * float(np.exp(betas.get(n, 0.))) for n, x in zip(MODULES, scores)]
@@ -143,6 +149,8 @@ def main():
                 del base, ci
             else: baseline = model(ids)[0]
             counts = [s.shape[-1] for s in scores]
+            always = [m for m in args.always_keep.split(',') if m]
+            if always: scores = [torch.full_like(x, 1e30) if n in always else x for n, x in zip(MODULES, scores)]
             combined = torch.cat(scores, -1).float()
             # Stable sorting gives a deterministic tie-break for VPD's zeros.
             order = combined.argsort(dim=-1, descending=True, stable=True)
@@ -151,7 +159,8 @@ def main():
             baseline_ce += float(F.cross_entropy(baseline.flatten(0, 1), labels.flatten(), reduction='sum'))
             del baseline
             for fraction, total in zip(fractions, sums):
-                k = min(sum(counts), round(fraction*sum(counts)))
+                fixed = sum(c for n, c in zip(MODULES, counts) if n in always)
+                k = min(sum(counts), fixed + round(fraction*(sum(counts) - fixed)))
                 keep = torch.zeros_like(order, dtype=torch.float32).scatter_(-1, order[..., :k], 1.)
                 parts = keep.split(counts, -1)
                 if owners is not None: parts = [m.index_select(-1, o) for m, (o, _) in zip(parts, owners)]
@@ -181,14 +190,14 @@ def main():
                 kl = (prob*(logp-pred.float().log_softmax(-1))).sum()
                 total['kl'] += float(kl)
                 total['ce'] += float(F.cross_entropy(pred.flatten(0, 1), labels.flatten(), reduction='sum'))
-                total['kept'] += k*ids.numel(); total['n'] += ids.numel()
+                total['kept'] += (k - fixed)*ids.numel(); total['n'] += ids.numel()   # always-kept matrices not counted
                 del pred, masks, keep
         print(json.dumps(dict(evaluated_sequences=min(first+2, args.sequences))), flush=True)
     curve = [dict(keep_fraction=f, kept_components=s['kept']/s['n'], kl=s['kl']/s['n'],
                   ce=s['ce']/s['n']) for f, s in zip(fractions, sums)]
     result = dict(method=args.method, curve=curve, baseline_ce=baseline_ce/(args.sequences*512),
                   positions=args.sequences*512, total_components=sum(counts),
-                  delta_components_included=False, score_input=args.score_input, matrix_log_scale=args.matrix_log_scale, sensor=(f'scalar CE integrated gradients k={args.ig_k}' if args.sensor == 'ig' else 'scalar CE GIM' if args.sensor == 'gim' else 'write size |r.h| ||u||' if args.sensor == 'write' else 'static Fisher write |r.h| sqrt(u^T M u)' if args.sensor == 'static' else 'static Fisher interaction 2 v.y - ||v||^2' if args.sensor == 'interact' else f'greedy matching pursuit in the static metric, {args.greedy_steps} picks, fixed [{args.greedy_fixed}], scale [{args.greedy_scale}]' if args.sensor == 'greedy' else 'per-piece finite local ablation' if args.sensor == 'finite' else f'Fisher k={args.fisher_k} sampled labels' + (' + GIM rules' if args.sensor == 'fisher_gim' else '') if args.sensor.startswith('fisher') else 'scalar CE') if args.method == 'parauto' else 'VPD CI',
+                  delta_components_included=False, score_input=args.score_input, score_floor=args.score_floor, always_keep=args.always_keep, matrix_log_scale=args.matrix_log_scale, sensor=(f'scalar CE integrated gradients k={args.ig_k}' if args.sensor == 'ig' else 'scalar CE GIM' if args.sensor == 'gim' else 'write size |r.h| ||u||' if args.sensor == 'write' else 'static Fisher write |r.h| sqrt(u^T M u)' if args.sensor == 'static' else 'static Fisher interaction 2 v.y - ||v||^2' if args.sensor == 'interact' else f'greedy matching pursuit in the static metric, {args.greedy_steps} picks, fixed [{args.greedy_fixed}], scale [{args.greedy_scale}]' if args.sensor == 'greedy' else 'per-piece finite local ablation' if args.sensor == 'finite' else f'Fisher k={args.fisher_k} sampled labels' + (' + GIM rules' if args.sensor == 'fisher_gim' else '') if args.sensor.startswith('fisher') else 'scalar CE') if args.method == 'parauto' else 'VPD CI',
                   seconds=time.perf_counter()-started, data_sha256=manifest['val']['sha256'])
     if integration_audits:
         estimate=sum(a['signed_attribution_sum'] for a in integration_audits)/(args.sequences*512)
