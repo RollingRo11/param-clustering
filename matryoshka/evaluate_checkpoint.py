@@ -33,6 +33,7 @@ def main():
     parser.add_argument('--greedy-steps', type=int, default=710)   # greedy: picks per token before the static order takes over
     parser.add_argument('--score-input', choices=['intact', 'masked'], default='intact')   # masked: each matrix re-ranks its
     # share of the top-k on the input it receives in the masked forward (matryoshka67 MATRYOSHKA_SCORE_INPUT=masked)
+    parser.add_argument('--matrix-log-scale', default='')   # module=beta,...: rank exp(beta) * score (fit_matrix_scales.py)
     parser.add_argument('--greedy-fixed', default='')       # greedy: comma-separated modules ranked by their static cost (no interactions)
     parser.add_argument('--greedy-scale', default='')       # greedy: module=factor,... scaling that module's metric
     args = parser.parse_args(); credentials(); torch.set_num_threads(4)
@@ -129,6 +130,9 @@ def main():
                     else:
                         scores = [method.scores_of(e, p, piece_rank).reshape(*ids.shape, -1) for e, p in zip(cache, pieces)]
                 del cache
+                if args.matrix_log_scale:
+                    betas = {k: float(v) for k, v in (x.split('=') for x in args.matrix_log_scale.split(','))}
+                    scores = [x.float() * float(np.exp(betas.get(n, 0.))) for n, x in zip(MODULES, scores)]
             torch.cuda.synchronize(); scoring_seconds+=time.perf_counter()-score_start
         with torch.no_grad(), torch.autocast('cuda', dtype=torch.bfloat16):
             if args.method == 'vpd':
@@ -184,7 +188,7 @@ def main():
                   ce=s['ce']/s['n']) for f, s in zip(fractions, sums)]
     result = dict(method=args.method, curve=curve, baseline_ce=baseline_ce/(args.sequences*512),
                   positions=args.sequences*512, total_components=sum(counts),
-                  delta_components_included=False, score_input=args.score_input, sensor=(f'scalar CE integrated gradients k={args.ig_k}' if args.sensor == 'ig' else 'scalar CE GIM' if args.sensor == 'gim' else 'write size |r.h| ||u||' if args.sensor == 'write' else 'static Fisher write |r.h| sqrt(u^T M u)' if args.sensor == 'static' else 'static Fisher interaction 2 v.y - ||v||^2' if args.sensor == 'interact' else f'greedy matching pursuit in the static metric, {args.greedy_steps} picks, fixed [{args.greedy_fixed}], scale [{args.greedy_scale}]' if args.sensor == 'greedy' else 'per-piece finite local ablation' if args.sensor == 'finite' else f'Fisher k={args.fisher_k} sampled labels' + (' + GIM rules' if args.sensor == 'fisher_gim' else '') if args.sensor.startswith('fisher') else 'scalar CE') if args.method == 'parauto' else 'VPD CI',
+                  delta_components_included=False, score_input=args.score_input, matrix_log_scale=args.matrix_log_scale, sensor=(f'scalar CE integrated gradients k={args.ig_k}' if args.sensor == 'ig' else 'scalar CE GIM' if args.sensor == 'gim' else 'write size |r.h| ||u||' if args.sensor == 'write' else 'static Fisher write |r.h| sqrt(u^T M u)' if args.sensor == 'static' else 'static Fisher interaction 2 v.y - ||v||^2' if args.sensor == 'interact' else f'greedy matching pursuit in the static metric, {args.greedy_steps} picks, fixed [{args.greedy_fixed}], scale [{args.greedy_scale}]' if args.sensor == 'greedy' else 'per-piece finite local ablation' if args.sensor == 'finite' else f'Fisher k={args.fisher_k} sampled labels' + (' + GIM rules' if args.sensor == 'fisher_gim' else '') if args.sensor.startswith('fisher') else 'scalar CE') if args.method == 'parauto' else 'VPD CI',
                   seconds=time.perf_counter()-started, data_sha256=manifest['val']['sha256'])
     if integration_audits:
         estimate=sum(a['signed_attribution_sum'] for a in integration_audits)/(args.sequences*512)
