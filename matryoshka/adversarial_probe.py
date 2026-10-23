@@ -35,7 +35,7 @@ def main():
     ap.add_argument('--sequences', type=int, default=32); ap.add_argument('--microbatch', type=int, default=8)
     ap.add_argument('--record', default='0,20,40,80,160,320'); ap.add_argument('--step-size', type=float, default=.1)
     ap.add_argument('--fisher-k', type=int, default=8)
-    ap.add_argument('--sensor', choices=['fisher', 'write'], default='fisher')   # par-auto ranking; write = |r.h| ||u||
+    ap.add_argument('--sensor', choices=['fisher', 'write', 'static'], default='fisher')   # par-auto ranking; write = |r.h| ||u||, static = |r.h| sqrt(u^T M u)
     ap.add_argument('--adversary', choices=['soft', 'hard'], default='soft'); ap.add_argument('--init', choices=['random', 'off'], default='random')
     args = ap.parse_args(); credentials(); torch.set_num_threads(4); torch.backends.cuda.matmul.allow_tf32 = False
     leak = (lambda r: (r > .5).float() + r - r.detach()) if args.adversary == 'hard' else (lambda r: r)
@@ -59,6 +59,8 @@ def main():
         trainer.model.load_state_dict(saved['factors']); trainer.model.eval().requires_grad_(False)
     else:
         pieces = [core.FreePieces(p['read'].cuda(), p['write'].cuda()) for p in saved['factors']]
+    # static sensor: the run's fixed output metric (static_fisher.py), saved in every model.pth
+    metric = [(f['L'].cuda(), f['eigenvalues']) for f in saved['static_metric']] if 'static_metric' in saved else None
     del saved
     data, manifest = tokens('val')
     configs = (['native'] if 'native' in gate_kinds else [])+([f'top{k:g}' for k in keeps] if 'topk' in gate_kinds else [])
@@ -85,6 +87,10 @@ def main():
             if args.sensor == 'write':
                 from write_attribution import capture_inputs
                 cache = capture_inputs(model, rows)
+            elif args.sensor == 'static':
+                import static_fisher
+                from write_attribution import capture_inputs
+                cache = static_fisher.entries(capture_inputs(model, rows), metric)
             else:
                 from fisher_attribution import capture_fisher
                 cache = capture_fisher(model, rows, k=args.fisher_k, seed=first)

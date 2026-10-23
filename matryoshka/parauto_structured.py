@@ -141,6 +141,15 @@ def scores(entry, pieces):
         h = entry['h'] if torch.is_autocast_enabled(pieces.read.device.type) else entry['h'].to(pieces.read.dtype)
         read = h @ pieces.read
         return norm_input(read).abs() * norm_input(pieces.write).square().sum(0).add(1e-30).sqrt()
+    if entry['kind'] == 'metric_write':
+        # |r_c.h| sqrt(u_c^T M u_c): the write's size in a fixed output metric M = L L^T (static_fisher.py: the
+        # target's token-averaged output Fisher), shared['metric'] = L [d_out, rank]. Needs no loss cotangent.
+        auto = torch.is_autocast_enabled(pieces.read.device.type)
+        h = entry['h'] if auto else entry['h'].to(pieces.read.dtype)
+        metric = entry['shared']['metric']
+        read = h @ pieces.read
+        write = metric.T @ pieces.write if auto else metric.T.to(pieces.write.dtype) @ pieces.write
+        return norm_input(read).abs() * norm_input(write).square().sum(0).add(1e-30).sqrt()
     h = entry['h']
     if entry['kind'] == 'vjp' and not torch.is_autocast_enabled(pieces.read.device.type): h = h.to(pieces.read.dtype)
     read = h @ pieces.read

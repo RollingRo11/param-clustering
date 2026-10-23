@@ -632,6 +632,42 @@ def check_write_sensor(model, data, weights):
     return result
 
 
+def check_static_sensor(model, data, weights):
+    """MATRYOSHKA_SENSOR=static: on the rows M is estimated from, the static score squared, averaged over positions, is
+    the Fisher score squared averaged over the same positions and sampled labels (u^T M u = mean_x u^T F_x u, read
+    factor aside, here with unit reads); the static entries score like the formula; M is PSD with L L^T = M."""
+    import static_fisher
+    pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, mt.COUNTS)]
+    rows, k = 16, 4
+    factors = static_fisher.estimate(model, data, rows=rows, k=k, seed=7, microbatch=16)
+    block = torch.from_numpy(np.array(data[len(data)-rows:], dtype=np.int64)).cuda()
+    cache = capture_fisher(model, block, k=k, seed=7, microbatch=16)
+    result = {}
+    for n, e, q, (L, values) in zip(MODULES, cache, pieces, factors):
+        cot = e['events']['cot'].double()                                   # [positions, k, d_out]
+        u = q.write.double()
+        fisher = (cot @ u).square().mean((0, 1))                            # mean_x mean_k (g.u)^2 per piece
+        static = (L.double().T @ u).square().sum(0)
+        result[n] = float(((static - fisher).abs() / fisher.clamp_min(1e-30)).max())
+        assert float(values.min()) >= 0
+    result = dict(static_vs_fisher_mean_max_rel_diff=max(result.values()))
+    assert result['static_vs_fisher_mean_max_rel_diff'] < 1e-3, result
+    mt.STATIC_METRIC = factors
+    try:
+        static = mt.capture(model, block[:4], seed=0, sensor='static', chunk=4)
+    finally:
+        mt.STATIC_METRIC = None
+    errors = []
+    for e, q, (L, _) in zip(static, pieces, factors):
+        direct = (e['h'].double() @ q.read.double()).abs() * (L.double().T @ q.write.double()).norm(dim=0)
+        with torch.no_grad(), torch.autocast('cuda', dtype=torch.bfloat16):
+            ours = method.structured.scores(e, q).double()
+        errors.append(float(((ours - direct).abs() / direct.clamp_min(1e-12)).median()))
+    result['score_median_rel_diff_max'] = max(errors)
+    assert result['score_median_rel_diff_max'] < 2e-2, result
+    return result
+
+
 def main():
     torch.backends.cuda.matmul.allow_tf32 = False
     result = dict(sigmoid_topk_jacobian_max_error=check_sigmoid_topk(), bisection_kernel=check_bisection_kernel(),
@@ -651,6 +687,8 @@ def main():
     result['mainline'] = check_mainline(model, data, weights)
     result['write_sensor'] = check_write_sensor(model, data, weights)
     print(json.dumps(dict(write_sensor=result['write_sensor'])), flush=True)
+    result['static_sensor'] = check_static_sensor(model, data, weights)
+    print(json.dumps(dict(static_sensor=result['static_sensor'])), flush=True)
     print(json.dumps(dict(mainline=result['mainline'])), flush=True)
     pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, mt.COUNTS)]
     rows = batch(data, 0)[:mt.MICRO]
