@@ -19,7 +19,9 @@ decompositions trained with a hard forward; the gradient passes straight through
 import argparse, json, os, sys, time
 from pathlib import Path
 ROOT = Path(os.environ.get('PAIR_ROOT', '/workspace/paired'))
-if (ROOT/'code/compare').is_dir(): sys.path.insert(0, str(ROOT/'code/compare'))
+# Old cluster snapshots hold only this file and import the rest from code/compare; a git checkout has it all beside it.
+if (ROOT/'code/compare').is_dir() and not (Path(__file__).resolve().parent/'train_pair.py').exists():
+    sys.path.insert(0, str(ROOT/'code/compare'))
 import numpy as np
 import torch
 from common import MODULES, TARGET_SHA, credentials, target, tokens, save_json, sha
@@ -33,6 +35,7 @@ def main():
     ap.add_argument('--sequences', type=int, default=32); ap.add_argument('--microbatch', type=int, default=8)
     ap.add_argument('--record', default='0,20,40,80,160,320'); ap.add_argument('--step-size', type=float, default=.1)
     ap.add_argument('--fisher-k', type=int, default=8)
+    ap.add_argument('--sensor', choices=['fisher', 'write'], default='fisher')   # par-auto ranking; write = |r.h| ||u||
     ap.add_argument('--adversary', choices=['soft', 'hard'], default='soft'); ap.add_argument('--init', choices=['random', 'off'], default='random')
     args = ap.parse_args(); credentials(); torch.set_num_threads(4); torch.backends.cuda.matmul.allow_tf32 = False
     leak = (lambda r: (r > .5).float() + r - r.detach()) if args.adversary == 'hard' else (lambda r: r)
@@ -79,8 +82,12 @@ def main():
         """ids, intact logits (bf16), and per-config gates for one microbatch."""
         rows = torch.tensor(np.array(data[first:first+args.microbatch], dtype=np.int64), device='cuda'); ids = rows[:, :-1]
         if args.method == 'parauto':
-            from fisher_attribution import capture_fisher
-            cache = capture_fisher(model, rows, k=args.fisher_k, seed=first)
+            if args.sensor == 'write':
+                from write_attribution import capture_inputs
+                cache = capture_inputs(model, rows)
+            else:
+                from fisher_attribution import capture_fisher
+                cache = capture_fisher(model, rows, k=args.fisher_k, seed=first)
             with torch.no_grad(), torch.autocast('cuda', dtype=torch.bfloat16):
                 scores = [method.scores_of(e, p).float().reshape(*ids.shape, -1) for e, p in zip(cache, pieces)]
             del cache
@@ -152,7 +159,7 @@ def main():
             print(json.dumps(dict(sequences=first+args.microbatch, seconds=round(time.perf_counter()-started, 1),
                                   running={c: {s: round(v/n_tok, 3) for s, v in d.items()} for c, d in sums.items()})), flush=True)
     result = {c: {s: v/n_tok for s, v in d.items()} for c, d in sums.items()}
-    save_json(dict(method=args.method, ranking=('CI' if args.method == 'vpd' else 'fisher'), scope=args.scope, step_size=args.step_size,
+    save_json(dict(method=args.method, ranking=('CI' if args.method == 'vpd' else args.sensor), scope=args.scope, step_size=args.step_size,
                    adversary=args.adversary, init=args.init,
                    checkpoint=str(args.checkpoint), checkpoint_sha256=sha(args.checkpoint), **meta, positions=n_tok, sequences=args.sequences,
                    microbatch=args.microbatch, gpu=torch.cuda.get_device_name(), data_sha256=manifest['val']['sha256'],

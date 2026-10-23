@@ -8,6 +8,7 @@ is retained in the primary curve rather than subtracted.
 """
 import argparse
 import json
+import os
 import time
 import numpy as np
 import torch
@@ -15,7 +16,7 @@ import torch.nn.functional as F
 import wandb
 
 from pathlib import Path
-from common import ROOT, MODULES, TARGET_SHA, credentials, target, tokens, save_json, sha
+from common import ROOT, MODULES, TARGET_SHA, TARGET, EXPERIMENT, credentials, target, tokens, save_json, sha
 from train_pair import VPD, capture, core, method
 
 
@@ -169,9 +170,13 @@ def main():
                   training_data_sha256=train_sha, checkpoint_sha256=checkpoint_sha, target_sha256=TARGET_SHA,
                   precision='bf16 autocast; fp32 KL reductions', gpu=torch.cuda.get_device_name())
     save_json(result, root/'klkeep.json')
-    run = wandb.init(project='param-autoenc', entity='rohan-kathuria-neu',
-                     name=args.run_tag or f'paired-1b-{args.method}-klkeep-{args.expected_step}',
-                     group='paired-h200-1b-20260910', job_type='evaluation', dir=str(root),
+    if TARGET == 'pile67':
+        place = dict(project='param-autoenc', name=args.run_tag or f'paired-1b-{args.method}-klkeep-{args.expected_step}',
+                     group='paired-h200-1b-20260910', dir=str(root))
+    else:      # W&B's local files off the network volume, as in training
+        place = dict(project='matryoshka', name=args.run_tag or f'ss-{args.method}-klkeep-{args.expected_step}',
+                     group=EXPERIMENT, dir=os.environ.get('MATRYOSHKA_WANDB_DIR', str(root)))
+    run = wandb.init(entity='rohan-kathuria-neu', job_type='evaluation', **place,
                      config={k: v for k, v in result.items() if k != 'curve'})
     save_json(dict(id=run.id, url=run.url), root/'wandb.json')
     table = wandb.Table(columns=['kept_components', 'kl', 'ce'], data=[[r[k] for k in ('kept_components', 'kl', 'ce')] for r in curve])
