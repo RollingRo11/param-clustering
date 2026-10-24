@@ -825,7 +825,7 @@ def check_attack_routing(model, data, weights):
     cache, logp = mt.capture(model, rows, seed=5, sensor='fisher', chunk=mt.MICRO, keep_logp=True)
     feasible = [method.project(w, p, tc) for w, p in zip(weights, pieces)]
     out = []
-    old = mt.ATTACK_ROUTING
+    old = mt.ATTACK_ROUTING, mt.PLAIN_ROUTING
     try:
         for routed in (True, False):
             mt.ATTACK_ROUTING = 'all'
@@ -833,12 +833,20 @@ def check_attack_routing(model, data, weights):
             router = torch.Generator(device='cuda').manual_seed(3) if routed else None
             out.append(mt.accumulate(model, rows, cache, feasible, list(DRAWS), 'hard', None, target_logp=logp, chunk=4,
                                      merged=adversary, router=router))
+        plain = []                       # PLAIN_ROUTING=all with nothing attacked: the unrouted plain update
+        for routed in (True, False):
+            mt.ATTACK_ROUTING, mt.PLAIN_ROUTING = 'same', 'all'
+            adversary = mt.MergedAdversary(cfg, 0., 1, 4, seed=0); adversary.draw(0)
+            router = torch.Generator(device='cuda').manual_seed(3) if routed else None
+            plain.append(mt.accumulate(model, rows, cache, feasible, list(DRAWS), 'hard', None, target_logp=logp, chunk=4,
+                                       merged=adversary, router=router)[1])
     finally:
-        mt.ATTACK_ROUTING = old
+        mt.ATTACK_ROUTING, mt.PLAIN_ROUTING = old
     (a, sa), (b, sb) = out
     diff = max(abs(x['kl'] - y['kl']) / y['kl'] for x, y in zip(sa, sb))
-    assert diff < 1e-5, diff
-    return dict(kl_max_rel_diff=diff)
+    plain_diff = max(abs(x['kl'] - y['kl']) / y['kl'] for x, y in zip(*plain))
+    assert diff < 1e-5 and plain_diff < 1e-5, (diff, plain_diff)
+    return dict(kl_max_rel_diff=diff, plain_kl_max_rel_diff=plain_diff)
 
 
 def main():
