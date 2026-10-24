@@ -52,6 +52,9 @@ MATRYOSHKA_PLAIN_ROUTING=all: the same for plain (unattacked) contexts, which th
 MATRYOSHKA_PLAIN_WEIGHT=w (merged attacker): every attacked context also adds w * its KL at the plain keep mask (plain
 routing), so every context trains the plain mask, as VPD puts its stochastic and PGD losses on the same batch; one extra
 forward and backward over the attacked contexts.
+MATRYOSHKA_ADV_GLOBAL_SHARE=g (merged attacker): each attacked context uses, with probability g, one source shared by all
+global-scope contexts and positions ([N], persistent, its own Adam state, every ascent step on the sum of their gradients)
+in place of its slot's per-position source: training against universal perturbations, the adversarial probe's global scope.
 MATRYOSHKA_FLOOR_SET_FRACTION=f (with floors): each update, each context is with probability f kept at its above-floor set
 (every piece whose static score exceeds its floor, so a per-token budget the floors set) instead of the drawn budget's
 top-k; hard in the forward, sigmoid((score - floor)/tau) passed straight through to the scores and the floors. The
@@ -151,6 +154,8 @@ ROUTING = os.environ.get('MATRYOSHKA_ROUTING', 'all')                 # which ma
 ATTACK_ROUTING = os.environ.get('MATRYOSHKA_ATTACK_ROUTING', 'same')   # all: attacked contexts mask every matrix (VPD's PGD term)
 PLAIN_ROUTING = os.environ.get('MATRYOSHKA_PLAIN_ROUTING', 'same')     # all: plain contexts mask every matrix (KLKeep's regime)
 PLAIN_WEIGHT = float(os.environ.get('MATRYOSHKA_PLAIN_WEIGHT', '0'))   # attacked contexts also train their plain keep mask, this weight
+GLOBAL_SHARE = float(os.environ.get('MATRYOSHKA_ADV_GLOBAL_SHARE', '0'))  # share of attacked contexts using the one global source
+assert PLAIN_WEIGHT >= 0 and 0 <= GLOBAL_SHARE <= 1
 assert PLAIN_WEIGHT >= 0
 assert ATTACK_ROUTING in ('same', 'all') and PLAIN_ROUTING in ('same', 'all')
 assert ROUTING in ('all', 'uniform_k_subset')
@@ -616,15 +621,35 @@ class MergedAdversary(Adversary):
         self.seed, self.lr, self.gradients = seed, 0., None
         self.attacked = torch.zeros(contexts, dtype=torch.bool)
         self.pick = torch.zeros(contexts, dtype=torch.long)
+        self.share, self.scoped = GLOBAL_SHARE, torch.zeros(contexts, dtype=torch.bool)    # global-scope slots this update
+        self.glob = torch.rand(sum(COUNTS), device='cuda', generator=generator)
+        self.gm, self.gv, self.gcount = torch.zeros_like(self.glob), torch.zeros_like(self.glob), 0
 
     def draw(self, step):
         """This update's coin per slot and particle per attacked slot, from a generator seeded by the update number."""
         generator = torch.Generator().manual_seed(self.seed * 1_000_003 + step)
         self.attacked = torch.rand(self.attacked.shape, generator=generator) < self.fraction
         self.pick = torch.randint(self.particles, self.pick.shape, generator=generator)
+        if self.share:
+            self.scoped = self.attacked & (torch.rand(self.attacked.shape, generator=torch.Generator().manual_seed(self.seed * 7 + step)) < self.share)
 
     def ascend(self, slots, grad):
-        """One Adam ascent step on the drawn particles of context slots `slots` (a CPU long tensor), then clamp."""
+        """One Adam ascent step on the drawn particles of context slots `slots` (a CPU long tensor), then clamp. Global-scope
+        slots (ADV_GLOBAL_SHARE) instead step the one global source on the sum of their gradients."""
+        scoped = self.scoped[slots]
+        if scoped.any():
+            g = grad[scoped.cuda()].sum((0, 1))
+            with torch.no_grad():
+                self.gcount += 1
+                self.gm.mul_(self.beta1).add_(g, alpha=1 - self.beta1)
+                self.gv.mul_(self.beta2).addcmul_(g, g, value=1 - self.beta2)
+                step = self.lr * (self.gm / (1 - self.beta1 ** self.gcount)) / (self.gv / (1 - self.beta2 ** self.gcount)).sqrt().add_(self.eps)
+                self.glob.add_(step).clamp_(0., 1.)
+            if scoped.all(): return
+            slots, grad = slots[~scoped], grad[(~scoped).cuda()]
+        self._ascend_slots(slots, grad)
+
+    def _ascend_slots(self, slots, grad):
         if self.gradients is not None: self.gradients.append((slots, grad.detach().clone()))
         index = (self.pick[slots].cuda(), slots.cuda())
         number = (self.count[self.pick[slots], slots] + 1).to('cuda', torch.float64)[:, None, None]
@@ -640,14 +665,20 @@ class MergedAdversary(Adversary):
         self.count[self.pick[slots], slots] += 1
 
     def sources(self, slots):
-        return self.source[self.pick[slots].cuda(), slots.cuda()]
+        out = self.source[self.pick[slots].cuda(), slots.cuda()]
+        scoped = self.scoped[slots].cuda()
+        return torch.where(scoped[:, None, None], self.glob.expand_as(out), out) if self.share else out
 
     def state(self):
-        return dict(source=self.source, m=self.m, v=self.v, count=self.count)
+        return dict(source=self.source, m=self.m, v=self.v, count=self.count, glob=self.glob, gm=self.gm, gv=self.gv,
+                    gcount=torch.tensor(self.gcount))
 
     def load(self, state):
         with torch.no_grad():
             for name in ('source', 'm', 'v'): getattr(self, name).copy_(state[name])
+            if 'glob' in state:
+                for name in ('glob', 'gm', 'gv'): getattr(self, name).copy_(state[name])
+                self.gcount = int(state['gcount'])
         self.count.copy_(state['count'])
 
 
@@ -1012,6 +1043,9 @@ def main():
         plan['init'] = dict(checkpoint=INIT, note='pieces, Adam state, budget generator, RNG states and step count (and the '
                                                   'adversary\'s sources when both runs have one) of that checkpoint; the lr '
                                                   'schedule continues from its step')
+    if GLOBAL_SHARE:
+        plan['adv_global'] = dict(share=GLOBAL_SHARE, rule='attacked contexts use, with this probability, one persistent source '
+                                  '[N] shared by all such contexts and positions (own Adam, steps on the summed gradient)')
     if PLAIN_WEIGHT:
         plan['plain_weight'] = dict(weight=PLAIN_WEIGHT, rule='attacked contexts also add weight * their KL at the plain keep mask '
                                     '(plain routing); every context trains the plain mask, as VPD puts both losses on each batch')
@@ -1207,6 +1241,8 @@ def main():
         if freq is not None: row.update(freq_normalized=float(np.mean([s['freq_normalized'] for s in stats])), freq_scale=freq['scale'])
         if TAIL_COEFF: row['tail_share'] = float(np.mean([s['tail_share'] for s in stats]))
         if FLOORS: row.update(floor_log_mean=float(FLOOR.mean()), floor_log_std=float(FLOOR.std()))
+        if merged is not None and GLOBAL_SHARE:
+            row.update(adv_global_mean=float(merged.glob.mean()), adv_global_share=float(merged.scoped.float().mean()))
         if PLAIN_WEIGHT:
             pe = [s['plain_extra'] for s in stats if 'plain_extra' in s]
             if pe: row['kl_attacked_plain'] = float(np.mean(pe))
