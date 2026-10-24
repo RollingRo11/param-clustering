@@ -48,6 +48,7 @@ through the ranking's gradient and the Lp / tail / frequency terms, which see th
 activation then scores ~0, so such pieces leave the keep set as a block (floored).
 MATRYOSHKA_ATTACK_ROUTING=all (with routing and the merged attacker): attacked contexts mask all matrices at every
 position, as VPD's PersistentPGDReconLoss (no router); plain contexts keep the subset routing (VPD's StochasticReconSubsetLoss).
+MATRYOSHKA_PLAIN_ROUTING=all: the same for plain (unattacked) contexts, which then train in KLKeep's all-masked regime.
 MATRYOSHKA_FLOOR_SET_FRACTION=f (with floors): each update, each context is with probability f kept at its above-floor set
 (every piece whose static score exceeds its floor, so a per-token budget the floors set) instead of the drawn budget's
 top-k; hard in the forward, sigmoid((score - floor)/tau) passed straight through to the scores and the floors. The
@@ -145,7 +146,8 @@ ADV_OVERRIDES = {k: float(os.environ[f'MATRYOSHKA_ADV_{e}']) for k, e in
                  (('lr', 'LR'), ('beta1', 'BETA1'), ('beta2', 'BETA2'), ('warmup_pct', 'LR_WARMUP')) if f'MATRYOSHKA_ADV_{e}' in os.environ}
 ROUTING = os.environ.get('MATRYOSHKA_ROUTING', 'all')                 # which matrices a position masks; all = every one
 ATTACK_ROUTING = os.environ.get('MATRYOSHKA_ATTACK_ROUTING', 'same')   # all: attacked contexts mask every matrix (VPD's PGD term)
-assert ATTACK_ROUTING in ('same', 'all')
+PLAIN_ROUTING = os.environ.get('MATRYOSHKA_PLAIN_ROUTING', 'same')     # all: plain contexts mask every matrix (KLKeep's regime)
+assert ATTACK_ROUTING in ('same', 'all') and PLAIN_ROUTING in ('same', 'all')
 assert ROUTING in ('all', 'uniform_k_subset')
 FREQ_COEFF = float(os.environ.get('MATRYOSHKA_FREQ_COEFF', '0'))      # weight of the hard-set frequency term (hard_frequency); 0 = off
 TAIL_COEFF = float(os.environ.get('MATRYOSHKA_TAIL_COEFF', '0'))      # weight of the tail-share term (tail_share); 0 = off
@@ -723,6 +725,8 @@ def accumulate(model, rows, cache, feasible, draws, forward=FORWARD, lp=None, ta
         route = None if router is None else routing_masks(router, tuple(ids.shape))
         if route is not None and merged is not None and ATTACK_ROUTING == 'all':    # attacked contexts: every matrix masked
             route[:, merged.attacked[first:first+len(block)].cuda()] = True
+        if route is not None and merged is not None and PLAIN_ROUTING == 'all':     # plain contexts: every matrix masked
+            route[:, ~merged.attacked[first:first+len(block)].cuda()] = True
         extra, train_mask, local = {}, mask, ()
         if floor_contexts is not None: extra['floor_set'] = extra_floor
         if merged is not None:
@@ -978,6 +982,8 @@ def main():
                                scope='one draw per chunk and update, shared by the plain and attacked forwards and the warm-up steps')
         if ATTACK_ROUTING == 'all':
             plan['routing']['attacked'] = 'all matrices masked at every position of attacked contexts (VPD PersistentPGDReconLoss); plain contexts routed'
+        if PLAIN_ROUTING == 'all':
+            plan['routing']['plain'] = 'all matrices masked at every position of plain contexts (the regime KLKeep measures)'
     if FREQ_COEFF:
         plan['hard_frequency'] = dict(coeff=FREQ_COEFF, positions=BATCH*CONTEXT,
                                       term='per chunk, sum_c f_c log2(1 + positions * f_c) / F0, f_c = share of the chunk\'s positions '
