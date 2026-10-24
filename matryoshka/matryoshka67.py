@@ -1,5 +1,8 @@
 """Matryoshka training of exact-sum rank-one pieces (after MAttr, arXiv 2609.25518), 5,000 steps.
 
+SimpleStories: the recipe we move on with is "B" (24 Oct 2026), the defaults of run_ss_mainline.sh: static sensor,
+learned floors (MATRYOSHKA_FLOORS), 30% floor-set contexts, 50/50 attacked/plain. See that script's header for the numbers.
+
 par-auto's own read x write score (Fisher or GIM) picks which pieces each token keeps; a sigmoid top-k mask at a
 random budget k keeps them; the loss is the KL of the actually masked model to the intact one. There is no gate
 network; by default no Lp term and no PGD (MATRYOSHKA_LP_COEFF adds the old Lp term, MATRYOSHKA_ADV_COEFF adds VPD's

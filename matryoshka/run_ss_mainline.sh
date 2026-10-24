@@ -1,15 +1,27 @@
 #!/bin/bash
-# Matryoshka mainline recipe (21 Oct 2026; the same knobs as slurm_matryoshka67_mainline.sh) on the 2-layer SimpleStories
-# target (gf6rbga0, 7,104 pieces), on a single-GPU box from this git clone. Only committed code runs: the script stops if
+# THE SIMPLESTORIES RECIPE: "B" (chosen 24 Oct 2026). The defaults below are recipe B; every knob is still overridable.
+#   = the 21 Oct mainline (hard top-k, k ~ k^-1.5 on [32, N-1], Lp / mass / hard frequency / tail terms, merged attacker,
+#     uniform-k-subset routing) with
+#   + static sensor (forward-only |r.h| sqrt(u^T M u), M the cached text-averaged Fisher)    MATRYOSHKA_SENSOR=static
+#   + learned per-piece score floors at the pieces' lr                                       MATRYOSHKA_FLOORS=1, _FLOOR_LR_SCALE=1
+#   + 30% of contexts kept at their above-floor set                                          MATRYOSHKA_FLOOR_SET_FRACTION=0.3
+#   + half the contexts attacked, half plain (was 90/10)                                     MATRYOSHKA_ADV_FRACTION=0.5
+#   + 5,000 steps on the 8,700-step schedule, monitor every 100                              MATRYOSHKA_STEPS / _SCHEDULE_STEPS
+# Measured (run fs30_adv50_5k): KLKeep 2.31 / 0.50 / 0.41 / 0.30 at k = 21 / 71 / 213 / 710 (VPD 8.22 / 0.43 / 0.38 /
+# 0.38); global adversarial probe after 320 steps 12.4 / 2.23 / 0.47 at 0.5 / 1 / 10% kept (VPD 14.3 / 6.08 / 0.48).
+# The overnight alternatives (all-masked plain passes, plain loss on attacked contexts, global attack sources: the
+# MATRYOSHKA_PLAIN_* / _ATTACK_ROUTING / _ADV_GLOBAL_* knobs) gained KLKeep but lost the probe, so they are off.
+#
+# Runs on the 2-layer SimpleStories target (gf6rbga0, 7,104 pieces), on a single-GPU box from this git clone. Only committed code runs: the script stops if
 # the clone has local changes, and a resumed run stops if the clone's commit differs from the one the run started on.
 # Usage:
 #   matryoshka/run_ss_mainline.sh smoke   tests on the SS target, then 20 steps into $SS_OUT/smoke (not on W&B)
 #   matryoshka/run_ss_mainline.sh train   resumable (rerun the same command to continue from the newest full checkpoint)
-# Env (optional): MATRYOSHKA_STEPS (default: one epoch of the train split, 18,522 updates = 607M tokens; the lr cosine,
-# p schedule and attacker warm-up are stretched to it unless MATRYOSHKA_SCHEDULE_STEPS sets another horizon; the earlier
-# 5,000-step SS runs used 8,700), MATRYOSHKA_K_MIN (smallest budget, default 32), MATRYOSHKA_SENSOR (default fisher;
-# write = rank by |r.h| ||u||, one forward; static = |r.h| sqrt(u^T M u)), MATRYOSHKA_BUDGET_POWER (budget density
-# k^-power, default 1.5), MATRYOSHKA_MONITOR_EVERY (default 250),
+# Env (optional): MATRYOSHKA_STEPS (default 5000; one epoch of the train split is 18,522), MATRYOSHKA_SCHEDULE_STEPS
+# (horizon of the lr cosine, p schedule and attacker warm-up, default 8700), MATRYOSHKA_K_MIN (smallest budget, default
+# 32), MATRYOSHKA_SENSOR (default static; fisher = per-token Fisher K=4, write = |r.h| ||u||), MATRYOSHKA_FLOORS,
+# MATRYOSHKA_FLOOR_LR_SCALE, MATRYOSHKA_FLOOR_SET_FRACTION, MATRYOSHKA_ADV_FRACTION (recipe B: 1, 1, 0.3, 0.5),
+# MATRYOSHKA_BUDGET_POWER (budget density k^-power, default 1.5), MATRYOSHKA_MONITOR_EVERY (default 100),
 # MATRYOSHKA_SCORE_INPUT=masked (static or write sensor): rank each matrix on its masked-forward input (matryoshka67.py).
 # Sparser budgets: MATRYOSHKA_K_MIN=8 (power 1.5: median budget 30, 69% of draws at k <= 71, about VPD's 47 active pieces
 # per token, 7.5% at k >= 710; power 2: median 16, 89% at k <= 71, 1% at k >= 710).
@@ -30,16 +42,18 @@ export PYTHONPATH="${VPD_CODE:-/root/vpd}${PYTHONPATH:+:$PYTHONPATH}"
 export OMP_NUM_THREADS=4 MKL_NUM_THREADS=4 TOKENIZERS_PARALLELISM=false
 py="${PY:-/root/venvs/ss/bin/python}"
 
-# The mainline recipe (main.md; knobs in newmethod.md), as on 67M, except the attacker's lr is constant from the first
-# update (MATRYOSHKA_ADV_LR_WARMUP=0), as in the SimpleStories runs it was measured on (particles_ss.py).
-export MATRYOSHKA_FORWARD=hard MATRYOSHKA_SENSOR="${MATRYOSHKA_SENSOR:-fisher}" MATRYOSHKA_K_MIN="${MATRYOSHKA_K_MIN:-32}" \
+# Recipe B (see the top): the mainline knobs (main.md; newmethod.md), as on 67M except the attacker's lr is constant from
+# the first update (MATRYOSHKA_ADV_LR_WARMUP=0, as in particles_ss.py), plus B's static sensor, floors, floor set and 50/50.
+export MATRYOSHKA_FORWARD=hard MATRYOSHKA_SENSOR="${MATRYOSHKA_SENSOR:-static}" MATRYOSHKA_K_MIN="${MATRYOSHKA_K_MIN:-32}" \
+  MATRYOSHKA_FLOORS="${MATRYOSHKA_FLOORS:-1}" MATRYOSHKA_FLOOR_LR_SCALE="${MATRYOSHKA_FLOOR_LR_SCALE:-1}" \
+  MATRYOSHKA_FLOOR_SET_FRACTION="${MATRYOSHKA_FLOOR_SET_FRACTION:-0.3}" \
   MATRYOSHKA_BUDGET_POWER="${MATRYOSHKA_BUDGET_POWER:-1.5}" MATRYOSHKA_BUDGET_CONTEXTS=1 MATRYOSHKA_BUDGET_STRATIFIED=1 \
   MATRYOSHKA_LP_COEFF=1 MATRYOSHKA_MASS_COEFF=10 MATRYOSHKA_FREQ_COEFF=0.5 MATRYOSHKA_TAIL_COEFF=1 \
-  MATRYOSHKA_ADV_FRACTION="${MATRYOSHKA_ADV_FRACTION:-0.9}" MATRYOSHKA_PARTICLES=1 \
+  MATRYOSHKA_ADV_FRACTION="${MATRYOSHKA_ADV_FRACTION:-0.5}" MATRYOSHKA_PARTICLES=1 \
   MATRYOSHKA_ADV_LR=0.02 MATRYOSHKA_ADV_BETA1=0.01 MATRYOSHKA_ADV_BETA2=0.99 MATRYOSHKA_ADV_LR_WARMUP=0 \
   MATRYOSHKA_ROUTING=uniform_k_subset MATRYOSHKA_PROJECTION=fp64
-steps="${MATRYOSHKA_STEPS:-$(cd "$code" && $py -c 'import common_ss; print(common_ss.train_updates())')}"
-export MATRYOSHKA_STEPS="$steps" MATRYOSHKA_SCHEDULE_STEPS="${MATRYOSHKA_SCHEDULE_STEPS:-$steps}" MATRYOSHKA_MONITOR_EVERY="${MATRYOSHKA_MONITOR_EVERY:-250}"
+export MATRYOSHKA_STEPS="${MATRYOSHKA_STEPS:-5000}" MATRYOSHKA_SCHEDULE_STEPS="${MATRYOSHKA_SCHEDULE_STEPS:-8700}" \
+  MATRYOSHKA_MONITOR_EVERY="${MATRYOSHKA_MONITOR_EVERY:-100}"
 out="${SS_OUT:-/root/runs/matryoshka_ss_mainline}"
 mkdir -p "$out"
 mode="${1:-train}"
