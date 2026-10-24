@@ -792,8 +792,9 @@ def check_floor_set(model, data, weights):
     """FLOOR_SET_FRACTION: a context drawn for the floor set trains at exactly its above-floor pieces (stats k = their
     mean count), the others at their budget; the floors get a gradient through the floor-set contexts."""
     import static_fisher
-    old_metric, old_floor = mt.STATIC_METRIC, mt.FLOOR
+    old_metric, old_floor, old_ramp = mt.STATIC_METRIC, mt.FLOOR, mt.FLOOR_RAMP
     try:
+        mt.FLOOR_RAMP = 0.                  # the hard floor set (the ramp's sizes are mask sums)
         mt.STATIC_METRIC = static_fisher.estimate(model, data, rows=16, k=4)
         pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, mt.COUNTS)]
         rows = batch(data, 0)[:4]
@@ -813,7 +814,7 @@ def check_floor_set(model, data, weights):
         assert mt.FLOOR.grad is not None and float(mt.FLOOR.grad.abs().sum()) > 0
         return dict(floor_set_sizes=[sizes[0], sizes[2]])
     finally:
-        mt.STATIC_METRIC, mt.FLOOR = old_metric, old_floor
+        mt.STATIC_METRIC, mt.FLOOR, mt.FLOOR_RAMP = old_metric, old_floor, old_ramp
 
 
 def check_attack_routing(model, data, weights):
