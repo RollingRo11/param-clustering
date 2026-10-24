@@ -55,6 +55,7 @@ forward and backward over the attacked contexts.
 MATRYOSHKA_ADV_GLOBAL_SHARE=g (merged attacker): each attacked context uses, with probability g, one source shared by all
 global-scope contexts and positions ([N], persistent, its own Adam state, every ascent step on the sum of their gradients)
 in place of its slot's per-position source: training against universal perturbations, the adversarial probe's global scope.
+MATRYOSHKA_GLOBAL_ROUTING=all: those global-source contexts also mask every matrix, so they match the probe exactly.
 MATRYOSHKA_FLOOR_SET_FRACTION=f (with floors): each update, each context is with probability f kept at its above-floor set
 (every piece whose static score exceeds its floor, so a per-token budget the floors set) instead of the drawn budget's
 top-k; hard in the forward, sigmoid((score - floor)/tau) passed straight through to the scores and the floors. The
@@ -155,6 +156,8 @@ ATTACK_ROUTING = os.environ.get('MATRYOSHKA_ATTACK_ROUTING', 'same')   # all: at
 PLAIN_ROUTING = os.environ.get('MATRYOSHKA_PLAIN_ROUTING', 'same')     # all: plain contexts mask every matrix (KLKeep's regime)
 PLAIN_WEIGHT = float(os.environ.get('MATRYOSHKA_PLAIN_WEIGHT', '0'))   # attacked contexts also train their plain keep mask, this weight
 GLOBAL_SHARE = float(os.environ.get('MATRYOSHKA_ADV_GLOBAL_SHARE', '0'))  # share of attacked contexts using the one global source
+GLOBAL_ROUTING = os.environ.get('MATRYOSHKA_GLOBAL_ROUTING', 'same')      # all: those contexts mask every matrix (the probe's setting)
+assert GLOBAL_ROUTING in ('same', 'all')
 assert PLAIN_WEIGHT >= 0 and 0 <= GLOBAL_SHARE <= 1
 assert PLAIN_WEIGHT >= 0
 assert ATTACK_ROUTING in ('same', 'all') and PLAIN_ROUTING in ('same', 'all')
@@ -765,6 +768,8 @@ def accumulate(model, rows, cache, feasible, draws, forward=FORWARD, lp=None, ta
             route[:, merged.attacked[first:first+len(block)].cuda()] = True
         if route is not None and merged is not None and PLAIN_ROUTING == 'all':     # plain contexts: every matrix masked
             route[:, ~merged.attacked[first:first+len(block)].cuda()] = True
+        if route is not None and merged is not None and GLOBAL_ROUTING == 'all':    # global-source contexts: every matrix masked
+            route[:, merged.scoped[first:first+len(block)].cuda()] = True
         extra, train_mask, local = {}, mask, ()
         if floor_contexts is not None: extra['floor_set'] = extra_floor
         if merged is not None:
@@ -1044,7 +1049,7 @@ def main():
                                                   'adversary\'s sources when both runs have one) of that checkpoint; the lr '
                                                   'schedule continues from its step')
     if GLOBAL_SHARE:
-        plan['adv_global'] = dict(share=GLOBAL_SHARE, rule='attacked contexts use, with this probability, one persistent source '
+        plan['adv_global'] = dict(share=GLOBAL_SHARE, routing=GLOBAL_ROUTING, rule='attacked contexts use, with this probability, one persistent source '
                                   '[N] shared by all such contexts and positions (own Adam, steps on the summed gradient)')
     if PLAIN_WEIGHT:
         plan['plain_weight'] = dict(weight=PLAIN_WEIGHT, rule='attacked contexts also add weight * their KL at the plain keep mask '
