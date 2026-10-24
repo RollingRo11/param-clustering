@@ -816,6 +816,31 @@ def check_floor_set(model, data, weights):
         mt.STATIC_METRIC, mt.FLOOR = old_metric, old_floor
 
 
+def check_attack_routing(model, data, weights):
+    """ATTACK_ROUTING=all: with every context attacked, a routed update is the unrouted (all matrices masked) update."""
+    cfg = mt.vpd_adversary_config()
+    pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, mt.COUNTS)]
+    tc = method.TrainConfig(precision='bf16', projection_precision='fp32')
+    rows = batch(data, 0)[:4]
+    cache, logp = mt.capture(model, rows, seed=5, sensor='fisher', chunk=mt.MICRO, keep_logp=True)
+    feasible = [method.project(w, p, tc) for w, p in zip(weights, pieces)]
+    out = []
+    old = mt.ATTACK_ROUTING
+    try:
+        for routed in (True, False):
+            mt.ATTACK_ROUTING = 'all'
+            adversary = mt.MergedAdversary(cfg, 1., 1, 4, seed=0); adversary.lr = .01; adversary.draw(0)
+            router = torch.Generator(device='cuda').manual_seed(3) if routed else None
+            out.append(mt.accumulate(model, rows, cache, feasible, list(DRAWS), 'hard', None, target_logp=logp, chunk=4,
+                                     merged=adversary, router=router))
+    finally:
+        mt.ATTACK_ROUTING = old
+    (a, sa), (b, sb) = out
+    diff = max(abs(x['kl'] - y['kl']) / y['kl'] for x, y in zip(sa, sb))
+    assert diff < 1e-5, diff
+    return dict(kl_max_rel_diff=diff)
+
+
 def main():
     torch.backends.cuda.matmul.allow_tf32 = False
     run_score_input, mt.SCORE_INPUT = mt.SCORE_INPUT, 'intact'    # the reference checks below are on intact scoring
@@ -843,6 +868,7 @@ def main():
     result['greedy_scores'] = check_greedy_scores(model, data, weights)
     result['masked_scorer'] = check_masked_scorer(model, data, weights)
     result['floor_set'] = check_floor_set(model, data, weights)
+    result['attack_routing'] = check_attack_routing(model, data, weights)
     print(json.dumps(dict(floor_set=result['floor_set'])), flush=True)
     print(json.dumps(dict(masked_scorer=result['masked_scorer'])), flush=True)
     if mt.SENSOR == 'static':      # the checks below use the run's own sensor
