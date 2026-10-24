@@ -1,7 +1,8 @@
 """Prompt circuits on SimpleStories, Goodfire's VPD (s-9e774a82) against one of our checkpoints, through VPD's own app code
 (param_decomp.app.backend.compute_edges_from_ci, as the 20 Oct SS port's native_circuit.py / pg67.py).
 Circuit = each method's own notion of active at every prompt position: VPD's CI > 0 set (CI as its mask value, as the app);
-ours the pieces whose static score (|h.r_c| ||L^T u_c||) is above their learned floor (MATRYOSHKA_FLOORS runs; mask 1).
+ours the pieces whose static score (|h.r_c| ||L^T u_c||) is above their learned floor (MATRYOSHKA_FLOORS runs; mask 1),
+or with --ramp w the leaky hard-clipped ramp of the score around the floor (mask in [0, 1], active where > 0).
 For each: P(label) intact, with only the circuit (every other piece off), and under two attacks that may switch any piece
 outside the circuit partly back on (mask keep + (1 - keep) r, sign-PGD on -log P(label): the app's 4 steps of 1.0 and our
 eval's 320 steps of 0.1, one r per piece per position); and the attribution graph (sec 5.1 edges) at the circuit.
@@ -44,8 +45,9 @@ def load_ours(model, saved, cfg):
     return cm.eval().requires_grad_(False)
 
 
-def above_floor(model, tokens, saved):
-    """Per matrix [1, seq, C] 0/1: static score above the piece's learned floor (and the raw scores)."""
+def above_floor(model, tokens, saved, ramp=0.):
+    """Per matrix [1, seq, C] mask: 0/1 static score above the piece's learned floor; ramp = w > 0: the leaky hard-clipped
+    ramp 0.5 + (score - floor) / (2 w floor) clipped to [0, 1] (MATRYOSHKA_FLOOR_RAMP's forward), active where it is > 0."""
     pre, hooks = {}, []
     for n in MODULES:
         hooks.append(model.get_submodule(n).register_forward_hook(lambda _m, a, _o, n=n: pre.__setitem__(n, a[0].detach().float())))
@@ -57,7 +59,7 @@ def above_floor(model, tokens, saved):
     out = {}
     for n, f, m, fl in zip(MODULES, saved['factors'], saved['static_metric'], floors):
         score = (pre[n][0] @ f['read'].cuda().float()).abs() * (m['L'].cuda().float().T @ f['write'].cuda().float()).norm(dim=0)
-        out[n] = (score > fl).float()[None]
+        out[n] = ((0.5 + (score - fl) / (2 * ramp * fl)).clamp(0, 1) if ramp else (score > fl).float())[None]
     return out
 
 
@@ -103,6 +105,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--ours', type=Path, required=True); ap.add_argument('--prompt', required=True); ap.add_argument('--label', required=True)
     ap.add_argument('--output', type=Path, required=True)
+    ap.add_argument('--ramp', type=float, default=0., help='gate ours by the leaky hard-clipped ramp of this half-width x floor')
     args = ap.parse_args(); credentials(); torch.backends.cuda.matmul.allow_tf32 = False
     from param_decomp.models.component_model import ComponentModel, ParamDecompRunInfo
     from param_decomp.topology import TransformerTopology
@@ -115,7 +118,7 @@ def main():
     assert len(label_ids) == 1, label_ids
     tokens, label = torch.tensor([ids], device='cuda'), label_ids[0]
     result = dict(prompt=args.prompt, label=args.label, tokens=[tok.decode([i]) for i in ids], token_ids=ids, label_id=label,
-                  attacks=ATTACKS, ours=str(args.ours), methods={})
+                  attacks=ATTACKS, ours=str(args.ours), ramp=args.ramp, methods={})
     ri = ParamDecompRunInfo.from_path(VPD_RUN)
     vpd, cfg = ComponentModel.from_run_info(ri).cuda().eval().requires_grad_(False), ri.config
     with torch.no_grad():
@@ -123,7 +126,7 @@ def main():
     vpd_keep = {n: ci.lower_leaky[n].float() for n in MODULES}
     saved = torch.load(args.ours, map_location='cpu', weights_only=False)
     ours_model = target(); ours = load_ours(ours_model, saved, cfg)
-    ours_keep = above_floor(ours_model, tokens, saved)
+    ours_keep = above_floor(ours_model, tokens, saved, args.ramp)
     for name, cm, keep in (('vpd', vpd, vpd_keep), ('ours', ours, ours_keep)):
         with torch.no_grad():
             intact = float(F.softmax(cm(tokens)[0, -1].float(), -1)[label])
