@@ -52,6 +52,9 @@ activation then scores ~0, so such pieces leave the keep set as a block (floored
 MATRYOSHKA_ATTACK_ROUTING=all (with routing and the merged attacker): attacked contexts mask all matrices at every
 position, as VPD's PersistentPGDReconLoss (no router); plain contexts keep the subset routing (VPD's StochasticReconSubsetLoss).
 MATRYOSHKA_PLAIN_ROUTING=all: the same for plain (unattacked) contexts, which then train in KLKeep's all-masked regime.
+MATRYOSHKA_FLOOR_RAMP=w (with the floor set): the floor-set contexts' mask is the leaky hard-clipped ramp of half-width w x floor
+around each piece's floor (floor_set), used as the mask value itself, as VPD uses its CI.
+MATRYOSHKA_MASS_COEFF=0 still logs the piece mass (train/mass_*), so its drift without the penalty can be watched.
 MATRYOSHKA_PLAIN_WEIGHT=w (merged attacker): every attacked context also adds w * its KL at the plain keep mask (plain
 routing), so every context trains the plain mask, as VPD puts its stochastic and PGD losses on the same batch; one extra
 forward and backward over the attacked contexts.
@@ -130,6 +133,8 @@ FLOOR_LR_SCALE = float(os.environ.get('MATRYOSHKA_FLOOR_LR_SCALE', '10'))   # fl
 assert not FLOORS or SENSOR == 'static', 'floors are in static-score units'
 FLOOR = None              # FLOORS: log floor per piece [N] (a leaf trained with the pieces), set by main or a test
 FLOOR_SET_FRACTION = float(os.environ.get('MATRYOSHKA_FLOOR_SET_FRACTION', '0'))  # share of contexts kept at their above-floor set
+FLOOR_RAMP = float(os.environ.get('MATRYOSHKA_FLOOR_RAMP', '0'))      # > 0: floor-set mask = leaky hard-clipped ramp of this half-width
+assert FLOOR_RAMP >= 0
 assert 0 <= FLOOR_SET_FRACTION <= 1 and (FLOOR_SET_FRACTION == 0 or FLOORS)
 SCORE_INPUT = os.environ.get('MATRYOSHKA_SCORE_INPUT', 'intact')   # masked: rank each matrix on its masked-forward input (MaskedScorer)
 assert SCORE_INPUT in ('intact', 'masked')
@@ -371,9 +376,17 @@ def floored(parts):
 
 def floor_set(raw):
     """The above-floor keep set of raw per-matrix scores [n, C] (FLOOR), concatenated [n, N]: hard (score > floor) in
-    the forward, sigmoid((score - floor) / tau) passed straight through."""
+    the forward, sigmoid((score - floor) / tau) passed straight through. MATRYOSHKA_FLOOR_RAMP=w: instead the mask itself
+    is a hard-clipped ramp, 0 below (1 - w) f, 1 above (1 + w) f, linear between (exact zeros, as VPD's CI), with VPD's
+    leaky gradient outside the ramp (slope 0.01 of the ramp's, so clipped pieces still feel the loss)."""
     masks = []
     for x, f in zip(raw, FLOOR.exp().split(COUNTS)):
+        if FLOOR_RAMP:
+            y = 0.5 + (x.float() - f) / (2 * FLOOR_RAMP * f)
+            inside = (y > 0) & (y < 1)
+            path = torch.where(inside, y, 0.01 * y)                       # gradient path: slope 1 inside, 0.01 outside
+            masks.append(y.clamp(0, 1).detach() + path - path.detach())
+            continue
         soft = torch.sigmoid((x.float() - f) / (f.detach() / 10))
         masks.append((x.float() > f).float().detach() + soft - soft.detach())
     return torch.cat(masks, -1)
@@ -1225,6 +1238,8 @@ def main():
         if MASS_COEFF:
             masses = piece_mass(feasible, weight_norms)
             outputs.append(MASS_COEFF * (masses - 1).pow(2).mean()); cotangents.append(torch.ones((), device=masses.device))
+        else:                    # tracked only
+            with torch.no_grad(): masses = piece_mass(feasible, weight_norms)
         torch.autograd.backward(outputs, cotangents)
         del leaves, feasible
         grad_norm = float(torch.linalg.vector_norm(torch.stack([t.grad.norm() for t in parameters])))
@@ -1242,7 +1257,7 @@ def main():
                    peak_allocated_bytes=torch.cuda.max_memory_allocated(), positions=completed*BATCH*CONTEXT)
         if lp:
             row.update(lp_normalized=float(np.mean([s['lp_normalized'] for s in stats])), p=lp['p'])
-        if MASS_COEFF:
+        if True:                 # logged with or without the penalty (MASS_COEFF = 0: tracked only)
             m = masses.detach()
             row.update(mass_penalty=float((m - 1).pow(2).mean()), mass_max=float(m.max()),
                        mass_total=float((m * torch.tensor(weight_norms, device=m.device)).sum()) / weight_mass)
