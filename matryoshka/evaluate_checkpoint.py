@@ -33,6 +33,7 @@ def main():
     parser.add_argument('--greedy-steps', type=int, default=710)   # greedy: picks per token before the static order takes over
     parser.add_argument('--score-input', choices=['intact', 'masked'], default='intact')   # masked: each matrix re-ranks its
     # share of the top-k on the input it receives in the masked forward (matryoshka67 MATRYOSHKA_SCORE_INPUT=masked)
+    parser.add_argument('--fractions', default='0,.0001,.0003,.001,.003,.01,.03,.1,.2,.4,.6,.8,1')   # keep fractions of the curve
     parser.add_argument('--score-floor', default=None)       # .pt of per-piece floors in score units (floor_ranking.py): rank
     # max(0, score - floor) (+1e-6 score to order the zeros)
     parser.add_argument('--always-keep', default='')         # comma-separated modules kept whole; fractions count the rest
@@ -92,7 +93,7 @@ def main():
             u = p.write.float() if args.sensor == 'write' else f[0].float().T @ p.write.float()
             factors[name] = u.square().sum(0).add(1e-30).sqrt()
     data, manifest = tokens('val')
-    fractions = [0., .0001, .0003, .001, .003, .01, .03, .1, .2, .4, .6, .8, 1.]
+    fractions = [float(x) for x in args.fractions.split(',')]
     sums = [dict(kl=0., ce=0., kept=0., n=0) for _ in fractions]
     baseline_ce = 0.; started = time.perf_counter(); integration_audits = []; scoring_seconds = 0.
     for first in range(0, args.sequences, 2):
