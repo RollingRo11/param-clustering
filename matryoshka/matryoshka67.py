@@ -56,6 +56,9 @@ MATRYOSHKA_ADV_GLOBAL_SHARE=g (merged attacker): each attacked context uses, wit
 global-scope contexts and positions ([N], persistent, its own Adam state, every ascent step on the sum of their gradients)
 in place of its slot's per-position source: training against universal perturbations, the adversarial probe's global scope.
 MATRYOSHKA_GLOBAL_ROUTING=all: those global-source contexts also mask every matrix, so they match the probe exactly.
+MATRYOSHKA_ADV_GLOBAL_RESET=r: the global source restarts (uniform draw, fresh Adam state) every r updates, so it is a
+fresh attack of ~r*12 steps like the probe's 320, not one that has kept climbing for the whole run (which, unreset,
+reached a near-universal r ~ 0.77 and attacked KL ~ 9: the pieces gave up on small budgets).
 MATRYOSHKA_FLOOR_SET_FRACTION=f (with floors): each update, each context is with probability f kept at its above-floor set
 (every piece whose static score exceeds its floor, so a per-token budget the floors set) instead of the drawn budget's
 top-k; hard in the forward, sigmoid((score - floor)/tau) passed straight through to the scores and the floors. The
@@ -157,6 +160,7 @@ PLAIN_ROUTING = os.environ.get('MATRYOSHKA_PLAIN_ROUTING', 'same')     # all: pl
 PLAIN_WEIGHT = float(os.environ.get('MATRYOSHKA_PLAIN_WEIGHT', '0'))   # attacked contexts also train their plain keep mask, this weight
 GLOBAL_SHARE = float(os.environ.get('MATRYOSHKA_ADV_GLOBAL_SHARE', '0'))  # share of attacked contexts using the one global source
 GLOBAL_ROUTING = os.environ.get('MATRYOSHKA_GLOBAL_ROUTING', 'same')      # all: those contexts mask every matrix (the probe's setting)
+GLOBAL_RESET = int(os.environ.get('MATRYOSHKA_ADV_GLOBAL_RESET', '0'))    # re-draw the global source every this many updates; 0 = never
 assert GLOBAL_ROUTING in ('same', 'all')
 assert PLAIN_WEIGHT >= 0 and 0 <= GLOBAL_SHARE <= 1
 assert PLAIN_WEIGHT >= 0
@@ -635,6 +639,11 @@ class MergedAdversary(Adversary):
         self.pick = torch.randint(self.particles, self.pick.shape, generator=generator)
         if self.share:
             self.scoped = self.attacked & (torch.rand(self.attacked.shape, generator=torch.Generator().manual_seed(self.seed * 7 + step)) < self.share)
+            if GLOBAL_RESET and step % GLOBAL_RESET == 0:
+                with torch.no_grad():
+                    self.glob.copy_(torch.rand(self.glob.shape, device='cuda', generator=torch.Generator(device='cuda').manual_seed(self.seed * 11 + step)))
+                    self.gm.zero_(); self.gv.zero_()
+                self.gcount = 0
 
     def ascend(self, slots, grad):
         """One Adam ascent step on the drawn particles of context slots `slots` (a CPU long tensor), then clamp. Global-scope
@@ -1049,7 +1058,7 @@ def main():
                                                   'adversary\'s sources when both runs have one) of that checkpoint; the lr '
                                                   'schedule continues from its step')
     if GLOBAL_SHARE:
-        plan['adv_global'] = dict(share=GLOBAL_SHARE, routing=GLOBAL_ROUTING, rule='attacked contexts use, with this probability, one persistent source '
+        plan['adv_global'] = dict(share=GLOBAL_SHARE, routing=GLOBAL_ROUTING, reset_every=GLOBAL_RESET, rule='attacked contexts use, with this probability, one persistent source '
                                   '[N] shared by all such contexts and positions (own Adam, steps on the summed gradient)')
     if PLAIN_WEIGHT:
         plan['plain_weight'] = dict(weight=PLAIN_WEIGHT, rule='attacked contexts also add weight * their KL at the plain keep mask '
