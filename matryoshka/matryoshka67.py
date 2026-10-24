@@ -49,6 +49,9 @@ activation then scores ~0, so such pieces leave the keep set as a block (floored
 MATRYOSHKA_ATTACK_ROUTING=all (with routing and the merged attacker): attacked contexts mask all matrices at every
 position, as VPD's PersistentPGDReconLoss (no router); plain contexts keep the subset routing (VPD's StochasticReconSubsetLoss).
 MATRYOSHKA_PLAIN_ROUTING=all: the same for plain (unattacked) contexts, which then train in KLKeep's all-masked regime.
+MATRYOSHKA_PLAIN_WEIGHT=w (merged attacker): every attacked context also adds w * its KL at the plain keep mask (plain
+routing), so every context trains the plain mask, as VPD puts its stochastic and PGD losses on the same batch; one extra
+forward and backward over the attacked contexts.
 MATRYOSHKA_FLOOR_SET_FRACTION=f (with floors): each update, each context is with probability f kept at its above-floor set
 (every piece whose static score exceeds its floor, so a per-token budget the floors set) instead of the drawn budget's
 top-k; hard in the forward, sigmoid((score - floor)/tau) passed straight through to the scores and the floors. The
@@ -147,6 +150,8 @@ ADV_OVERRIDES = {k: float(os.environ[f'MATRYOSHKA_ADV_{e}']) for k, e in
 ROUTING = os.environ.get('MATRYOSHKA_ROUTING', 'all')                 # which matrices a position masks; all = every one
 ATTACK_ROUTING = os.environ.get('MATRYOSHKA_ATTACK_ROUTING', 'same')   # all: attacked contexts mask every matrix (VPD's PGD term)
 PLAIN_ROUTING = os.environ.get('MATRYOSHKA_PLAIN_ROUTING', 'same')     # all: plain contexts mask every matrix (KLKeep's regime)
+PLAIN_WEIGHT = float(os.environ.get('MATRYOSHKA_PLAIN_WEIGHT', '0'))   # attacked contexts also train their plain keep mask, this weight
+assert PLAIN_WEIGHT >= 0
 assert ATTACK_ROUTING in ('same', 'all') and PLAIN_ROUTING in ('same', 'all')
 assert ROUTING in ('all', 'uniform_k_subset')
 FREQ_COEFF = float(os.environ.get('MATRYOSHKA_FREQ_COEFF', '0'))      # weight of the hard-set frequency term (hard_frequency); 0 = off
@@ -723,6 +728,8 @@ def accumulate(model, rows, cache, feasible, draws, forward=FORWARD, lp=None, ta
             del raw
         counts = matrix_counts(mask) if SCORE_INPUT == 'masked' else None
         route = None if router is None else routing_masks(router, tuple(ids.shape))
+        plain_route = None if route is None else route.clone()      # PLAIN_WEIGHT's plain pass on attacked contexts
+        if plain_route is not None and PLAIN_ROUTING == 'all': plain_route[:] = True
         if route is not None and merged is not None and ATTACK_ROUTING == 'all':    # attacked contexts: every matrix masked
             route[:, merged.attacked[first:first+len(block)].cuda()] = True
         if route is not None and merged is not None and PLAIN_ROUTING == 'all':     # plain contexts: every matrix masked
@@ -768,6 +775,14 @@ def accumulate(model, rows, cache, feasible, draws, forward=FORWARD, lp=None, ta
             del scorer
         term = lp_term(parts, lp) if lp else None
         loss = kl.sum() if term is None else kl.sum() + lp['coeff'] * term * len(ks)
+        if PLAIN_WEIGHT and len(local):   # the attacked contexts' plain keep mask, too
+            inside = local.cuda()
+            sub = [a.reshape(*ids.shape, -1)[inside] for a in mask.split(COUNTS, -1)]
+            kl_extra = kl_per_position(target[inside], masked_logits(model, ids[inside], leaves, sub,
+                                                                     None if plain_route is None else plain_route[:, inside])).view(len(local), -1).mean(-1)
+            loss = loss + PLAIN_WEIGHT * kl_extra.sum()
+            extra['plain_extra'] = dict(zip(local.tolist(), kl_extra.detach().tolist()))
+            del sub, kl_extra
         if freq is not None:
             raw = hard_frequency(mask, freq['positions'])
             if freq['scale'] is None: freq['scale'] = float(raw.detach())
@@ -825,6 +840,7 @@ def accumulate(model, rows, cache, feasible, draws, forward=FORWARD, lp=None, ta
             if 'attacked' in extra: stats[-1]['attacked'] = bool(extra['attacked'][j])
             if 'floor_set' in extra: stats[-1]['floor_set'] = bool(extra['floor_set'][j])
             if j in starts: stats[-1]['adv_kl_start'] = starts[j]
+            if j in extra.get('plain_extra', {}): stats[-1]['plain_extra'] = extra['plain_extra'][j]
     return leaves, stats
 
 
@@ -996,6 +1012,9 @@ def main():
         plan['init'] = dict(checkpoint=INIT, note='pieces, Adam state, budget generator, RNG states and step count (and the '
                                                   'adversary\'s sources when both runs have one) of that checkpoint; the lr '
                                                   'schedule continues from its step')
+    if PLAIN_WEIGHT:
+        plan['plain_weight'] = dict(weight=PLAIN_WEIGHT, rule='attacked contexts also add weight * their KL at the plain keep mask '
+                                    '(plain routing); every context trains the plain mask, as VPD puts both losses on each batch')
     if FLOOR_SET_FRACTION:
         plan['floor_set'] = dict(fraction=FLOOR_SET_FRACTION, rule='per update and context, with this probability the keep set is the '
                                  'above-floor set (score > floor, per token) instead of the drawn budget top-k; sigmoid((score - floor)'
@@ -1188,6 +1207,9 @@ def main():
         if freq is not None: row.update(freq_normalized=float(np.mean([s['freq_normalized'] for s in stats])), freq_scale=freq['scale'])
         if TAIL_COEFF: row['tail_share'] = float(np.mean([s['tail_share'] for s in stats]))
         if FLOORS: row.update(floor_log_mean=float(FLOOR.mean()), floor_log_std=float(FLOOR.std()))
+        if PLAIN_WEIGHT:
+            pe = [s['plain_extra'] for s in stats if 'plain_extra' in s]
+            if pe: row['kl_attacked_plain'] = float(np.mean(pe))
         if FLOOR_SET_FRACTION:
             at = [s for s in stats if s.get('floor_set')]
             row['floor_set_share'] = len(at) / len(stats)

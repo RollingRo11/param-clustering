@@ -849,6 +849,30 @@ def check_attack_routing(model, data, weights):
     return dict(kl_max_rel_diff=diff, plain_kl_max_rel_diff=plain_diff)
 
 
+def check_plain_weight(model, data, weights):
+    """PLAIN_WEIGHT: an attacked context's extra plain pass is its KL at the plain keep mask (the KL a plain context
+    gets), and its gradient adds to the attacked one."""
+    cfg = mt.vpd_adversary_config()
+    pieces = [core.initialize_pieces(w, c, 0) for w, c in zip(weights, mt.COUNTS)]
+    tc = method.TrainConfig(precision='bf16', projection_precision='fp32')
+    rows = batch(data, 0)[:4]
+    cache, logp = mt.capture(model, rows, seed=5, sensor='fisher', chunk=mt.MICRO, keep_logp=True)
+    feasible = [method.project(w, p, tc) for w, p in zip(weights, pieces)]
+    old = mt.PLAIN_WEIGHT
+    try:
+        mt.PLAIN_WEIGHT = 0.
+        plain = mt.MergedAdversary(cfg, 0., 1, 4, seed=0); plain.draw(0)
+        _, plain_stats = mt.accumulate(model, rows, cache, feasible, list(DRAWS), 'hard', None, target_logp=logp, chunk=4, merged=plain)
+        mt.PLAIN_WEIGHT = 1.
+        attacked = mt.MergedAdversary(cfg, 1., 1, 4, seed=0); attacked.lr = .01; attacked.draw(0)
+        _, stats = mt.accumulate(model, rows, cache, feasible, list(DRAWS), 'hard', None, target_logp=logp, chunk=4, merged=attacked)
+    finally:
+        mt.PLAIN_WEIGHT = old
+    diff = max(abs(a['plain_extra'] - b['kl']) / b['kl'] for a, b in zip(stats, plain_stats))
+    assert diff < 1e-3, diff
+    return dict(plain_extra_vs_plain_max_rel_diff=diff)
+
+
 def main():
     torch.backends.cuda.matmul.allow_tf32 = False
     run_score_input, mt.SCORE_INPUT = mt.SCORE_INPUT, 'intact'    # the reference checks below are on intact scoring
@@ -877,6 +901,7 @@ def main():
     result['masked_scorer'] = check_masked_scorer(model, data, weights)
     result['floor_set'] = check_floor_set(model, data, weights)
     result['attack_routing'] = check_attack_routing(model, data, weights)
+    result['plain_weight'] = check_plain_weight(model, data, weights)
     print(json.dumps(dict(floor_set=result['floor_set'])), flush=True)
     print(json.dumps(dict(masked_scorer=result['masked_scorer'])), flush=True)
     if mt.SENSOR == 'static':      # the checks below use the run's own sensor
